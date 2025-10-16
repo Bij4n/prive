@@ -6,3 +6,8 @@ description = "Cross-platform password & encryption toolkit"
 license = "MIT"
 
 [dependencies]
+clap = { version = "4", features = ["derive"] }
+clap_complete = "4"
+rand = "0.8"
+colored = "2"
+rpassword = "7"
