@@ -24,3 +24,29 @@ pub fn vault_path() -> PathBuf {
 }
 
 pub fn keyring_dir() -> PathBuf {
+    data_dir().join("keyring")
+}
+
+pub fn config_file_path() -> PathBuf {
+    config_dir().join("config.toml")
+}
+
+pub fn backup_dir() -> PathBuf {
+    data_dir().join("backups")
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct AppConfig {
+    #[serde(default)]
+    pub vault: VaultConfig,
+    #[serde(default)]
+    pub clipboard: ClipboardConfig,
+    #[serde(default)]
+    pub generate: GenerateConfig,
+    #[serde(default)]
+    pub backup: BackupConfig,
+    #[serde(default)]
+    pub session: SessionConfig,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
