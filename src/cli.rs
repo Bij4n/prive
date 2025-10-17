@@ -200,3 +200,32 @@ pub struct GenerateArgs {
     pub words: usize,
 
     /// Separator for passphrase words
+    #[arg(short, long, default_value = "-")]
+    pub separator: String,
+
+    /// Copy result to clipboard
+    #[arg(short, long)]
+    pub copy: bool,
+
+    /// Generate a numeric PIN
+    #[arg(long)]
+    pub pin: bool,
+
+    /// Generate a pronounceable password
+    #[arg(long)]
+    pub pronounceable: bool,
+
+    /// Custom character set
+    #[arg(long)]
+    pub charset: Option<String>,
+}
+
+// --- PGP ---
+
+#[derive(Parser)]
+pub struct PgpArgs {
+    #[command(subcommand)]
+    pub command: PgpCommand,
+}
+
+#[derive(Subcommand)]
