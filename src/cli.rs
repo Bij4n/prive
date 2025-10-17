@@ -345,3 +345,32 @@ pub enum ConfigCommand {
     },
     /// Reset configuration to defaults
     Reset,
+}
+
+// --- Audit ---
+
+#[derive(Parser)]
+pub struct AuditArgs {
+    /// Check passwords against Have I Been Pwned
+    #[arg(long)]
+    pub breach: bool,
+}
+
+// --- Backup ---
+
+#[derive(Parser)]
+pub struct BackupArgs {
+    #[command(subcommand)]
+    pub command: BackupCommand,
+}
+
+#[derive(Subcommand)]
+pub enum BackupCommand {
+    /// Create a new backup
+    Create,
+    /// List available backups
+    List,
+    /// Restore vault from a backup
+    Restore {
+        /// Path to backup file
+        file: PathBuf,
