@@ -316,3 +316,32 @@ pub struct DecryptArgs {
     pub file: PathBuf,
 
     /// Output file path
+    #[arg(short, long)]
+    pub output: Option<PathBuf>,
+
+    /// Verify signature if present
+    #[arg(long)]
+    pub verify: bool,
+}
+
+// --- Config ---
+
+#[derive(Parser)]
+pub struct ConfigArgs {
+    #[command(subcommand)]
+    pub command: ConfigCommand,
+}
+
+#[derive(Subcommand)]
+pub enum ConfigCommand {
+    /// Create default configuration
+    Init,
+    /// Show current configuration
+    Show,
+    /// Set a configuration value (key=value)
+    Set {
+        /// Key=value pair (e.g. "generate.default_length=24")
+        pair: String,
+    },
+    /// Reset configuration to defaults
+    Reset,
