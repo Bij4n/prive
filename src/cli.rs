@@ -258,3 +258,32 @@ pub enum PgpCommand {
         /// Export the secret key
         #[arg(long)]
         secret: bool,
+        /// Output file path
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+    },
+    /// Import a key from file
+    Import {
+        /// Path to the key file
+        file: PathBuf,
+    },
+    /// Delete a key from the keyring
+    Delete {
+        /// Key ID or fingerprint
+        key_id: String,
+        /// Skip confirmation
+        #[arg(long)]
+        force: bool,
+    },
+    /// Show key details
+    Info {
+        /// Key ID or fingerprint
+        key_id: String,
+    },
+}
+
+// --- File Encryption ---
+
+#[derive(Parser)]
+pub struct EncryptArgs {
+    /// File to encrypt
