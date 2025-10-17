@@ -142,3 +142,31 @@ pub enum PwCommand {
     },
     /// Delete an entry
     Rm {
+        /// Entry name
+        name: String,
+        /// Skip confirmation
+        #[arg(long)]
+        force: bool,
+    },
+    /// Search entries by name, URL, or tags
+    Search {
+        /// Search query
+        query: String,
+    },
+    /// Show TOTP code for an entry
+    Totp {
+        /// Entry name
+        name: String,
+    },
+    /// Add TOTP secret to an entry
+    TotpAdd {
+        /// Entry name
+        name: String,
+        /// Base32-encoded TOTP secret
+        #[arg(long)]
+        secret: Option<String>,
+        /// otpauth:// URI
+        #[arg(long)]
+        uri: Option<String>,
+    },
+}
