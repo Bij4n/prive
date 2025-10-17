@@ -374,3 +374,32 @@ pub enum BackupCommand {
     Restore {
         /// Path to backup file
         file: PathBuf,
+    },
+}
+
+// --- Import ---
+
+#[derive(Parser)]
+pub struct ImportArgs {
+    /// Import file format
+    #[arg(long, value_enum, default_value = "csv")]
+    pub format: ImportFormat,
+
+    /// Path to the import file
+    pub file: PathBuf,
+}
+
+#[derive(Clone, ValueEnum)]
+pub enum ImportFormat {
+    Csv,
+    Bitwarden,
+    Keepass,
+}
+
+// --- Export ---
+
+#[derive(Parser)]
+pub struct ExportArgs {
+    /// Export file format
+    #[arg(long, value_enum, default_value = "csv")]
+    pub format: ExportFormat,
