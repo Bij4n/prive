@@ -76,3 +76,30 @@ pub struct GenerateConfig {
     pub default_no_symbols: bool,
     #[serde(default)]
     pub default_no_numbers: bool,
+    #[serde(default)]
+    pub default_no_uppercase: bool,
+    #[serde(default = "default_passphrase_words")]
+    pub default_words: usize,
+    #[serde(default = "default_passphrase_separator")]
+    pub default_separator: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct BackupConfig {
+    #[serde(default = "default_true")]
+    pub auto_backup: bool,
+    #[serde(default = "default_max_backups")]
+    pub max_backups: usize,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct SessionConfig {
+    #[serde(default = "default_session_timeout")]
+    pub timeout_seconds: u64,
+    #[serde(default)]
+    pub agent_enabled: bool,
+}
+
+fn default_argon2_time() -> u32 { 3 }
+fn default_argon2_memory() -> u32 { 65536 }
+fn default_argon2_parallelism() -> u32 { 4 }
