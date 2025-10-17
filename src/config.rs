@@ -50,3 +50,29 @@ pub struct AppConfig {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
+pub struct VaultConfig {
+    pub path: Option<String>,
+    #[serde(default = "default_argon2_time")]
+    pub argon2_time_cost: u32,
+    #[serde(default = "default_argon2_memory")]
+    pub argon2_memory_cost: u32,
+    #[serde(default = "default_argon2_parallelism")]
+    pub argon2_parallelism: u32,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ClipboardConfig {
+    #[serde(default = "default_clipboard_timeout")]
+    pub clear_after_seconds: u64,
+    #[serde(default)]
+    pub auto_clear: bool,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct GenerateConfig {
+    #[serde(default = "default_password_length")]
+    pub default_length: usize,
+    #[serde(default)]
+    pub default_no_symbols: bool,
+    #[serde(default)]
+    pub default_no_numbers: bool,
