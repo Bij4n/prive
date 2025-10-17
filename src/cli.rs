@@ -113,3 +113,32 @@ pub enum PwCommand {
         #[arg(long)]
         copy: bool,
         /// Retrieve a specific field
+        #[arg(long)]
+        field: Option<String>,
+    },
+    /// List all entries
+    List {
+        /// Filter by tags
+        #[arg(short, long, value_delimiter = ',')]
+        tags: Vec<String>,
+        /// Output format
+        #[arg(long, default_value = "table")]
+        format: String,
+    },
+    /// Edit an existing entry
+    Edit {
+        /// Entry name
+        name: String,
+        #[arg(short, long)]
+        username: Option<String>,
+        #[arg(short, long)]
+        password: Option<String>,
+        #[arg(long)]
+        url: Option<String>,
+        #[arg(long)]
+        notes: Option<String>,
+        #[arg(short, long, value_delimiter = ',')]
+        tags: Option<Vec<String>>,
+    },
+    /// Delete an entry
+    Rm {
