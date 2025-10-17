@@ -84,3 +84,32 @@ pub enum PwCommand {
         #[arg(short, long)]
         username: Option<String>,
         /// Password (prompted securely if omitted)
+        #[arg(short, long)]
+        password: Option<String>,
+        /// Auto-generate the password
+        #[arg(short, long)]
+        generate: bool,
+        /// Generated password length
+        #[arg(short, long, default_value = "20")]
+        length: usize,
+        /// Associated URL
+        #[arg(long)]
+        url: Option<String>,
+        /// Notes
+        #[arg(long)]
+        notes: Option<String>,
+        /// Comma-separated tags
+        #[arg(short, long, value_delimiter = ',')]
+        tags: Vec<String>,
+    },
+    /// Retrieve a password
+    Get {
+        /// Entry name
+        name: String,
+        /// Print password to stdout instead of clipboard
+        #[arg(long)]
+        show: bool,
+        /// Copy to clipboard (default behavior)
+        #[arg(long)]
+        copy: bool,
+        /// Retrieve a specific field
