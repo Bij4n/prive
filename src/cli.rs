@@ -287,3 +287,32 @@ pub enum PgpCommand {
 #[derive(Parser)]
 pub struct EncryptArgs {
     /// File to encrypt
+    pub file: PathBuf,
+
+    /// Encrypt to PGP recipient (repeatable)
+    #[arg(short, long)]
+    pub recipient: Vec<String>,
+
+    /// Encrypt with passphrase instead of PGP
+    #[arg(long)]
+    pub symmetric: bool,
+
+    /// Sign with a secret key
+    #[arg(long)]
+    pub sign: Option<String>,
+
+    /// Output file path
+    #[arg(short, long)]
+    pub output: Option<PathBuf>,
+
+    /// ASCII armor output
+    #[arg(short, long)]
+    pub armor: bool,
+}
+
+#[derive(Parser)]
+pub struct DecryptArgs {
+    /// File to decrypt
+    pub file: PathBuf,
+
+    /// Output file path
