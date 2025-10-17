@@ -170,3 +170,33 @@ pub enum PwCommand {
         uri: Option<String>,
     },
 }
+
+// --- Password Generation ---
+
+#[derive(Parser)]
+pub struct GenerateArgs {
+    /// Password length
+    #[arg(short, long, default_value = "20")]
+    pub length: usize,
+
+    /// Exclude symbols
+    #[arg(long)]
+    pub no_symbols: bool,
+
+    /// Exclude numbers
+    #[arg(long)]
+    pub no_numbers: bool,
+
+    /// Exclude uppercase letters
+    #[arg(long)]
+    pub no_uppercase: bool,
+
+    /// Generate a diceware-style passphrase instead
+    #[arg(long)]
+    pub passphrase: bool,
+
+    /// Number of words for passphrase
+    #[arg(short, long, default_value = "6")]
+    pub words: usize,
+
+    /// Separator for passphrase words
