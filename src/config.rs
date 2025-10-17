@@ -129,3 +129,29 @@ impl Default for ClipboardConfig {
             clear_after_seconds: default_clipboard_timeout(),
             auto_clear: false,
         }
+    }
+}
+
+impl Default for GenerateConfig {
+    fn default() -> Self {
+        Self {
+            default_length: default_password_length(),
+            default_no_symbols: false,
+            default_no_numbers: false,
+            default_no_uppercase: false,
+            default_words: default_passphrase_words(),
+            default_separator: default_passphrase_separator(),
+        }
+    }
+}
+
+impl Default for BackupConfig {
+    fn default() -> Self {
+        Self {
+            auto_backup: true,
+            max_backups: default_max_backups(),
+        }
+    }
+}
+
+impl Default for SessionConfig {
