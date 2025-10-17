@@ -103,3 +103,29 @@ pub struct SessionConfig {
 fn default_argon2_time() -> u32 { 3 }
 fn default_argon2_memory() -> u32 { 65536 }
 fn default_argon2_parallelism() -> u32 { 4 }
+fn default_clipboard_timeout() -> u64 { 45 }
+fn default_password_length() -> usize { 20 }
+fn default_passphrase_words() -> usize { 6 }
+fn default_passphrase_separator() -> String { "-".to_string() }
+fn default_true() -> bool { true }
+fn default_max_backups() -> usize { 10 }
+fn default_session_timeout() -> u64 { 300 }
+
+impl Default for AppConfig {
+    fn default() -> Self {
+        Self {
+            vault: VaultConfig::default(),
+            clipboard: ClipboardConfig::default(),
+            generate: GenerateConfig::default(),
+            backup: BackupConfig::default(),
+            session: SessionConfig::default(),
+        }
+    }
+}
+
+impl Default for ClipboardConfig {
+    fn default() -> Self {
+        Self {
+            clear_after_seconds: default_clipboard_timeout(),
+            auto_clear: false,
+        }
