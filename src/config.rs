@@ -155,3 +155,29 @@ impl Default for BackupConfig {
 }
 
 impl Default for SessionConfig {
+    fn default() -> Self {
+        Self {
+            timeout_seconds: default_session_timeout(),
+            agent_enabled: false,
+        }
+    }
+}
+
+impl AppConfig {
+    pub fn load() -> Self {
+        let path = config_file_path();
+        if path.exists() {
+            if let Ok(content) = fs::read_to_string(&path) {
+                if let Ok(config) = toml::from_str(&content) {
+                    return config;
+                }
+            }
+        }
+        Self::default()
+    }
+
+    pub fn save(&self) -> Result<(), String> {
+        let path = config_file_path();
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent).map_err(|e| format!("Failed to create config dir: {e}"))?;
+        }
