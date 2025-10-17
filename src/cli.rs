@@ -403,3 +403,31 @@ pub struct ExportArgs {
     /// Export file format
     #[arg(long, value_enum, default_value = "csv")]
     pub format: ExportFormat,
+
+    /// Output file path
+    #[arg(short, long)]
+    pub output: Option<PathBuf>,
+}
+
+#[derive(Clone, ValueEnum)]
+pub enum ExportFormat {
+    Csv,
+    BitwardenJson,
+}
+
+// --- Completions ---
+
+#[derive(Parser)]
+pub struct CompletionsArgs {
+    /// Shell to generate completions for
+    #[arg(long, value_enum)]
+    pub shell: ShellType,
+}
+
+#[derive(Clone, ValueEnum)]
+pub enum ShellType {
+    Bash,
+    Zsh,
+    Fish,
+    Powershell,
+}
