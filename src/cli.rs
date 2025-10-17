@@ -55,3 +55,32 @@ pub enum Commands {
 #[derive(Parser)]
 pub struct VaultArgs {
     #[command(subcommand)]
+    pub command: VaultCommand,
+}
+
+#[derive(Subcommand)]
+pub enum VaultCommand {
+    /// Create a new vault with a master password
+    Init,
+    /// Change the vault master password
+    ChangePassword,
+}
+
+// --- Password Management ---
+
+#[derive(Parser)]
+pub struct PwArgs {
+    #[command(subcommand)]
+    pub command: PwCommand,
+}
+
+#[derive(Subcommand)]
+pub enum PwCommand {
+    /// Add a new password entry
+    Add {
+        /// Entry name (e.g. "GitHub")
+        name: String,
+        /// Username or email
+        #[arg(short, long)]
+        username: Option<String>,
+        /// Password (prompted securely if omitted)
