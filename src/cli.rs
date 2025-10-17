@@ -229,3 +229,32 @@ pub struct PgpArgs {
 }
 
 #[derive(Subcommand)]
+pub enum PgpCommand {
+    /// Generate a new PGP keypair
+    Generate {
+        /// Name for the key UID
+        #[arg(long)]
+        name: Option<String>,
+        /// Email for the key UID
+        #[arg(long)]
+        email: Option<String>,
+        /// Algorithm: cv25519 or rsa4096
+        #[arg(long, default_value = "cv25519")]
+        algorithm: String,
+        /// Expiration (e.g. "2y", "never")
+        #[arg(long, default_value = "2y")]
+        expire: String,
+    },
+    /// List keys in keyring
+    List {
+        /// Show only secret keys
+        #[arg(long)]
+        secret: bool,
+    },
+    /// Export a key (ASCII armored)
+    Export {
+        /// Key ID or fingerprint
+        key_id: String,
+        /// Export the secret key
+        #[arg(long)]
+        secret: bool,
