@@ -81,3 +81,24 @@ pub fn parse_otpauth_uri(uri: &str) -> Result<TotpParams, String> {
             }
         }
     }
+
+    let secret = secret.ok_or_else(|| "Missing 'secret' parameter in URI".to_string())?;
+
+    Ok(TotpParams {
+        label,
+        secret,
+        issuer,
+        digits,
+        period,
+    })
+}
+
+fn urldecode(s: &str) -> String {
+    let mut result = String::new();
+    let mut chars = s.chars();
+    while let Some(c) = chars.next() {
+        if c == '%' {
+            let hex: String = chars.by_ref().take(2).collect();
+            if let Some(decoded) = u8::from_str_radix(&hex, 16).ok().map(|b| b as char) {
+                result.push(decoded);
+            } else {
