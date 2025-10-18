@@ -75,3 +75,18 @@ pub fn format_duration_ago(seconds: i64) -> String {
     }
     let years = days / 365;
     format!("{years}y ago")
+}
+
+pub fn truncate_string(s: &str, max_len: usize) -> String {
+    if s.len() <= max_len {
+        s.to_string()
+    } else {
+        format!("{}...", &s[..max_len.saturating_sub(3)])
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
