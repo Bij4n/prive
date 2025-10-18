@@ -44,3 +44,18 @@ pub fn copy_to_clipboard_with_clear(text: &str, clear_seconds: u64) -> Result<()
 
     Ok(())
 }
+
+pub fn confirm_prompt(message: &str) -> Result<bool> {
+    print!("{message} [y/N] ");
+    std::io::Write::flush(&mut std::io::stdout())?;
+    let mut input = String::new();
+    std::io::stdin().read_line(&mut input)?;
+    Ok(input.trim().eq_ignore_ascii_case("y"))
+}
+
+pub fn format_duration_ago(seconds: i64) -> String {
+    if seconds < 60 {
+        return "just now".to_string();
+    }
+    if seconds < 3600 {
+        let mins = seconds / 60;
