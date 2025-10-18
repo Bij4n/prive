@@ -356,3 +356,30 @@ mod tests {
         let pw = generate_custom(10, "abc123").unwrap();
         assert_eq!(pw.len(), 10);
         assert!(pw.chars().all(|c| "abc123".contains(c)));
+    }
+
+    #[test]
+    fn test_generate_custom_empty_charset() {
+        let result = generate_custom(10, "");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_password_entropy() {
+        let e1 = password_entropy("abc");
+        let e2 = password_entropy("aBc1!");
+        assert!(e2 > e1);
+    }
+
+    #[test]
+    fn test_password_entropy_empty() {
+        assert_eq!(password_entropy(""), 0.0);
+    }
+
+    #[test]
+    fn test_password_entropy_digits_only() {
+        let e = password_entropy("1234");
+        // 4 chars * log2(10) ≈ 13.3
+        assert!(e > 13.0 && e < 14.0);
+    }
+}
