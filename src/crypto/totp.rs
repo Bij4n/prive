@@ -39,3 +39,24 @@ pub fn generate_totp_at(
 }
 
 pub fn decode_base32_secret(encoded: &str) -> Result<Vec<u8>, String> {
+    let cleaned = encoded.replace(' ', "").replace('-', "").to_uppercase();
+    base32::decode(base32::Alphabet::Rfc4648 { padding: false }, &cleaned)
+        .or_else(|| base32::decode(base32::Alphabet::Rfc4648 { padding: true }, &cleaned))
+        .ok_or_else(|| "Invalid base32 encoding".to_string())
+}
+
+pub fn time_remaining(time_step: u64) -> u64 {
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+    time_step - (now % time_step)
+}
+
+pub fn parse_otpauth_uri(uri: &str) -> Result<TotpParams, String> {
+    if !uri.starts_with("otpauth://totp/") {
+        return Err("Invalid otpauth URI — must start with otpauth://totp/".to_string());
+    }
+
+    let rest = &uri["otpauth://totp/".len()..];
+    let (label, query) = rest
