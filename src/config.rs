@@ -181,3 +181,29 @@ impl AppConfig {
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent).map_err(|e| format!("Failed to create config dir: {e}"))?;
         }
+        let content = toml::to_string_pretty(self).map_err(|e| format!("Serialization error: {e}"))?;
+        fs::write(&path, content).map_err(|e| format!("Failed to write config: {e}"))?;
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_default_config() {
+        let config = AppConfig::default();
+        assert_eq!(config.generate.default_length, 20);
+        assert_eq!(config.clipboard.clear_after_seconds, 45);
+        assert_eq!(config.backup.max_backups, 10);
+    }
+
+    #[test]
+    fn test_config_serialize_deserialize() {
+        let config = AppConfig::default();
+        let toml_str = toml::to_string_pretty(&config).unwrap();
+        let parsed: AppConfig = toml::from_str(&toml_str).unwrap();
+        assert_eq!(parsed.generate.default_length, config.generate.default_length);
+    }
+}
