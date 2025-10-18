@@ -273,3 +273,31 @@ pub fn password_entropy(password: &str) -> f64 {
     if has_symbol { charset_size += 32.0; }
 
     if charset_size == 0.0 {
+        return 0.0;
+    }
+
+    password.len() as f64 * charset_size.log2()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_generate_password_length() {
+        let pw = generate_password(32, true, true, true);
+        assert_eq!(pw.len(), 32);
+    }
+
+    #[test]
+    fn test_generate_password_lowercase_only() {
+        let pw = generate_password(20, false, false, false);
+        assert!(pw.chars().all(|c| c.is_ascii_lowercase()));
+    }
+
+    #[test]
+    fn test_generate_password_has_all_charsets() {
+        let pw = generate_password(20, true, true, true);
+        assert!(pw.chars().any(|c| c.is_ascii_lowercase()));
+        assert!(pw.chars().any(|c| c.is_ascii_uppercase()));
+        assert!(pw.chars().any(|c| c.is_ascii_digit()));
