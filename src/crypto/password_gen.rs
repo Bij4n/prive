@@ -191,3 +191,30 @@ pub fn generate_password(
     let mut rng = rand::thread_rng();
     let password: String = (0..length)
         .map(|_| {
+            let idx = rng.gen_range(0..charset.len());
+            charset[idx] as char
+        })
+        .collect();
+
+    let has_lower = password.chars().any(|c| c.is_ascii_lowercase());
+    let has_upper = !include_uppercase || password.chars().any(|c| c.is_ascii_uppercase());
+    let has_digit = !include_numbers || password.chars().any(|c| c.is_ascii_digit());
+    let has_symbol =
+        !include_symbols || password.chars().any(|c| SYMBOLS.contains(&(c as u8)));
+
+    if length >= 4 && (!has_lower || !has_upper || !has_digit || !has_symbol) {
+        return generate_password(length, include_uppercase, include_numbers, include_symbols);
+    }
+
+    password
+}
+
+pub fn generate_passphrase(words: usize, separator: &str) -> String {
+    let mut rng = rand::thread_rng();
+    let chosen: Vec<&str> = (0..words)
+        .map(|_| {
+            let idx = rng.gen_range(0..WORDLIST.len());
+            WORDLIST[idx]
+        })
+        .collect();
+    chosen.join(separator)
