@@ -301,3 +301,30 @@ mod tests {
         assert!(pw.chars().any(|c| c.is_ascii_lowercase()));
         assert!(pw.chars().any(|c| c.is_ascii_uppercase()));
         assert!(pw.chars().any(|c| c.is_ascii_digit()));
+        assert!(pw.chars().any(|c| SYMBOLS.contains(&(c as u8))));
+    }
+
+    #[test]
+    fn test_generate_passphrase_word_count() {
+        let pp = generate_passphrase(6, "-");
+        assert_eq!(pp.split('-').count(), 6);
+    }
+
+    #[test]
+    fn test_generate_passphrase_custom_separator() {
+        let pp = generate_passphrase(4, ".");
+        assert_eq!(pp.split('.').count(), 4);
+    }
+
+    #[test]
+    fn test_generate_pin() {
+        let pin = generate_pin(6);
+        assert_eq!(pin.len(), 6);
+        assert!(pin.chars().all(|c| c.is_ascii_digit()));
+    }
+
+    #[test]
+    fn test_generate_pin_4_digits() {
+        let pin = generate_pin(4);
+        assert_eq!(pin.len(), 4);
+        assert!(pin.chars().all(|c| c.is_ascii_digit()));
