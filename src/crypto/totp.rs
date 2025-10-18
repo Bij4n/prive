@@ -102,3 +102,24 @@ fn urldecode(s: &str) -> String {
             if let Some(decoded) = u8::from_str_radix(&hex, 16).ok().map(|b| b as char) {
                 result.push(decoded);
             } else {
+                result.push('%');
+                result.push_str(&hex);
+            }
+        } else if c == '+' {
+            result.push(' ');
+        } else {
+            result.push(c);
+        }
+    }
+    result
+}
+
+pub struct TotpParams {
+    pub label: String,
+    pub secret: String,
+    pub issuer: Option<String>,
+    pub digits: u32,
+    pub period: u64,
+}
+
+#[cfg(test)]
