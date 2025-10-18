@@ -163,3 +163,31 @@ const WORDLIST: &[&str] = &[
     "victory", "video", "village", "vintage", "violin", "virtual", "virus", "visa",
     "visit", "visual", "vital", "vivid", "voice", "volcano", "volume", "voyage",
     "waffle", "wagon", "walnut", "warfare", "warm", "warrior", "wash", "wasp",
+    "waste", "water", "wealth", "weapon", "weather", "wedding", "weekend", "weird",
+    "welcome", "west", "whale", "wheat", "wheel", "whisper", "width", "wild",
+    "will", "window", "wine", "winner", "winter", "wisdom", "wolf", "woman",
+    "wonder", "world", "worth", "wrap", "wrestle", "wrist", "wrong", "yellow",
+    "young", "youth", "zebra", "zero", "zone",
+];
+
+pub fn generate_password(
+    length: usize,
+    include_uppercase: bool,
+    include_numbers: bool,
+    include_symbols: bool,
+) -> String {
+    let mut charset: Vec<u8> = Vec::new();
+    charset.extend_from_slice(LOWERCASE);
+    if include_uppercase {
+        charset.extend_from_slice(UPPERCASE);
+    }
+    if include_numbers {
+        charset.extend_from_slice(DIGITS);
+    }
+    if include_symbols {
+        charset.extend_from_slice(SYMBOLS);
+    }
+
+    let mut rng = rand::thread_rng();
+    let password: String = (0..length)
+        .map(|_| {
