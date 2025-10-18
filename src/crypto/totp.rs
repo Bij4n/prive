@@ -123,3 +123,24 @@ pub struct TotpParams {
 }
 
 #[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_totp_rfc6238_vector() {
+        let secret = b"12345678901234567890";
+        let code = generate_totp_at(secret, 59, 30, 8).unwrap();
+        assert_eq!(code, "94287082");
+    }
+
+    #[test]
+    fn test_totp_6_digits() {
+        let secret = b"12345678901234567890";
+        let code = generate_totp_at(secret, 59, 30, 6).unwrap();
+        assert_eq!(code.len(), 6);
+    }
+
+    #[test]
+    fn test_totp_different_times() {
+        let secret = b"testsecret123456";
+        let code1 = generate_totp_at(secret, 1000, 30, 6).unwrap();
