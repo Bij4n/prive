@@ -90,3 +90,18 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_format_duration_ago() {
+        assert_eq!(format_duration_ago(30), "just now");
+        assert_eq!(format_duration_ago(120), "2m ago");
+        assert_eq!(format_duration_ago(7200), "2h ago");
+        assert_eq!(format_duration_ago(172800), "2d ago");
+        assert_eq!(format_duration_ago(2592000), "1mo ago");
+        assert_eq!(format_duration_ago(31536000), "1y ago");
+    }
+
+    #[test]
+    fn test_truncate_string() {
+        assert_eq!(truncate_string("hello", 10), "hello");
+        assert_eq!(truncate_string("hello world", 8), "hello...");
+    }
+}
