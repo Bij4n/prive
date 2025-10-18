@@ -218,3 +218,31 @@ pub fn generate_passphrase(words: usize, separator: &str) -> String {
         })
         .collect();
     chosen.join(separator)
+}
+
+pub fn generate_pin(length: usize) -> String {
+    let mut rng = rand::thread_rng();
+    (0..length)
+        .map(|_| {
+            let d = rng.gen_range(0..10u8);
+            (b'0' + d) as char
+        })
+        .collect()
+}
+
+pub fn generate_pronounceable(length: usize) -> String {
+    let consonants = b"bcdfghjklmnpqrstvwxyz";
+    let vowels = b"aeiou";
+    let mut rng = rand::thread_rng();
+    let mut result = String::with_capacity(length);
+
+    for i in 0..length {
+        let c = if i % 2 == 0 {
+            consonants[rng.gen_range(0..consonants.len())]
+        } else {
+            vowels[rng.gen_range(0..vowels.len())]
+        };
+        result.push(c as char);
+    }
+
+    result
