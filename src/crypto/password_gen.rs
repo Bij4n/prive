@@ -328,3 +328,31 @@ mod tests {
         let pin = generate_pin(4);
         assert_eq!(pin.len(), 4);
         assert!(pin.chars().all(|c| c.is_ascii_digit()));
+    }
+
+    #[test]
+    fn test_generate_pronounceable() {
+        let pw = generate_pronounceable(10);
+        assert_eq!(pw.len(), 10);
+        assert!(pw.chars().all(|c| c.is_ascii_lowercase()));
+    }
+
+    #[test]
+    fn test_generate_pronounceable_alternates() {
+        let pw = generate_pronounceable(6);
+        let consonants = b"bcdfghjklmnpqrstvwxyz";
+        let vowels = b"aeiou";
+        for (i, c) in pw.bytes().enumerate() {
+            if i % 2 == 0 {
+                assert!(consonants.contains(&c), "position {i} should be consonant");
+            } else {
+                assert!(vowels.contains(&c), "position {i} should be vowel");
+            }
+        }
+    }
+
+    #[test]
+    fn test_generate_custom() {
+        let pw = generate_custom(10, "abc123").unwrap();
+        assert_eq!(pw.len(), 10);
+        assert!(pw.chars().all(|c| "abc123".contains(c)));
