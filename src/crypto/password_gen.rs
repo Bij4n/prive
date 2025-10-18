@@ -246,3 +246,30 @@ pub fn generate_pronounceable(length: usize) -> String {
     }
 
     result
+}
+
+pub fn generate_custom(length: usize, charset: &str) -> Result<String, String> {
+    if charset.is_empty() {
+        return Err("Charset cannot be empty".to_string());
+    }
+    let chars: Vec<char> = charset.chars().collect();
+    let mut rng = rand::thread_rng();
+    let password: String = (0..length)
+        .map(|_| chars[rng.gen_range(0..chars.len())])
+        .collect();
+    Ok(password)
+}
+
+pub fn password_entropy(password: &str) -> f64 {
+    let mut charset_size: f64 = 0.0;
+    let has_lower = password.chars().any(|c| c.is_ascii_lowercase());
+    let has_upper = password.chars().any(|c| c.is_ascii_uppercase());
+    let has_digit = password.chars().any(|c| c.is_ascii_digit());
+    let has_symbol = password.chars().any(|c| !c.is_ascii_alphanumeric());
+
+    if has_lower { charset_size += 26.0; }
+    if has_upper { charset_size += 26.0; }
+    if has_digit { charset_size += 10.0; }
+    if has_symbol { charset_size += 32.0; }
+
+    if charset_size == 0.0 {
