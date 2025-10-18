@@ -60,3 +60,24 @@ pub fn parse_otpauth_uri(uri: &str) -> Result<TotpParams, String> {
 
     let rest = &uri["otpauth://totp/".len()..];
     let (label, query) = rest
+        .split_once('?')
+        .ok_or_else(|| "Missing query parameters in URI".to_string())?;
+
+    let label = urldecode(label);
+
+    let mut secret = None;
+    let mut issuer = None;
+    let mut digits = 6u32;
+    let mut period = 30u64;
+
+    for param in query.split('&') {
+        if let Some((key, value)) = param.split_once('=') {
+            match key.to_lowercase().as_str() {
+                "secret" => secret = Some(value.to_string()),
+                "issuer" => issuer = Some(urldecode(value)),
+                "digits" => digits = value.parse().unwrap_or(6),
+                "period" => period = value.parse().unwrap_or(30),
+                _ => {}
+            }
+        }
+    }
