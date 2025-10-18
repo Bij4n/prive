@@ -59,3 +59,19 @@ pub fn format_duration_ago(seconds: i64) -> String {
     }
     if seconds < 3600 {
         let mins = seconds / 60;
+        return format!("{mins}m ago");
+    }
+    if seconds < 86400 {
+        let hours = seconds / 3600;
+        return format!("{hours}h ago");
+    }
+    let days = seconds / 86400;
+    if days < 30 {
+        return format!("{days}d ago");
+    }
+    if days < 365 {
+        let months = days / 30;
+        return format!("{months}mo ago");
+    }
+    let years = days / 365;
+    format!("{years}y ago")
