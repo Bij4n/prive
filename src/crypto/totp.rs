@@ -144,3 +144,24 @@ mod tests {
     fn test_totp_different_times() {
         let secret = b"testsecret123456";
         let code1 = generate_totp_at(secret, 1000, 30, 6).unwrap();
+        let code2 = generate_totp_at(secret, 2000, 30, 6).unwrap();
+        assert_ne!(code1, code2);
+    }
+
+    #[test]
+    fn test_totp_same_time_step() {
+        let secret = b"testsecret123456";
+        let code1 = generate_totp_at(secret, 30, 30, 6).unwrap();
+        let code2 = generate_totp_at(secret, 59, 30, 6).unwrap();
+        assert_eq!(code1, code2);
+    }
+
+    #[test]
+    fn test_decode_base32() {
+        let decoded = decode_base32_secret("JBSWY3DPEHPK3PXP").unwrap();
+        assert_eq!(decoded, b"Hello!\xDE\xAD\xBE\xEF");
+    }
+
+    #[test]
+    fn test_decode_base32_with_spaces() {
+        let decoded = decode_base32_secret("JBSW Y3DP EHPK 3PXP").unwrap();
