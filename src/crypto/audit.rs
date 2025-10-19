@@ -110,3 +110,31 @@ fn check_weak_passwords(entries: &[VaultEntry], report: &mut AuditReport) {
             report.weak_passwords.push(AuditIssue {
                 entry_name: entry.name.clone(),
                 severity: Severity::Warning,
+                description: "Password uses only two character types".to_string(),
+            });
+        }
+
+        // Check for common patterns
+        let lower = pw.to_lowercase();
+        let common = [
+            "password", "123456", "qwerty", "admin", "letmein", "welcome",
+            "monkey", "dragon", "master", "abc123", "login", "princess",
+        ];
+        for pattern in &common {
+            if lower.contains(pattern) {
+                report.weak_passwords.push(AuditIssue {
+                    entry_name: entry.name.clone(),
+                    severity: Severity::Critical,
+                    description: format!("Password contains common pattern: '{pattern}'"),
+                });
+                break;
+            }
+        }
+    }
+}
+
+fn check_duplicate_passwords(entries: &[VaultEntry], report: &mut AuditReport) {
+    let mut seen: std::collections::HashMap<String, Vec<String>> = std::collections::HashMap::new();
+
+    for entry in entries {
+        let hash = hex::encode(Sha256::digest(entry.password.as_bytes()));
