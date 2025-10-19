@@ -186,3 +186,23 @@ mod tests {
         assert_eq!(params.digits, 6);
         assert_eq!(params.period, 30);
     }
+
+    #[test]
+    fn test_parse_otpauth_invalid() {
+        let result = parse_otpauth_uri("https://example.com");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_time_remaining() {
+        let remaining = time_remaining(30);
+        assert!(remaining > 0 && remaining <= 30);
+    }
+
+    #[test]
+    fn test_urldecode() {
+        assert_eq!(urldecode("hello%20world"), "hello world");
+        assert_eq!(urldecode("test+value"), "test value");
+        assert_eq!(urldecode("no%encoding"), "no%encoding"); // invalid hex
+    }
+}
