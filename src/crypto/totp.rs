@@ -165,3 +165,24 @@ mod tests {
     #[test]
     fn test_decode_base32_with_spaces() {
         let decoded = decode_base32_secret("JBSW Y3DP EHPK 3PXP").unwrap();
+        assert_eq!(decoded, b"Hello!\xDE\xAD\xBE\xEF");
+    }
+
+    #[test]
+    fn test_parse_otpauth_uri() {
+        let uri = "otpauth://totp/Example:alice@example.com?secret=JBSWY3DPEHPK3PXP&issuer=Example&digits=6&period=30";
+        let params = parse_otpauth_uri(uri).unwrap();
+        assert_eq!(params.secret, "JBSWY3DPEHPK3PXP");
+        assert_eq!(params.digits, 6);
+        assert_eq!(params.period, 30);
+        assert_eq!(params.issuer, Some("Example".to_string()));
+    }
+
+    #[test]
+    fn test_parse_otpauth_uri_minimal() {
+        let uri = "otpauth://totp/myapp?secret=ABC123";
+        let params = parse_otpauth_uri(uri).unwrap();
+        assert_eq!(params.secret, "ABC123");
+        assert_eq!(params.digits, 6);
+        assert_eq!(params.period, 30);
+    }
