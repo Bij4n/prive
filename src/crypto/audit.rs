@@ -81,3 +81,32 @@ pub fn audit_vault(vault: &Vault) -> AuditReport {
             Severity::Info => penalty += 1,
         }
     }
+
+    report.score = 100u32.saturating_sub(penalty);
+
+    report
+}
+
+fn check_weak_passwords(entries: &[VaultEntry], report: &mut AuditReport) {
+    for entry in entries {
+        let pw = &entry.password;
+
+        let has_lower = pw.chars().any(|c| c.is_ascii_lowercase());
+        let has_upper = pw.chars().any(|c| c.is_ascii_uppercase());
+        let has_digit = pw.chars().any(|c| c.is_ascii_digit());
+        let has_symbol = pw.chars().any(|c| !c.is_ascii_alphanumeric());
+        let variety = [has_lower, has_upper, has_digit, has_symbol]
+            .iter()
+            .filter(|&&v| v)
+            .count();
+
+        if variety <= 1 {
+            report.weak_passwords.push(AuditIssue {
+                entry_name: entry.name.clone(),
+                severity: Severity::Critical,
+                description: "Password uses only one character type".to_string(),
+            });
+        } else if variety == 2 {
+            report.weak_passwords.push(AuditIssue {
+                entry_name: entry.name.clone(),
+                severity: Severity::Warning,
