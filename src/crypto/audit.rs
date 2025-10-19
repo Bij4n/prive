@@ -26,3 +26,31 @@ pub enum Severity {
     Warning,
     Info,
 }
+
+impl std::fmt::Display for Severity {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Severity::Critical => write!(f, "CRITICAL"),
+            Severity::Warning => write!(f, "WARNING"),
+            Severity::Info => write!(f, "INFO"),
+        }
+    }
+}
+
+pub fn audit_vault(vault: &Vault) -> AuditReport {
+    let mut report = AuditReport {
+        total_entries: vault.entries.len(),
+        weak_passwords: Vec::new(),
+        duplicate_passwords: Vec::new(),
+        old_passwords: Vec::new(),
+        short_passwords: Vec::new(),
+        reused_usernames: Vec::new(),
+        score: 100,
+    };
+
+    if vault.entries.is_empty() {
+        return report;
+    }
+
+    check_weak_passwords(&vault.entries, &mut report);
+    check_duplicate_passwords(&vault.entries, &mut report);
