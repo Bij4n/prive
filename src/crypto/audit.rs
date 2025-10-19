@@ -54,3 +54,30 @@ pub fn audit_vault(vault: &Vault) -> AuditReport {
 
     check_weak_passwords(&vault.entries, &mut report);
     check_duplicate_passwords(&vault.entries, &mut report);
+    check_old_passwords(&vault.entries, &mut report);
+    check_short_passwords(&vault.entries, &mut report);
+    check_reused_usernames(&vault.entries, &mut report);
+
+    // Calculate score
+    let _total_issues = report.weak_passwords.len()
+        + report.duplicate_passwords.len()
+        + report.old_passwords.len()
+        + report.short_passwords.len();
+
+    let penalty_per_critical = 15u32;
+    let penalty_per_warning = 5u32;
+
+    let mut penalty = 0u32;
+    for issue in report
+        .weak_passwords
+        .iter()
+        .chain(report.duplicate_passwords.iter())
+        .chain(report.old_passwords.iter())
+        .chain(report.short_passwords.iter())
+    {
+        match issue.severity {
+            Severity::Critical => penalty += penalty_per_critical,
+            Severity::Warning => penalty += penalty_per_warning,
+            Severity::Info => penalty += 1,
+        }
+    }
