@@ -100,3 +100,18 @@ mod tests {
     #[test]
     fn test_encrypt_decrypt_roundtrip() {
         let password = b"test-master-password";
+        let plaintext = b"hello vault world";
+
+        let blob = VaultCrypto::encrypt(plaintext, password).unwrap();
+        let decrypted = VaultCrypto::decrypt(&blob, password).unwrap();
+
+        assert_eq!(decrypted, plaintext);
+    }
+
+    #[test]
+    fn test_wrong_password_fails() {
+        let plaintext = b"secret data";
+        let blob = VaultCrypto::encrypt(plaintext, b"correct-password").unwrap();
+        let result = VaultCrypto::decrypt(&blob, b"wrong-password");
+        assert!(result.is_err());
+    }
