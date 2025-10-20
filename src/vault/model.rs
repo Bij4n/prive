@@ -53,3 +53,18 @@ impl Vault {
             .retain(|e| !e.name.eq_ignore_ascii_case(name));
         self.entries.len() < before
     }
+
+    pub fn search(&self, query: &str) -> Vec<&VaultEntry> {
+        let q = query.to_lowercase();
+        self.entries
+            .iter()
+            .filter(|e| {
+                e.name.to_lowercase().contains(&q)
+                    || e.username
+                        .as_deref()
+                        .is_some_and(|u| u.to_lowercase().contains(&q))
+                    || e.url
+                        .as_deref()
+                        .is_some_and(|u| u.to_lowercase().contains(&q))
+                    || e.tags.iter().any(|t| t.to_lowercase().contains(&q))
+            })
