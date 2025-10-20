@@ -68,3 +68,17 @@ impl Vault {
                         .is_some_and(|u| u.to_lowercase().contains(&q))
                     || e.tags.iter().any(|t| t.to_lowercase().contains(&q))
             })
+            .collect()
+    }
+}
+
+impl VaultEntry {
+    pub fn new(
+        name: String,
+        username: Option<String>,
+        password: String,
+        url: Option<String>,
+        notes: Option<String>,
+        tags: Vec<String>,
+    ) -> Self {
+        let now = Utc::now();
