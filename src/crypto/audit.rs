@@ -306,3 +306,31 @@ mod tests {
     #[test]
     fn test_audit_duplicate_passwords() {
         let mut vault = Vault::new();
+        vault.entries.push(make_entry("site1", "MyP@ssw0rd!234"));
+        vault.entries.push(make_entry("site2", "MyP@ssw0rd!234"));
+        let report = audit_vault(&vault);
+        assert!(!report.duplicate_passwords.is_empty());
+    }
+
+    #[test]
+    fn test_audit_strong_password() {
+        let mut vault = Vault::new();
+        vault.entries.push(make_entry("secure", "Xk9#mP2$vL7@nQ4!"));
+        let report = audit_vault(&vault);
+        assert!(report.weak_passwords.is_empty());
+        assert!(report.short_passwords.is_empty());
+    }
+
+    #[test]
+    fn test_audit_common_pattern() {
+        let mut vault = Vault::new();
+        vault.entries.push(make_entry("bad", "password123!A"));
+        let report = audit_vault(&vault);
+        let has_common = report
+            .weak_passwords
+            .iter()
+            .any(|i| i.description.contains("common pattern"));
+        assert!(has_common);
+    }
+
+    #[test]
