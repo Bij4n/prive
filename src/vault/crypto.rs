@@ -86,3 +86,17 @@ impl VaultCrypto {
         Ok(plaintext)
     }
 }
+
+pub struct EncryptedBlob {
+    pub salt: [u8; SALT_LEN],
+    pub nonce: [u8; NONCE_LEN],
+    pub ciphertext: Vec<u8>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_encrypt_decrypt_roundtrip() {
+        let password = b"test-master-password";
