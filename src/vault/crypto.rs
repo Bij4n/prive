@@ -56,3 +56,18 @@ impl VaultCrypto {
 
         let cipher =
             Aes256Gcm::new_from_slice(&key).map_err(|e| format!("Cipher init error: {e}"))?;
+        let nonce = Nonce::from_slice(&nonce_bytes);
+        let ciphertext = cipher
+            .encrypt(nonce, plaintext)
+            .map_err(|e| format!("Encryption error: {e}"))?;
+
+        key.zeroize();
+
+        Ok(EncryptedBlob {
+            salt,
+            nonce: nonce_bytes,
+            ciphertext,
+        })
+    }
+
+    /// Decrypt an encrypted blob with AES-256-GCM using a derived key.
