@@ -82,3 +82,17 @@ impl VaultEntry {
         tags: Vec<String>,
     ) -> Self {
         let now = Utc::now();
+        Self {
+            id: Uuid::new_v4(),
+            name,
+            username,
+            password,
+            url,
+            notes,
+            tags,
+            totp_secret: None,
+            created_at: now,
+            modified_at: now,
+        }
+    }
+}
