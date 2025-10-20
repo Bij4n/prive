@@ -71,3 +71,18 @@ impl VaultCrypto {
     }
 
     /// Decrypt an encrypted blob with AES-256-GCM using a derived key.
+    pub fn decrypt(blob: &EncryptedBlob, password: &[u8]) -> Result<Vec<u8>, String> {
+        let mut key = Self::derive_key(password, &blob.salt)?;
+
+        let cipher =
+            Aes256Gcm::new_from_slice(&key).map_err(|e| format!("Cipher init error: {e}"))?;
+        let nonce = Nonce::from_slice(&blob.nonce);
+        let plaintext = cipher
+            .decrypt(nonce, blob.ciphertext.as_ref())
+            .map_err(|_| "Decryption failed — wrong password or corrupted data".to_string())?;
+
+        key.zeroize();
+
+        Ok(plaintext)
+    }
+}
