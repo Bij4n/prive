@@ -138,3 +138,31 @@ fn check_duplicate_passwords(entries: &[VaultEntry], report: &mut AuditReport) {
 
     for entry in entries {
         let hash = hex::encode(Sha256::digest(entry.password.as_bytes()));
+        seen.entry(hash)
+            .or_default()
+            .push(entry.name.clone());
+    }
+
+    for (_hash, names) in &seen {
+        if names.len() > 1 {
+            for name in names {
+                report.duplicate_passwords.push(AuditIssue {
+                    entry_name: name.clone(),
+                    severity: Severity::Critical,
+                    description: format!(
+                        "Password reused across {} entries: {}",
+                        names.len(),
+                        names.join(", ")
+                    ),
+                });
+            }
+        }
+    }
+}
+
+fn check_old_passwords(entries: &[VaultEntry], report: &mut AuditReport) {
+    let now = chrono::Utc::now();
+    let ninety_days = chrono::Duration::days(90);
+    let one_year = chrono::Duration::days(365);
+
+    for entry in entries {
