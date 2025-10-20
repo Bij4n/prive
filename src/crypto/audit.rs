@@ -166,3 +166,31 @@ fn check_old_passwords(entries: &[VaultEntry], report: &mut AuditReport) {
     let one_year = chrono::Duration::days(365);
 
     for entry in entries {
+        let age = now - entry.modified_at;
+        if age > one_year {
+            report.old_passwords.push(AuditIssue {
+                entry_name: entry.name.clone(),
+                severity: Severity::Warning,
+                description: format!(
+                    "Password not changed in {} days",
+                    age.num_days()
+                ),
+            });
+        } else if age > ninety_days {
+            report.old_passwords.push(AuditIssue {
+                entry_name: entry.name.clone(),
+                severity: Severity::Info,
+                description: format!(
+                    "Password is {} days old",
+                    age.num_days()
+                ),
+            });
+        }
+    }
+}
+
+fn check_short_passwords(entries: &[VaultEntry], report: &mut AuditReport) {
+    for entry in entries {
+        let len = entry.password.len();
+        if len < 8 {
+            report.short_passwords.push(AuditIssue {
