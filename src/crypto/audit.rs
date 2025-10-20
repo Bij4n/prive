@@ -249,3 +249,32 @@ pub fn check_breach(password: &str) -> Result<Option<u64>, String> {
     let suffix = &hash[5..];
 
     let url = format!("https://api.pwnedpasswords.com/range/{prefix}");
+
+    let response = reqwest::blocking::Client::new()
+        .get(&url)
+        .header("User-Agent", "prive-password-manager")
+        .send()
+        .map_err(|e| format!("HTTP request failed: {e}"))?
+        .text()
+        .map_err(|e| format!("Failed to read response: {e}"))?;
+
+    for line in response.lines() {
+        if let Some((hash_suffix, count_str)) = line.split_once(':') {
+            if hash_suffix.trim() == suffix {
+                let count: u64 = count_str.trim().parse().unwrap_or(0);
+                return Ok(Some(count));
+            }
+        }
+    }
+
+    Ok(None)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::vault::model::VaultEntry;
+
+    fn make_entry(name: &str, password: &str) -> VaultEntry {
+        VaultEntry::new(
+            name.to_string(),
