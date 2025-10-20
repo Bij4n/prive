@@ -40,3 +40,16 @@ impl Vault {
             .iter()
             .find(|e| e.name.eq_ignore_ascii_case(name))
     }
+
+    pub fn find_by_name_mut(&mut self, name: &str) -> Option<&mut VaultEntry> {
+        self.entries
+            .iter_mut()
+            .find(|e| e.name.eq_ignore_ascii_case(name))
+    }
+
+    pub fn remove_by_name(&mut self, name: &str) -> bool {
+        let before = self.entries.len();
+        self.entries
+            .retain(|e| !e.name.eq_ignore_ascii_case(name));
+        self.entries.len() < before
+    }
