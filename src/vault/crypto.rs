@@ -42,3 +42,17 @@ impl VaultCrypto {
     }
 
     /// Generate a random nonce.
+    pub fn generate_nonce() -> [u8; NONCE_LEN] {
+        let mut nonce = [0u8; NONCE_LEN];
+        rand::thread_rng().fill_bytes(&mut nonce);
+        nonce
+    }
+
+    /// Encrypt plaintext with AES-256-GCM using a derived key.
+    pub fn encrypt(plaintext: &[u8], password: &[u8]) -> Result<EncryptedBlob, String> {
+        let salt = Self::generate_salt();
+        let nonce_bytes = Self::generate_nonce();
+        let mut key = Self::derive_key(password, &salt)?;
+
+        let cipher =
+            Aes256Gcm::new_from_slice(&key).map_err(|e| format!("Cipher init error: {e}"))?;
