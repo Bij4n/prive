@@ -115,3 +115,17 @@ mod tests {
         let result = VaultCrypto::decrypt(&blob, b"wrong-password");
         assert!(result.is_err());
     }
+
+    #[test]
+    fn test_different_encryptions_produce_different_output() {
+        let password = b"same-password";
+        let plaintext = b"same-plaintext";
+
+        let blob1 = VaultCrypto::encrypt(plaintext, password).unwrap();
+        let blob2 = VaultCrypto::encrypt(plaintext, password).unwrap();
+
+        // Different salt and nonce means different ciphertext
+        assert_ne!(blob1.salt, blob2.salt);
+        assert_ne!(blob1.ciphertext, blob2.ciphertext);
+    }
+}
