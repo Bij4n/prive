@@ -194,3 +194,31 @@ fn check_short_passwords(entries: &[VaultEntry], report: &mut AuditReport) {
         let len = entry.password.len();
         if len < 8 {
             report.short_passwords.push(AuditIssue {
+                entry_name: entry.name.clone(),
+                severity: Severity::Critical,
+                description: format!("Password is only {len} characters long"),
+            });
+        } else if len < 12 {
+            report.short_passwords.push(AuditIssue {
+                entry_name: entry.name.clone(),
+                severity: Severity::Warning,
+                description: format!("Password is only {len} characters long (recommended: 12+)"),
+            });
+        }
+    }
+}
+
+fn check_reused_usernames(entries: &[VaultEntry], report: &mut AuditReport) {
+    let mut seen: std::collections::HashMap<String, Vec<String>> = std::collections::HashMap::new();
+
+    for entry in entries {
+        if let Some(username) = &entry.username {
+            let lower = username.to_lowercase();
+            seen.entry(lower)
+                .or_default()
+                .push(entry.name.clone());
+        }
+    }
+
+    for (username, names) in &seen {
+        if names.len() > 1 {
