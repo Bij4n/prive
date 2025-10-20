@@ -27,3 +27,18 @@ impl VaultCrypto {
         .map_err(|e| format!("Argon2 params error: {e}"))?;
 
         let argon2 = Argon2::new(argon2::Algorithm::Argon2id, Version::V0x13, params);
+        let mut key = vec![0u8; KEY_LEN];
+        argon2
+            .hash_password_into(password, salt, &mut key)
+            .map_err(|e| format!("Argon2 hash error: {e}"))?;
+        Ok(key)
+    }
+
+    /// Generate a random salt.
+    pub fn generate_salt() -> [u8; SALT_LEN] {
+        let mut salt = [0u8; SALT_LEN];
+        rand::thread_rng().fill_bytes(&mut salt);
+        salt
+    }
+
+    /// Generate a random nonce.
