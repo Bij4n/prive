@@ -26,3 +26,17 @@ pub struct VaultEntry {
 
 impl Vault {
     pub fn new() -> Self {
+        let now = Utc::now();
+        Self {
+            version: 1,
+            created_at: now,
+            modified_at: now,
+            entries: Vec::new(),
+        }
+    }
+
+    pub fn find_by_name(&self, name: &str) -> Option<&VaultEntry> {
+        self.entries
+            .iter()
+            .find(|e| e.name.eq_ignore_ascii_case(name))
+    }
