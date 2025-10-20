@@ -278,3 +278,31 @@ mod tests {
     fn make_entry(name: &str, password: &str) -> VaultEntry {
         VaultEntry::new(
             name.to_string(),
+            Some("user".to_string()),
+            password.to_string(),
+            None,
+            None,
+            vec![],
+        )
+    }
+
+    #[test]
+    fn test_audit_empty_vault() {
+        let vault = Vault::new();
+        let report = audit_vault(&vault);
+        assert_eq!(report.total_entries, 0);
+        assert_eq!(report.score, 100);
+    }
+
+    #[test]
+    fn test_audit_weak_password() {
+        let mut vault = Vault::new();
+        vault.entries.push(make_entry("test", "abc"));
+        let report = audit_vault(&vault);
+        assert!(!report.weak_passwords.is_empty());
+        assert!(!report.short_passwords.is_empty());
+    }
+
+    #[test]
+    fn test_audit_duplicate_passwords() {
+        let mut vault = Vault::new();
