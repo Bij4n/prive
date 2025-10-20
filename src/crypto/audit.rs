@@ -222,3 +222,30 @@ fn check_reused_usernames(entries: &[VaultEntry], report: &mut AuditReport) {
 
     for (username, names) in &seen {
         if names.len() > 1 {
+            report.reused_usernames.push(AuditIssue {
+                entry_name: username.clone(),
+                severity: Severity::Info,
+                description: format!(
+                    "Username used across {} entries: {}",
+                    names.len(),
+                    names.join(", ")
+                ),
+            });
+        }
+    }
+}
+
+/// Check if a password has been exposed in data breaches using the
+/// Have I Been Pwned API (k-anonymity model — only first 5 chars of SHA-1 hash sent).
+pub fn check_breach(password: &str) -> Result<Option<u64>, String> {
+    let hash = {
+        use sha1::Digest;
+        let mut hasher = sha1::Sha1::new();
+        hasher.update(password.as_bytes());
+        hex::encode(hasher.finalize()).to_uppercase()
+    };
+
+    let prefix = &hash[..5];
+    let suffix = &hash[5..];
+
+    let url = format!("https://api.pwnedpasswords.com/range/{prefix}");
