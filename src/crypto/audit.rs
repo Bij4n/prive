@@ -334,3 +334,30 @@ mod tests {
     }
 
     #[test]
+    fn test_audit_short_password() {
+        let mut vault = Vault::new();
+        vault.entries.push(make_entry("short", "Ab1!"));
+        let report = audit_vault(&vault);
+        let has_short = report
+            .short_passwords
+            .iter()
+            .any(|i| i.severity == Severity::Critical);
+        assert!(has_short);
+    }
+
+    #[test]
+    fn test_audit_score_decreases_with_issues() {
+        let mut vault = Vault::new();
+        vault.entries.push(make_entry("bad1", "abc"));
+        vault.entries.push(make_entry("bad2", "abc"));
+        let report = audit_vault(&vault);
+        assert!(report.score < 100);
+    }
+
+    #[test]
+    fn test_severity_display() {
+        assert_eq!(format!("{}", Severity::Critical), "CRITICAL");
+        assert_eq!(format!("{}", Severity::Warning), "WARNING");
+        assert_eq!(format!("{}", Severity::Info), "INFO");
+    }
+}
