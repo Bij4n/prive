@@ -120,3 +120,34 @@ pub fn import_bitwarden_json(content: &str) -> Result<Vec<VaultEntry>, String> {
         }
 
         let mut tags = vec!["imported".to_string(), "bitwarden".to_string()];
+
+        let folder_id = item.get("folderId").and_then(|v| v.as_str());
+        if let Some(fid) = folder_id {
+            tags.push(format!("folder:{fid}"));
+        }
+
+        let mut entry = VaultEntry::new(name, username, password, url, notes, tags);
+        entry.totp_secret = totp;
+        entries.push(entry);
+    }
+
+    Ok(entries)
+}
+
+/// Import from KeePass XML export.
+pub fn import_keepass_xml(content: &str) -> Result<Vec<VaultEntry>, String> {
+    // Simple XML parsing for KeePass format
+    let mut entries = Vec::new();
+    let mut in_entry = false;
+    let mut current_name = String::new();
+    let mut current_username = String::new();
+    let mut current_password = String::new();
+    let mut current_url = String::new();
+    let mut current_notes = String::new();
+    let mut current_key = String::new();
+    let _in_value = false;
+
+    for line in content.lines() {
+        let trimmed = line.trim();
+
+        if trimmed == "<Entry>" {
