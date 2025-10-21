@@ -27,3 +27,34 @@ pub fn import_csv(content: &str) -> Result<Vec<VaultEntry>, String> {
 
     for result in reader.records() {
         let record = result.map_err(|e| format!("CSV parse error: {e}"))?;
+
+        let name = name_col
+            .and_then(|i| record.get(i))
+            .unwrap_or("Imported")
+            .to_string();
+        let url = url_col
+            .and_then(|i| record.get(i))
+            .map(|s| s.to_string())
+            .filter(|s| !s.is_empty());
+        let username = username_col
+            .and_then(|i| record.get(i))
+            .map(|s| s.to_string())
+            .filter(|s| !s.is_empty());
+        let password = record
+            .get(password_col)
+            .unwrap_or("")
+            .to_string();
+        let notes = notes_col
+            .and_then(|i| record.get(i))
+            .map(|s| s.to_string())
+            .filter(|s| !s.is_empty());
+
+        if password.is_empty() {
+            continue;
+        }
+
+        entries.push(VaultEntry::new(name, username, password, url, notes, vec!["imported".to_string()]));
+    }
+
+    Ok(entries)
+}
