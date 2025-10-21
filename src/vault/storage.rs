@@ -89,3 +89,25 @@ impl VaultStorage {
         nonce.copy_from_slice(&data[nonce_start..ciphertext_start]);
 
         let ciphertext = data[ciphertext_start..].to_vec();
+
+        let blob = EncryptedBlob {
+            salt,
+            nonce,
+            ciphertext,
+        };
+
+        let plaintext = VaultCrypto::decrypt(&blob, password)?;
+        let vault: Vault =
+            serde_json::from_slice(&plaintext).map_err(|e| format!("Deserialization error: {e}"))?;
+
+        Ok(vault)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    fn temp_vault_path() -> PathBuf {
+        let mut path = std::env::temp_dir();
