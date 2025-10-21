@@ -244,3 +244,34 @@ pub fn export_bitwarden_json(vault: &Vault) -> Result<String, String> {
         .collect();
 
     let export = serde_json::json!({
+        "encrypted": false,
+        "items": items,
+    });
+
+    serde_json::to_string_pretty(&export).map_err(|e| format!("JSON error: {e}"))
+}
+
+fn find_column(headers: &[String], candidates: &[&str]) -> Option<usize> {
+    for candidate in candidates {
+        if let Some(idx) = headers.iter().position(|h| h == *candidate) {
+            return Some(idx);
+        }
+    }
+    None
+}
+
+fn extract_xml_value(line: &str, tag: &str) -> Option<String> {
+    let open = format!("<{tag}>");
+    let close = format!("</{tag}>");
+    if let Some(start) = line.find(&open) {
+        if let Some(end) = line.find(&close) {
+            let value_start = start + open.len();
+            if value_start < end {
+                return Some(xml_unescape(&line[value_start..end]));
+            }
+        }
+    }
+    None
+}
+
+fn xml_unescape(s: &str) -> String {
