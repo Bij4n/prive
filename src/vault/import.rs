@@ -367,3 +367,34 @@ mod tests {
 <Key>Password</Key>
 <Value>testpass</Value>
 </String>
+<String>
+<Key>URL</Key>
+<Value>https://example.com</Value>
+</String>
+</Entry>
+</Group>
+</Root>
+</KeePassFile>"#;
+
+        let entries = import_keepass_xml(xml).unwrap();
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].name, "Test Entry");
+        assert_eq!(entries[0].password, "testpass");
+    }
+
+    #[test]
+    fn test_export_csv() {
+        let mut vault = Vault::new();
+        vault.entries.push(VaultEntry::new(
+            "GitHub".to_string(),
+            Some("johnd".to_string()),
+            "secret".to_string(),
+            Some("https://github.com".to_string()),
+            None,
+            vec!["dev".to_string()],
+        ));
+        let csv = export_csv(&vault);
+        assert!(csv.contains("GitHub"));
+        assert!(csv.contains("johnd"));
+        assert!(csv.contains("secret"));
+    }
