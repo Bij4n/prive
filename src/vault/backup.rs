@@ -71,3 +71,27 @@ impl BackupManager {
                     .modified()
                     .ok()
                     .and_then(|t| {
+                        t.duration_since(std::time::UNIX_EPOCH)
+                            .ok()
+                            .map(|d| d.as_secs())
+                    })
+                    .unwrap_or(0);
+
+                backups.push(BackupInfo {
+                    path,
+                    name,
+                    size,
+                    timestamp: modified,
+                });
+            }
+        }
+
+        backups.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
+        Ok(backups)
+    }
+
+    /// Restore a vault from a backup.
+    pub fn restore_backup(&self, backup_path: &Path, vault_path: &Path) -> Result<(), String> {
+        if !backup_path.exists() {
+            return Err(format!("Backup not found: {}", backup_path.display()));
+        }
