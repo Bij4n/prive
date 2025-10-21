@@ -168,3 +168,29 @@ mod tests {
         let backups = manager.list_backups().unwrap();
         assert!(backups.len() <= 3);
     }
+
+    #[test]
+    fn test_restore_backup() {
+        let tmp = tempfile::tempdir().unwrap();
+        let vault_path = tmp.path().join("vault.pv");
+        let backup_dir = tmp.path().join("backups");
+
+        fs::write(&vault_path, b"original data").unwrap();
+
+        let manager = BackupManager::with_dir(backup_dir, 5);
+        let backup_path = manager.create_backup(&vault_path).unwrap();
+
+        // Verify backup has original content
+        let backup_content = fs::read(&backup_path).unwrap();
+        assert_eq!(backup_content, b"original data");
+
+        // Modify the vault
+        fs::write(&vault_path, b"modified data").unwrap();
+
+        // Pause to ensure different timestamp for backup-before-restore
+        std::thread::sleep(std::time::Duration::from_secs(1));
+
+        // Restore
+        manager.restore_backup(&backup_path, &vault_path).unwrap();
+
+        let content = fs::read(&vault_path).unwrap();
