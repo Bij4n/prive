@@ -305,3 +305,34 @@ mod tests {
     }
 
     #[test]
+    fn test_import_csv_bitwarden_format() {
+        let csv = "folder,favorite,type,name,notes,fields,reprompt,login_uri,login_username,login_password,login_totp\n,,,Test,,,,https://test.com,user,pass123,\n";
+        let entries = import_csv(csv).unwrap();
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].password, "pass123");
+    }
+
+    #[test]
+    fn test_import_csv_skips_empty_passwords() {
+        let csv = "name,password\nEmpty,\nValid,pass123\n";
+        let entries = import_csv(csv).unwrap();
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].name, "Valid");
+    }
+
+    #[test]
+    fn test_import_bitwarden_json() {
+        let json = r#"{
+            "encrypted": false,
+            "items": [
+                {
+                    "type": 1,
+                    "name": "GitHub",
+                    "login": {
+                        "username": "johnd",
+                        "password": "secret123",
+                        "uris": [{"uri": "https://github.com"}]
+                    },
+                    "notes": null
+                },
+                {
