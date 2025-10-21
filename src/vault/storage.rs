@@ -43,3 +43,26 @@ impl VaultStorage {
         let mut file =
             fs::File::create(&tmp_path).map_err(|e| format!("Failed to create temp file: {e}"))?;
         file.write_all(&data)
+            .map_err(|e| format!("Failed to write temp file: {e}"))?;
+        file.sync_all()
+            .map_err(|e| format!("Failed to sync temp file: {e}"))?;
+
+        fs::rename(&tmp_path, path).map_err(|e| format!("Failed to rename temp file: {e}"))?;
+
+        Ok(())
+    }
+
+    /// Load and decrypt a vault from disk.
+    pub fn load(path: &Path, password: &[u8]) -> Result<Vault, String> {
+        if !path.exists() {
+            return Err("Vault not found. Run `prive vault init` first.".to_string());
+        }
+
+        let mut file =
+            fs::File::open(path).map_err(|e| format!("Failed to open vault: {e}"))?;
+        let mut data = Vec::new();
+        file.read_to_end(&mut data)
+            .map_err(|e| format!("Failed to read vault: {e}"))?;
+
+        // Parse header
+        if data.len() < 8 + 1 + 32 + 12 {
