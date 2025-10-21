@@ -89,3 +89,34 @@ pub fn import_bitwarden_json(content: &str) -> Result<Vec<VaultEntry>, String> {
             .and_then(|l| l.get("username"))
             .and_then(|v| v.as_str())
             .map(String::from);
+
+        let password = login
+            .and_then(|l| l.get("password"))
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
+
+        let url = login
+            .and_then(|l| l.get("uris"))
+            .and_then(|v| v.as_array())
+            .and_then(|uris| uris.first())
+            .and_then(|u| u.get("uri"))
+            .and_then(|v| v.as_str())
+            .map(String::from);
+
+        let notes = item
+            .get("notes")
+            .and_then(|v| v.as_str())
+            .map(String::from)
+            .filter(|s| !s.is_empty());
+
+        let totp = login
+            .and_then(|l| l.get("totp"))
+            .and_then(|v| v.as_str())
+            .map(String::from);
+
+        if password.is_empty() {
+            continue;
+        }
+
+        let mut tags = vec!["imported".to_string(), "bitwarden".to_string()];
