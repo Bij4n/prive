@@ -275,3 +275,33 @@ fn extract_xml_value(line: &str, tag: &str) -> Option<String> {
 }
 
 fn xml_unescape(s: &str) -> String {
+    s.replace("&amp;", "&")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&quot;", "\"")
+        .replace("&apos;", "'")
+}
+
+fn csv_escape(s: &str) -> String {
+    if s.contains(',') || s.contains('"') || s.contains('\n') {
+        format!("\"{}\"", s.replace('"', "\"\""))
+    } else {
+        s.to_string()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_import_csv_chrome_format() {
+        let csv = "name,url,username,password\nGitHub,https://github.com,johnd,mypassword\n";
+        let entries = import_csv(csv).unwrap();
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].name, "GitHub");
+        assert_eq!(entries[0].password, "mypassword");
+        assert_eq!(entries[0].username.as_deref(), Some("johnd"));
+    }
+
+    #[test]
