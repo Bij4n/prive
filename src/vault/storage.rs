@@ -133,3 +133,26 @@ mod tests {
     #[test]
     fn test_save_and_load_with_entries() {
         use crate::vault::model::VaultEntry;
+
+        let path = temp_vault_path();
+        let password = b"test-password";
+
+        let mut vault = Vault::new();
+        vault.entries.push(VaultEntry::new(
+            "GitHub".to_string(),
+            Some("johnd".to_string()),
+            "s3cret!".to_string(),
+            Some("https://github.com".to_string()),
+            None,
+            vec!["dev".to_string()],
+        ));
+
+        VaultStorage::save(&path, &vault, password).unwrap();
+
+        let loaded = VaultStorage::load(&path, password).unwrap();
+        assert_eq!(loaded.entries.len(), 1);
+        assert_eq!(loaded.entries[0].name, "GitHub");
+        assert_eq!(loaded.entries[0].password, "s3cret!");
+
+        fs::remove_file(&path).ok();
+    }
