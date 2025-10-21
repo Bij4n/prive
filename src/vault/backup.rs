@@ -120,3 +120,28 @@ impl BackupManager {
         Ok(())
     }
 }
+
+#[derive(Debug)]
+pub struct BackupInfo {
+    pub path: PathBuf,
+    pub name: String,
+    pub size: u64,
+    pub timestamp: u64,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    #[test]
+    fn test_create_and_list_backups() {
+        let tmp = tempfile::tempdir().unwrap();
+        let vault_path = tmp.path().join("vault.pv");
+        let backup_dir = tmp.path().join("backups");
+
+        fs::write(&vault_path, b"test vault data").unwrap();
+
+        let manager = BackupManager::with_dir(backup_dir, 5);
+        let backup_path = manager.create_backup(&vault_path).unwrap();
+        assert!(backup_path.exists());
