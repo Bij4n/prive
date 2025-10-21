@@ -336,3 +336,34 @@ mod tests {
                     "notes": null
                 },
                 {
+                    "type": 2,
+                    "name": "Secure Note"
+                }
+            ]
+        }"#;
+
+        let entries = import_bitwarden_json(json).unwrap();
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].name, "GitHub");
+        assert_eq!(entries[0].password, "secret123");
+    }
+
+    #[test]
+    fn test_import_keepass_xml() {
+        let xml = r#"<?xml version="1.0"?>
+<KeePassFile>
+<Root>
+<Group>
+<Entry>
+<String>
+<Key>Title</Key>
+<Value>Test Entry</Value>
+</String>
+<String>
+<Key>UserName</Key>
+<Value>testuser</Value>
+</String>
+<String>
+<Key>Password</Key>
+<Value>testpass</Value>
+</String>
