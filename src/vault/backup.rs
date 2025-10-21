@@ -194,3 +194,27 @@ mod tests {
         manager.restore_backup(&backup_path, &vault_path).unwrap();
 
         let content = fs::read(&vault_path).unwrap();
+        assert_eq!(content, b"original data");
+    }
+
+    #[test]
+    fn test_backup_nonexistent_vault() {
+        let tmp = tempfile::tempdir().unwrap();
+        let vault_path = tmp.path().join("nonexistent.pv");
+        let backup_dir = tmp.path().join("backups");
+
+        let manager = BackupManager::with_dir(backup_dir, 5);
+        let result = manager.create_backup(&vault_path);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_list_empty_backups() {
+        let tmp = tempfile::tempdir().unwrap();
+        let backup_dir = tmp.path().join("backups");
+
+        let manager = BackupManager::with_dir(backup_dir, 5);
+        let backups = manager.list_backups().unwrap();
+        assert!(backups.is_empty());
+    }
+}
