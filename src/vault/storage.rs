@@ -156,3 +156,26 @@ mod tests {
 
         fs::remove_file(&path).ok();
     }
+
+    #[test]
+    fn test_load_with_wrong_password() {
+        let path = temp_vault_path();
+
+        VaultStorage::create(&path, b"correct").unwrap();
+        let result = VaultStorage::load(&path, b"wrong");
+        assert!(result.is_err());
+
+        fs::remove_file(&path).ok();
+    }
+
+    #[test]
+    fn test_create_duplicate_fails() {
+        let path = temp_vault_path();
+
+        VaultStorage::create(&path, b"pass").unwrap();
+        let result = VaultStorage::create(&path, b"pass");
+        assert!(result.is_err());
+
+        fs::remove_file(&path).ok();
+    }
+}
