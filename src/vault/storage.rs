@@ -66,3 +66,26 @@ impl VaultStorage {
 
         // Parse header
         if data.len() < 8 + 1 + 32 + 12 {
+            return Err("Vault file is too small or corrupted".to_string());
+        }
+
+        if &data[0..8] != MAGIC {
+            return Err("Not a valid prive vault file".to_string());
+        }
+
+        let version = data[8];
+        if version != FORMAT_VERSION {
+            return Err(format!("Unsupported vault format version: {version}"));
+        }
+
+        let salt_start = 9;
+        let nonce_start = salt_start + 32;
+        let ciphertext_start = nonce_start + 12;
+
+        let mut salt = [0u8; 32];
+        salt.copy_from_slice(&data[salt_start..nonce_start]);
+
+        let mut nonce = [0u8; 12];
+        nonce.copy_from_slice(&data[nonce_start..ciphertext_start]);
+
+        let ciphertext = data[ciphertext_start..].to_vec();
