@@ -111,3 +111,25 @@ mod tests {
 
     fn temp_vault_path() -> PathBuf {
         let mut path = std::env::temp_dir();
+        path.push(format!("prive_test_{}.pv", uuid::Uuid::new_v4()));
+        path
+    }
+
+    #[test]
+    fn test_create_and_load_vault() {
+        let path = temp_vault_path();
+        let password = b"test-password";
+
+        VaultStorage::create(&path, password).unwrap();
+        assert!(path.exists());
+
+        let vault = VaultStorage::load(&path, password).unwrap();
+        assert_eq!(vault.version, 1);
+        assert!(vault.entries.is_empty());
+
+        fs::remove_file(&path).ok();
+    }
+
+    #[test]
+    fn test_save_and_load_with_entries() {
+        use crate::vault::model::VaultEntry;
