@@ -213,3 +213,34 @@ pub fn export_csv(vault: &Vault) -> String {
             "{},{},{},{},{},{}\n",
             csv_escape(&entry.name),
             csv_escape(entry.username.as_deref().unwrap_or("")),
+            csv_escape(&entry.password),
+            csv_escape(entry.url.as_deref().unwrap_or("")),
+            csv_escape(entry.notes.as_deref().unwrap_or("")),
+            csv_escape(&entry.tags.join(";")),
+        ));
+    }
+
+    output
+}
+
+/// Export vault to Bitwarden-compatible JSON.
+pub fn export_bitwarden_json(vault: &Vault) -> Result<String, String> {
+    let items: Vec<serde_json::Value> = vault
+        .entries
+        .iter()
+        .map(|e| {
+            serde_json::json!({
+                "type": 1,
+                "name": e.name,
+                "login": {
+                    "username": e.username,
+                    "password": e.password,
+                    "uris": e.url.as_ref().map(|u| vec![serde_json::json!({"uri": u})]).unwrap_or_default(),
+                    "totp": e.totp_secret,
+                },
+                "notes": e.notes,
+            })
+        })
+        .collect();
+
+    let export = serde_json::json!({
