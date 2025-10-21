@@ -58,3 +58,34 @@ pub fn import_csv(content: &str) -> Result<Vec<VaultEntry>, String> {
 
     Ok(entries)
 }
+
+/// Import from Bitwarden JSON export.
+pub fn import_bitwarden_json(content: &str) -> Result<Vec<VaultEntry>, String> {
+    let parsed: serde_json::Value =
+        serde_json::from_str(content).map_err(|e| format!("JSON parse error: {e}"))?;
+
+    let items = parsed
+        .get("items")
+        .and_then(|v| v.as_array())
+        .ok_or_else(|| "Missing 'items' array in Bitwarden export".to_string())?;
+
+    let mut entries = Vec::new();
+
+    for item in items {
+        let item_type = item.get("type").and_then(|v| v.as_u64()).unwrap_or(0);
+        if item_type != 1 {
+            continue; // Only import login items
+        }
+
+        let name = item
+            .get("name")
+            .and_then(|v| v.as_str())
+            .unwrap_or("Untitled")
+            .to_string();
+
+        let login = item.get("login");
+
+        let username = login
+            .and_then(|l| l.get("username"))
+            .and_then(|v| v.as_str())
+            .map(String::from);
