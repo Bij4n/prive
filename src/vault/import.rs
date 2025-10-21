@@ -151,3 +151,34 @@ pub fn import_keepass_xml(content: &str) -> Result<Vec<VaultEntry>, String> {
         let trimmed = line.trim();
 
         if trimmed == "<Entry>" {
+            in_entry = true;
+            current_name.clear();
+            current_username.clear();
+            current_password.clear();
+            current_url.clear();
+            current_notes.clear();
+        } else if trimmed == "</Entry>" && in_entry {
+            if !current_password.is_empty() {
+                entries.push(VaultEntry::new(
+                    if current_name.is_empty() {
+                        "Imported".to_string()
+                    } else {
+                        current_name.clone()
+                    },
+                    if current_username.is_empty() {
+                        None
+                    } else {
+                        Some(current_username.clone())
+                    },
+                    current_password.clone(),
+                    if current_url.is_empty() {
+                        None
+                    } else {
+                        Some(current_url.clone())
+                    },
+                    if current_notes.is_empty() {
+                        None
+                    } else {
+                        Some(current_notes.clone())
+                    },
+                    vec!["imported".to_string(), "keepass".to_string()],
