@@ -182,3 +182,34 @@ pub fn import_keepass_xml(content: &str) -> Result<Vec<VaultEntry>, String> {
                         Some(current_notes.clone())
                     },
                     vec!["imported".to_string(), "keepass".to_string()],
+                ));
+            }
+            in_entry = false;
+        } else if in_entry {
+            if let Some(key) = extract_xml_value(trimmed, "Key") {
+                current_key = key;
+            } else if let Some(value) = extract_xml_value(trimmed, "Value") {
+                match current_key.as_str() {
+                    "Title" => current_name = value,
+                    "UserName" => current_username = value,
+                    "Password" => current_password = value,
+                    "URL" => current_url = value,
+                    "Notes" => current_notes = value,
+                    _ => {}
+                }
+            }
+        }
+    }
+
+    Ok(entries)
+}
+
+/// Export vault entries to CSV format.
+pub fn export_csv(vault: &Vault) -> String {
+    let mut output = String::from("name,username,password,url,notes,tags\n");
+
+    for entry in &vault.entries {
+        output.push_str(&format!(
+            "{},{},{},{},{},{}\n",
+            csv_escape(&entry.name),
+            csv_escape(entry.username.as_deref().unwrap_or("")),
