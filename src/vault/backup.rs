@@ -95,3 +95,28 @@ impl BackupManager {
         if !backup_path.exists() {
             return Err(format!("Backup not found: {}", backup_path.display()));
         }
+
+        // Create a backup of the current vault before restoring
+        if vault_path.exists() {
+            self.create_backup(vault_path)?;
+        }
+
+        fs::copy(backup_path, vault_path)
+            .map_err(|e| format!("Failed to restore backup: {e}"))?;
+
+        Ok(())
+    }
+
+    /// Remove old backups, keeping only the most recent `max_backups`.
+    fn rotate_backups(&self) -> Result<(), String> {
+        let backups = self.list_backups()?;
+
+        if backups.len() > self.max_backups {
+            for backup in &backups[self.max_backups..] {
+                let _ = fs::remove_file(&backup.path);
+            }
+        }
+
+        Ok(())
+    }
+}
