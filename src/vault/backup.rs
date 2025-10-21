@@ -46,3 +46,28 @@ impl BackupManager {
 
         Ok(backup_path)
     }
+
+    /// List all available backups, sorted by date (newest first).
+    pub fn list_backups(&self) -> Result<Vec<BackupInfo>, String> {
+        if !self.backup_dir.exists() {
+            return Ok(Vec::new());
+        }
+
+        let mut backups: Vec<BackupInfo> = Vec::new();
+
+        let entries =
+            fs::read_dir(&self.backup_dir).map_err(|e| format!("Failed to read backup dir: {e}"))?;
+
+        for entry in entries {
+            let entry = entry.map_err(|e| format!("Read dir error: {e}"))?;
+            let path = entry.path();
+            let name = path.file_name().unwrap_or_default().to_string_lossy().to_string();
+
+            if name.starts_with("vault_") && name.ends_with(".pv.bak") {
+                let metadata = fs::metadata(&path)
+                    .map_err(|e| format!("Failed to read metadata: {e}"))?;
+                let size = metadata.len();
+                let modified = metadata
+                    .modified()
+                    .ok()
+                    .and_then(|t| {
