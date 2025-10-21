@@ -145,3 +145,26 @@ mod tests {
         let manager = BackupManager::with_dir(backup_dir, 5);
         let backup_path = manager.create_backup(&vault_path).unwrap();
         assert!(backup_path.exists());
+
+        let backups = manager.list_backups().unwrap();
+        assert_eq!(backups.len(), 1);
+    }
+
+    #[test]
+    fn test_backup_rotation() {
+        let tmp = tempfile::tempdir().unwrap();
+        let vault_path = tmp.path().join("vault.pv");
+        let backup_dir = tmp.path().join("backups");
+
+        fs::write(&vault_path, b"test vault data").unwrap();
+
+        let manager = BackupManager::with_dir(backup_dir, 3);
+
+        for _ in 0..5 {
+            manager.create_backup(&vault_path).unwrap();
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+
+        let backups = manager.list_backups().unwrap();
+        assert!(backups.len() <= 3);
+    }
