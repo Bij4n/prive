@@ -130,3 +130,25 @@ impl Keyring {
 
     pub fn load_public_key(&self, key_id: &str) -> Result<SignedPublicKey, String> {
         let key_id_lower = key_id.to_lowercase();
+        let entries =
+            fs::read_dir(&self.dir).map_err(|e| format!("Failed to read keyring: {e}"))?;
+
+        for entry in entries {
+            let entry = entry.map_err(|e| format!("Read dir error: {e}"))?;
+            let path = entry.path();
+            let name = path.file_name().unwrap_or_default().to_string_lossy().to_lowercase();
+
+            if name.ends_with(".pub.asc") && name.contains(&key_id_lower) {
+                let content =
+                    fs::read_to_string(&path).map_err(|e| format!("Failed to read key: {e}"))?;
+                let (key, _) = SignedPublicKey::from_string(&content)
+                    .map_err(|e| format!("Failed to parse public key: {e}"))?;
+                return Ok(key);
+            }
+        }
+
+        Err(format!("Public key not found: {key_id}"))
+    }
+
+    pub fn delete_key(&self, key_id: &str) -> Result<(), String> {
+        let key_id_lower = key_id.to_lowercase();
