@@ -102,3 +102,16 @@ mod tests {
         let key = generate_keypair("RSA User", "rsa@example.com", "rsa4096", "").unwrap();
         key.verify().unwrap();
     }
+
+    #[test]
+    fn test_generate_empty_passphrase() {
+        let key = generate_keypair("No Pass", "nopass@example.com", "cv25519", "").unwrap();
+        key.verify().unwrap();
+    }
+
+    #[test]
+    fn test_generate_invalid_algorithm() {
+        let result = generate_keypair("Test", "t@t.com", "invalid", "pass");
+        assert!(result.is_err());
+    }
+}
