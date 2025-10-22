@@ -128,3 +128,21 @@ pub fn sign_data(
         .to_armored_bytes(None.into())
         .map_err(|e| format!("Armor encoding error: {e}"))
 }
+
+/// Verify a signed PGP message.
+#[allow(dead_code)]
+pub fn verify_signature(
+    signed_data: &[u8],
+    public_key: &SignedPublicKey,
+) -> Result<Vec<u8>, String> {
+    let (message, _) = Message::from_armor_single(std::io::Cursor::new(signed_data))
+        .map_err(|e| format!("Failed to parse PGP message: {e}"))?;
+
+    message
+        .verify(&public_key.primary_key)
+        .map_err(|e| format!("Signature verification failed: {e}"))?;
+
+    extract_literal_data(&message).map(|(data, _)| data)
+}
+
+#[cfg(test)]
