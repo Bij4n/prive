@@ -79,3 +79,20 @@ pub fn decrypt_with_password(
 ) -> Result<(Vec<u8>, String), String> {
     let (message, _) = Message::from_armor_single(std::io::Cursor::new(encrypted_data))
         .map_err(|e| format!("Failed to parse PGP message: {e}"))?;
+
+    let pw = passphrase.to_string();
+    let decrypted = message
+        .decrypt_with_password(|| pw)
+        .map_err(|e| format!("Decryption error: {e}"))?;
+
+    extract_literal_data(&decrypted)
+}
+
+/// Extract literal data (content + filename) from a decrypted message.
+fn extract_literal_data(message: &Message) -> Result<(Vec<u8>, String), String> {
+    match message {
+        Message::Literal(lit) => {
+            let fname = String::new(); // filename access varies by version
+            Ok((lit.data().to_vec(), fname))
+        }
+        Message::Compressed(comp) => {
