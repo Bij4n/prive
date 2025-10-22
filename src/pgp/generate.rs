@@ -23,3 +23,17 @@ pub fn generate_keypair(
     } else {
         format!("{name} <{email}>")
     };
+
+    let (primary_key_type, subkey_type, version) = match algorithm.to_lowercase().as_str() {
+        "cv25519" | "curve25519" | "ed25519" => (
+            KeyType::EdDSALegacy,
+            KeyType::ECDH(pgp::crypto::ecc_curve::ECCCurve::Curve25519),
+            KeyVersion::V4,
+        ),
+        "rsa4096" | "rsa" => (
+            KeyType::Rsa(4096),
+            KeyType::Rsa(4096),
+            KeyVersion::V4,
+        ),
+        other => return Err(format!("Unsupported algorithm: {other}. Use cv25519 or rsa4096")),
+    };
