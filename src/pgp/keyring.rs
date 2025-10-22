@@ -196,3 +196,24 @@ impl Keyring {
 
         Err("Failed to parse key — not a valid PGP key".to_string())
     }
+
+    pub fn export_key(&self, key_id: &str, secret: bool) -> Result<String, String> {
+        if secret {
+            let key = self.load_secret_key(key_id)?;
+            key.to_armored_string(None.into())
+                .map_err(|e| format!("Armor encoding error: {e}"))
+        } else {
+            let key = self.load_public_key(key_id)?;
+            key.to_armored_string(None.into())
+                .map_err(|e| format!("Armor encoding error: {e}"))
+        }
+    }
+}
+
+pub struct KeyInfo {
+    pub key_id: String,
+    pub fingerprint: String,
+    pub uid: String,
+    pub has_secret: bool,
+    pub algorithm: String,
+}
