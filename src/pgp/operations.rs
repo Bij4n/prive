@@ -113,3 +113,18 @@ fn extract_literal_data(message: &Message) -> Result<(Vec<u8>, String), String> 
 pub fn sign_data(
     data: &[u8],
     filename: &str,
+    secret_key: &SignedSecretKey,
+    key_passphrase: &str,
+) -> Result<Vec<u8>, String> {
+    let mut rng = OsRng;
+    let message = Message::new_literal_bytes(filename, data);
+
+    let pw = key_passphrase.to_string();
+    let signed = message
+        .sign(&mut rng, &secret_key.primary_key, || pw, pgp::crypto::hash::HashAlgorithm::SHA2_256)
+        .map_err(|e| format!("Signing error: {e}"))?;
+
+    signed
+        .to_armored_bytes(None.into())
+        .map_err(|e| format!("Armor encoding error: {e}"))
+}
