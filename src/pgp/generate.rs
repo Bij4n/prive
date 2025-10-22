@@ -37,3 +37,16 @@ pub fn generate_keypair(
         ),
         other => return Err(format!("Unsupported algorithm: {other}. Use cv25519 or rsa4096")),
     };
+
+    let key_params = SecretKeyParamsBuilder::default()
+        .version(version)
+        .key_type(primary_key_type)
+        .can_certify(true)
+        .can_sign(true)
+        .primary_user_id(uid.clone())
+        .preferred_symmetric_algorithms(smallvec![
+            SymmetricKeyAlgorithm::AES256,
+            SymmetricKeyAlgorithm::AES192,
+            SymmetricKeyAlgorithm::AES128,
+        ])
+        .preferred_hash_algorithms(smallvec![
