@@ -63,3 +63,19 @@ pub fn decrypt_with_key(
 ) -> Result<(Vec<u8>, String), String> {
     let (message, _) = Message::from_armor_single(std::io::Cursor::new(encrypted_data))
         .map_err(|e| format!("Failed to parse PGP message: {e}"))?;
+
+    let pw = key_passphrase.to_string();
+    let (decrypted, _key_ids) = message
+        .decrypt(|| pw, &[secret_key])
+        .map_err(|e| format!("Decryption error: {e}"))?;
+
+    extract_literal_data(&decrypted)
+}
+
+/// Decrypt PGP-encrypted data with a passphrase.
+pub fn decrypt_with_password(
+    encrypted_data: &[u8],
+    passphrase: &str,
+) -> Result<(Vec<u8>, String), String> {
+    let (message, _) = Message::from_armor_single(std::io::Cursor::new(encrypted_data))
+        .map_err(|e| format!("Failed to parse PGP message: {e}"))?;
