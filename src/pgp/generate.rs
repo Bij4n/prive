@@ -50,3 +50,16 @@ pub fn generate_keypair(
             SymmetricKeyAlgorithm::AES128,
         ])
         .preferred_hash_algorithms(smallvec![
+            HashAlgorithm::SHA2_512,
+            HashAlgorithm::SHA2_256,
+        ])
+        .preferred_compression_algorithms(smallvec![
+            CompressionAlgorithm::ZLIB,
+            CompressionAlgorithm::ZIP,
+        ])
+        .subkey(
+            SubkeyParamsBuilder::default()
+                .version(version)
+                .key_type(subkey_type)
+                .can_encrypt(true)
+                .build()
