@@ -146,3 +146,18 @@ pub fn verify_signature(
 }
 
 #[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::pgp::generate::generate_keypair;
+
+    #[test]
+    fn test_pgp_encrypt_decrypt_roundtrip() {
+        let key = generate_keypair("Test", "test@test.com", "cv25519", "pass123").unwrap();
+        let pub_key: SignedPublicKey = key.clone().into();
+
+        let plaintext = b"Hello, PGP world!";
+        let encrypted = encrypt_to_keys(plaintext, "test.txt", &[&pub_key]).unwrap();
+
+        let (decrypted, _) = decrypt_with_key(&encrypted, &key, "pass123").unwrap();
+        assert_eq!(decrypted, plaintext);
+    }
