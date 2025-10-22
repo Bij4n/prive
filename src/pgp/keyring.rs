@@ -108,3 +108,25 @@ impl Keyring {
 
     pub fn load_secret_key(&self, key_id: &str) -> Result<SignedSecretKey, String> {
         let key_id_lower = key_id.to_lowercase();
+        let entries =
+            fs::read_dir(&self.dir).map_err(|e| format!("Failed to read keyring: {e}"))?;
+
+        for entry in entries {
+            let entry = entry.map_err(|e| format!("Read dir error: {e}"))?;
+            let path = entry.path();
+            let name = path.file_name().unwrap_or_default().to_string_lossy().to_lowercase();
+
+            if name.ends_with(".sec.asc") && name.contains(&key_id_lower) {
+                let content =
+                    fs::read_to_string(&path).map_err(|e| format!("Failed to read key: {e}"))?;
+                let (key, _) = SignedSecretKey::from_string(&content)
+                    .map_err(|e| format!("Failed to parse secret key: {e}"))?;
+                return Ok(key);
+            }
+        }
+
+        Err(format!("Secret key not found: {key_id}"))
+    }
+
+    pub fn load_public_key(&self, key_id: &str) -> Result<SignedPublicKey, String> {
+        let key_id_lower = key_id.to_lowercase();
