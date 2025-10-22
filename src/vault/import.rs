@@ -398,3 +398,33 @@ mod tests {
         assert!(csv.contains("johnd"));
         assert!(csv.contains("secret"));
     }
+
+    #[test]
+    fn test_export_bitwarden_json() {
+        let mut vault = Vault::new();
+        vault.entries.push(VaultEntry::new(
+            "Test".to_string(),
+            Some("user".to_string()),
+            "pass".to_string(),
+            None,
+            None,
+            vec![],
+        ));
+        let json = export_bitwarden_json(&vault).unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+        assert_eq!(parsed["items"][0]["name"], "Test");
+    }
+
+    #[test]
+    fn test_csv_escape() {
+        assert_eq!(csv_escape("hello"), "hello");
+        assert_eq!(csv_escape("hello,world"), "\"hello,world\"");
+        assert_eq!(csv_escape("say \"hi\""), "\"say \"\"hi\"\"\"");
+    }
+
+    #[test]
+    fn test_xml_unescape() {
+        assert_eq!(xml_unescape("a &amp; b"), "a & b");
+        assert_eq!(xml_unescape("&lt;tag&gt;"), "<tag>");
+    }
+}
