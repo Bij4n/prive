@@ -88,3 +88,17 @@ pub fn generate_keypair(
 mod tests {
     use super::*;
     use pgp::types::PublicKeyTrait;
+
+    #[test]
+    fn test_generate_cv25519_keypair() {
+        let key = generate_keypair("Test User", "test@example.com", "cv25519", "testpass").unwrap();
+        key.verify().unwrap();
+        let fp = hex::encode(key.fingerprint().as_bytes());
+        assert!(!fp.is_empty());
+    }
+
+    #[test]
+    fn test_generate_rsa4096_keypair() {
+        let key = generate_keypair("RSA User", "rsa@example.com", "rsa4096", "").unwrap();
+        key.verify().unwrap();
+    }
