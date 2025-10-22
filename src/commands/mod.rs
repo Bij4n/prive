@@ -3,3 +3,7 @@ pub mod backup;
 pub mod completions;
 pub mod config_cmd;
 pub mod encrypt;
+pub mod import_export;
+pub mod password;
+pub mod pgp;
+pub mod vault;
