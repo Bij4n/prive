@@ -47,3 +47,19 @@ pub fn encrypt_symmetric(data: &[u8], filename: &str, passphrase: &str) -> Resul
     let encrypted = message
         .encrypt_with_password_seipdv1(&mut rng, s2k, SymmetricKeyAlgorithm::AES256, || {
             pw.clone()
+        })
+        .map_err(|e| format!("Encryption error: {e}"))?;
+
+    encrypted
+        .to_armored_bytes(None.into())
+        .map_err(|e| format!("Armor encoding error: {e}"))
+}
+
+/// Decrypt PGP-encrypted data with a secret key.
+pub fn decrypt_with_key(
+    encrypted_data: &[u8],
+    secret_key: &SignedSecretKey,
+    key_passphrase: &str,
+) -> Result<(Vec<u8>, String), String> {
+    let (message, _) = Message::from_armor_single(std::io::Cursor::new(encrypted_data))
+        .map_err(|e| format!("Failed to parse PGP message: {e}"))?;
