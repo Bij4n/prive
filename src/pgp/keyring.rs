@@ -64,3 +64,25 @@ impl Keyring {
                     let uid = key
                         .details
                         .users
+                        .first()
+                        .map(|u| String::from_utf8_lossy(u.id.id()).to_string())
+                        .unwrap_or_default();
+                    keys.push(KeyInfo {
+                        key_id,
+                        fingerprint,
+                        uid,
+                        has_secret: true,
+                        algorithm: format!("{:?}", key.algorithm()),
+                    });
+                }
+            } else if !secret_only && name.ends_with(".pub.asc") {
+                let content =
+                    fs::read_to_string(&path).map_err(|e| format!("Failed to read key: {e}"))?;
+                if let Ok((key, _)) = SignedPublicKey::from_string(&content) {
+                    let key_id = hex::encode(key.key_id().as_ref());
+                    // Skip if we have a matching secret key
+                    let sec_path = self.dir.join(format!("{key_id}.sec.asc"));
+                    if sec_path.exists() {
+                        continue;
+                    }
+                    let fingerprint = hex::encode(key.fingerprint().as_bytes()).to_uppercase();
