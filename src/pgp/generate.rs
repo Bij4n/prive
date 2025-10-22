@@ -76,3 +76,15 @@ pub fn generate_keypair(
     let signed_key: SignedSecretKey = secret_key
         .sign(&mut rng, || passphrase_clone)
         .map_err(|e| format!("Key signing error: {e}"))?;
+
+    signed_key
+        .verify()
+        .map_err(|e| format!("Key verification error: {e}"))?;
+
+    Ok(signed_key)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use pgp::types::PublicKeyTrait;
