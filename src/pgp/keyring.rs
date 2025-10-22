@@ -41,3 +41,26 @@ impl Keyring {
         let pub_path = self.dir.join(format!("{key_id}.pub.asc"));
         fs::write(&pub_path, &pub_armor)
             .map_err(|e| format!("Failed to write public key: {e}"))?;
+
+        Ok(key_id)
+    }
+
+    pub fn list_keys(&self, secret_only: bool) -> Result<Vec<KeyInfo>, String> {
+        let mut keys = Vec::new();
+        let entries =
+            fs::read_dir(&self.dir).map_err(|e| format!("Failed to read keyring: {e}"))?;
+
+        for entry in entries {
+            let entry = entry.map_err(|e| format!("Read dir error: {e}"))?;
+            let path = entry.path();
+            let name = path.file_name().unwrap_or_default().to_string_lossy().to_string();
+
+            if name.ends_with(".sec.asc") {
+                let content =
+                    fs::read_to_string(&path).map_err(|e| format!("Failed to read key: {e}"))?;
+                if let Ok((key, _)) = SignedSecretKey::from_string(&content) {
+                    let key_id = hex::encode(key.key_id().as_ref());
+                    let fingerprint = hex::encode(key.fingerprint().as_bytes()).to_uppercase();
+                    let uid = key
+                        .details
+                        .users
