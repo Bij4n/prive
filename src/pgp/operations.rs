@@ -14,3 +14,19 @@ pub fn encrypt_to_keys(
 
     // Collect encryption subkeys from all recipients
     let mut enc_keys: Vec<&pgp::SignedPublicSubKey> = Vec::new();
+    for r in recipients {
+        for sk in &r.public_subkeys {
+            enc_keys.push(sk);
+        }
+    }
+
+    let encrypted = if enc_keys.is_empty() {
+        // No subkeys — encrypt to primary keys
+        message
+            .encrypt_to_keys_seipdv1(&mut rng, SymmetricKeyAlgorithm::AES256, &recipients.iter().map(|r| &r.primary_key).collect::<Vec<_>>())
+            .map_err(|e| format!("Encryption error: {e}"))?
+    } else {
+        message
+            .encrypt_to_keys_seipdv1(&mut rng, SymmetricKeyAlgorithm::AES256, &enc_keys)
+            .map_err(|e| format!("Encryption error: {e}"))?
+    };
