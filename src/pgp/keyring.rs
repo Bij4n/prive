@@ -174,3 +174,25 @@ impl Keyring {
         if found {
             Ok(())
         } else {
+            Err(format!("Key not found: {key_id}"))
+        }
+    }
+
+    pub fn import_key(&self, armored: &str) -> Result<String, String> {
+        if let Ok((key, _)) = SignedSecretKey::from_string(armored) {
+            return self.save_secret_key(&key);
+        }
+
+        if let Ok((key, _)) = SignedPublicKey::from_string(armored) {
+            let key_id = hex::encode(key.key_id().as_ref());
+            let pub_armor = key
+                .to_armored_string(None.into())
+                .map_err(|e| format!("Armor encoding error: {e}"))?;
+            let pub_path = self.dir.join(format!("{key_id}.pub.asc"));
+            fs::write(&pub_path, &pub_armor)
+                .map_err(|e| format!("Failed to write public key: {e}"))?;
+            return Ok(key_id);
+        }
+
+        Err("Failed to parse key — not a valid PGP key".to_string())
+    }
