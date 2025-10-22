@@ -30,3 +30,20 @@ pub fn encrypt_to_keys(
             .encrypt_to_keys_seipdv1(&mut rng, SymmetricKeyAlgorithm::AES256, &enc_keys)
             .map_err(|e| format!("Encryption error: {e}"))?
     };
+
+    encrypted
+        .to_armored_bytes(None.into())
+        .map_err(|e| format!("Armor encoding error: {e}"))
+}
+
+/// Encrypt data with a passphrase (symmetric PGP encryption).
+pub fn encrypt_symmetric(data: &[u8], filename: &str, passphrase: &str) -> Result<Vec<u8>, String> {
+    let mut rng = OsRng;
+    let message = Message::new_literal_bytes(filename, data);
+
+    let s2k = StringToKey::new_default(&mut rng);
+    let pw = passphrase.to_string();
+
+    let encrypted = message
+        .encrypt_with_password_seipdv1(&mut rng, s2k, SymmetricKeyAlgorithm::AES256, || {
+            pw.clone()
