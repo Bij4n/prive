@@ -161,3 +161,20 @@ mod tests {
         let (decrypted, _) = decrypt_with_key(&encrypted, &key, "pass123").unwrap();
         assert_eq!(decrypted, plaintext);
     }
+
+    #[test]
+    fn test_symmetric_encrypt_decrypt_roundtrip() {
+        let plaintext = b"Secret symmetric data";
+        let encrypted = encrypt_symmetric(plaintext, "secret.txt", "mypassword").unwrap();
+
+        let (decrypted, _) = decrypt_with_password(&encrypted, "mypassword").unwrap();
+        assert_eq!(decrypted, plaintext);
+    }
+
+    #[test]
+    fn test_symmetric_wrong_password_fails() {
+        let encrypted = encrypt_symmetric(b"data", "f.txt", "correct").unwrap();
+        let result = decrypt_with_password(&encrypted, "wrong");
+        assert!(result.is_err());
+    }
+}
