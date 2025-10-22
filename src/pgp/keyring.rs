@@ -86,3 +86,25 @@ impl Keyring {
                         continue;
                     }
                     let fingerprint = hex::encode(key.fingerprint().as_bytes()).to_uppercase();
+                    let uid = key
+                        .details
+                        .users
+                        .first()
+                        .map(|u| String::from_utf8_lossy(u.id.id()).to_string())
+                        .unwrap_or_default();
+                    keys.push(KeyInfo {
+                        key_id,
+                        fingerprint,
+                        uid,
+                        has_secret: false,
+                        algorithm: format!("{:?}", key.algorithm()),
+                    });
+                }
+            }
+        }
+
+        Ok(keys)
+    }
+
+    pub fn load_secret_key(&self, key_id: &str) -> Result<SignedSecretKey, String> {
+        let key_id_lower = key_id.to_lowercase();
