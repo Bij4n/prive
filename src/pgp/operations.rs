@@ -96,3 +96,20 @@ fn extract_literal_data(message: &Message) -> Result<(Vec<u8>, String), String> 
             Ok((lit.data().to_vec(), fname))
         }
         Message::Compressed(comp) => {
+            let decompressed = comp
+                .decompress()
+                .map_err(|e| format!("Decompression error: {e}"))?;
+            // The decompressor returns a Message
+            let msg = Message::from_bytes(decompressed)
+                .map_err(|e| format!("Failed to parse decompressed message: {e}"))?;
+            extract_literal_data(&msg)
+        }
+        _ => Err("Unexpected message format after decryption".to_string()),
+    }
+}
+
+/// Sign data with a secret key.
+#[allow(dead_code)]
+pub fn sign_data(
+    data: &[u8],
+    filename: &str,
