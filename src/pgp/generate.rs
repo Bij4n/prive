@@ -63,3 +63,16 @@ pub fn generate_keypair(
                 .key_type(subkey_type)
                 .can_encrypt(true)
                 .build()
+                .map_err(|e| format!("Subkey params error: {e}"))?,
+        )
+        .build()
+        .map_err(|e| format!("Key params error: {e}"))?;
+
+    let secret_key: SecretKey = key_params
+        .generate(&mut rng)
+        .map_err(|e| format!("Key generation error: {e}"))?;
+
+    let passphrase_clone = passphrase.to_string();
+    let signed_key: SignedSecretKey = secret_key
+        .sign(&mut rng, || passphrase_clone)
+        .map_err(|e| format!("Key signing error: {e}"))?;
