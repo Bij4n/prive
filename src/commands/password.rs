@@ -66,3 +66,37 @@ pub fn handle_pw(cmd: &PwCommand, vault_path_override: Option<&Path>) -> Result<
             url,
             notes,
             tags,
+        } => cmd_add(
+            vault_path_override,
+            name,
+            username.as_deref(),
+            password.as_deref(),
+            *generate,
+            *length,
+            url.as_deref(),
+            notes.as_deref(),
+            tags,
+        ),
+        PwCommand::Get { name, show, copy, field } => {
+            cmd_get(vault_path_override, name, *show, *copy, field.as_deref())
+        }
+        PwCommand::List { tags, format } => cmd_list(vault_path_override, tags, format),
+        PwCommand::Edit {
+            name,
+            username,
+            password,
+            url,
+            notes,
+            tags,
+        } => cmd_edit(
+            vault_path_override,
+            name,
+            username.as_deref(),
+            password.as_deref(),
+            url.as_deref(),
+            notes.as_deref(),
+            tags.as_deref(),
+        ),
+        PwCommand::Rm { name, force } => cmd_rm(vault_path_override, name, *force),
+        PwCommand::Search { query } => cmd_search(vault_path_override, query),
+        PwCommand::Totp { name } => cmd_totp(vault_path_override, name),
