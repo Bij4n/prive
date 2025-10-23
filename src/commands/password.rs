@@ -306,3 +306,38 @@ fn cmd_edit(
         entry.password = p.to_string();
     }
     if let Some(u) = url {
+        entry.url = Some(u.to_string());
+    }
+    if let Some(n) = notes {
+        entry.notes = Some(n.to_string());
+    }
+    if let Some(t) = tags {
+        entry.tags = t.to_vec();
+    }
+    entry.modified_at = chrono::Utc::now();
+    vault.modified_at = chrono::Utc::now();
+
+    VaultStorage::save(&path, &vault, master_pw.as_bytes())
+        .map_err(|e| anyhow::anyhow!(e))?;
+
+    println!("{} Entry '{}' updated.", "✓".green(), name);
+    Ok(())
+}
+
+fn cmd_rm(vault_path: Option<&Path>, name: &str, force: bool) -> Result<()> {
+    let (path, mut vault, master_pw) = unlock_vault(vault_path)?;
+
+    if vault.find_by_name(name).is_none() {
+        anyhow::bail!("Entry '{}' not found", name);
+    }
+
+    if !force {
+        print!("Delete entry '{name}'? [y/N] ");
+        std::io::Write::flush(&mut std::io::stdout())?;
+        let mut input = String::new();
+        std::io::stdin().read_line(&mut input)?;
+        if !input.trim().eq_ignore_ascii_case("y") {
+            println!("Cancelled.");
+            return Ok(());
+        }
+    }
