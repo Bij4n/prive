@@ -409,3 +409,37 @@ fn cmd_totp(vault_path: Option<&Path>, name: &str) -> Result<()> {
 }
 
 fn cmd_totp_add(
+    vault_path: Option<&Path>,
+    name: &str,
+    secret: Option<&str>,
+    uri: Option<&str>,
+) -> Result<()> {
+    let (path, mut vault, master_pw) = unlock_vault(vault_path)?;
+
+    let entry = vault
+        .find_by_name_mut(name)
+        .ok_or_else(|| anyhow::anyhow!("Entry '{}' not found", name))?;
+
+    let totp_secret = if let Some(uri_str) = uri {
+        let params = totp::parse_otpauth_uri(uri_str)
+            .map_err(|e| anyhow::anyhow!("Failed to parse otpauth URI: {e}"))?;
+        params.secret
+    } else if let Some(s) = secret {
+        // Validate that the secret is valid base32
+        totp::decode_base32_secret(s)
+            .map_err(|e| anyhow::anyhow!("Invalid base32 secret: {e}"))?;
+        s.to_string()
+    } else {
+        anyhow::bail!("Provide either --secret or --uri");
+    };
+
+    entry.totp_secret = Some(totp_secret);
+    entry.modified_at = chrono::Utc::now();
+    vault.modified_at = chrono::Utc::now();
+
+    VaultStorage::save(&path, &vault, master_pw.as_bytes())
+        .map_err(|e| anyhow::anyhow!(e))?;
+
+    println!("{} TOTP secret added to '{}'.", "✓".green(), name);
+    Ok(())
+}
