@@ -44,3 +44,26 @@ fn cmd_init(vault_path_override: Option<&Path>) -> Result<()> {
     println!("{} Vault created successfully.", "✓".green());
     Ok(())
 }
+
+fn cmd_change_password(vault_path_override: Option<&Path>) -> Result<()> {
+    let path = resolve_vault_path(vault_path_override);
+
+    let old_password = rpassword::prompt_password("Enter current master password: ")?;
+    let vault = VaultStorage::load(&path, old_password.as_bytes())
+        .map_err(|e| anyhow::anyhow!(e))?;
+
+    let new_password = rpassword::prompt_password("Enter new master password: ")?;
+    if new_password.is_empty() {
+        anyhow::bail!("Password cannot be empty");
+    }
+    let confirm = rpassword::prompt_password("Confirm new master password: ")?;
+    if new_password != confirm {
+        anyhow::bail!("Passwords do not match");
+    }
+
+    VaultStorage::save(&path, &vault, new_password.as_bytes())
+        .map_err(|e| anyhow::anyhow!(e))?;
+
+    println!("{} Master password changed successfully.", "✓".green());
+    Ok(())
+}
