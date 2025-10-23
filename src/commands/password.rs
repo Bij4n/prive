@@ -168,3 +168,38 @@ fn cmd_get(
     let entry = vault
         .find_by_name(name)
         .ok_or_else(|| anyhow::anyhow!("Entry '{}' not found", name))?;
+
+    let value = match field {
+        Some("username") => entry.username.as_deref().unwrap_or("(none)").to_string(),
+        Some("url") => entry.url.as_deref().unwrap_or("(none)").to_string(),
+        Some("notes") => entry.notes.as_deref().unwrap_or("(none)").to_string(),
+        Some("password") | None => entry.password.clone(),
+        Some(f) => anyhow::bail!("Unknown field: '{f}'. Use: username, password, url, notes"),
+    };
+
+    if show {
+        if field.is_none() {
+            // Show full entry details
+            println!("{}: {}", "Name".bold(), entry.name);
+            if let Some(u) = &entry.username {
+                println!("{}: {u}", "Username".bold());
+            }
+            println!("{}: {}", "Password".bold(), entry.password);
+            if let Some(u) = &entry.url {
+                println!("{}: {u}", "URL".bold());
+            }
+            if let Some(n) = &entry.notes {
+                println!("{}: {n}", "Notes".bold());
+            }
+            if !entry.tags.is_empty() {
+                println!("{}: {}", "Tags".bold(), entry.tags.join(", "));
+            }
+        } else {
+            println!("{value}");
+        }
+    } else if copy || (!show && field.is_none()) {
+        util::copy_to_clipboard(&value)?;
+        println!("{} Password copied to clipboard.", "✓".green());
+    } else {
+        println!("{value}");
+    }
