@@ -375,3 +375,37 @@ fn cmd_search(vault_path: Option<&Path>, query: &str) -> Result<()> {
     let table = Table::new(rows);
     println!("{table}");
     println!("\n{} results for '{query}'", results.len());
+
+    Ok(())
+}
+
+fn cmd_totp(vault_path: Option<&Path>, name: &str) -> Result<()> {
+    let (_path, vault, _master_pw) = unlock_vault(vault_path)?;
+
+    let entry = vault
+        .find_by_name(name)
+        .ok_or_else(|| anyhow::anyhow!("Entry '{}' not found", name))?;
+
+    let secret_str = entry
+        .totp_secret
+        .as_deref()
+        .ok_or_else(|| anyhow::anyhow!("Entry '{}' has no TOTP secret configured", name))?;
+
+    let secret_bytes = totp::decode_base32_secret(secret_str)
+        .map_err(|e| anyhow::anyhow!("Failed to decode TOTP secret: {e}"))?;
+
+    let code = totp::generate_totp(&secret_bytes, 30, 6)
+        .map_err(|e| anyhow::anyhow!("Failed to generate TOTP: {e}"))?;
+
+    let remaining = totp::time_remaining(30);
+
+    println!("{}: {}", "TOTP Code".bold(), code.green().bold());
+    println!(
+        "Expires in {} seconds",
+        remaining.to_string().yellow()
+    );
+
+    Ok(())
+}
+
+fn cmd_totp_add(
