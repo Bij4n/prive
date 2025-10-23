@@ -135,3 +135,36 @@ fn cmd_add(
         if p.is_empty() {
             anyhow::bail!("Password cannot be empty");
         }
+        p
+    };
+
+    let entry = VaultEntry::new(
+        name.to_string(),
+        username.map(String::from),
+        pw,
+        url.map(String::from),
+        notes.map(String::from),
+        tags.to_vec(),
+    );
+    vault.entries.push(entry);
+    vault.modified_at = chrono::Utc::now();
+
+    VaultStorage::save(&path, &vault, master_pw.as_bytes())
+        .map_err(|e| anyhow::anyhow!(e))?;
+
+    println!("{} Entry '{}' added.", "✓".green(), name);
+    Ok(())
+}
+
+fn cmd_get(
+    vault_path: Option<&Path>,
+    name: &str,
+    show: bool,
+    copy: bool,
+    field: Option<&str>,
+) -> Result<()> {
+    let (_path, vault, _master_pw) = unlock_vault(vault_path)?;
+
+    let entry = vault
+        .find_by_name(name)
+        .ok_or_else(|| anyhow::anyhow!("Entry '{}' not found", name))?;
