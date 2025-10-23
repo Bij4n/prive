@@ -203,3 +203,38 @@ fn cmd_get(
     } else {
         println!("{value}");
     }
+
+    Ok(())
+}
+
+#[derive(Tabled)]
+struct EntryRow {
+    #[tabled(rename = "Name")]
+    name: String,
+    #[tabled(rename = "Username")]
+    username: String,
+    #[tabled(rename = "URL")]
+    url: String,
+    #[tabled(rename = "Tags")]
+    tags: String,
+}
+
+fn cmd_list(vault_path: Option<&Path>, filter_tags: &[String], format: &str) -> Result<()> {
+    let (_path, vault, _master_pw) = unlock_vault(vault_path)?;
+
+    let entries: Vec<&VaultEntry> = if filter_tags.is_empty() {
+        vault.entries.iter().collect()
+    } else {
+        vault
+            .entries
+            .iter()
+            .filter(|e| {
+                filter_tags
+                    .iter()
+                    .any(|t| e.tags.iter().any(|et| et.eq_ignore_ascii_case(t)))
+            })
+            .collect()
+    };
+
+    if entries.is_empty() {
+        println!("No entries found.");
