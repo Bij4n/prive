@@ -21,3 +21,26 @@ fn resolve_vault_path(override_path: Option<&Path>) -> std::path::PathBuf {
 }
 
 fn cmd_init(vault_path_override: Option<&Path>) -> Result<()> {
+    let path = resolve_vault_path(vault_path_override);
+
+    if path.exists() {
+        anyhow::bail!("Vault already exists at {}", path.display());
+    }
+
+    println!("Creating new vault at {}", path.display().to_string().dimmed());
+
+    let password = rpassword::prompt_password("Enter master password: ")?;
+    if password.is_empty() {
+        anyhow::bail!("Password cannot be empty");
+    }
+    let confirm = rpassword::prompt_password("Confirm master password: ")?;
+    if password != confirm {
+        anyhow::bail!("Passwords do not match");
+    }
+
+    VaultStorage::create(&path, password.as_bytes())
+        .map_err(|e| anyhow::anyhow!(e))?;
+
+    println!("{} Vault created successfully.", "✓".green());
+    Ok(())
+}
