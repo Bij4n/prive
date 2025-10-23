@@ -272,3 +272,37 @@ fn cmd_list(vault_path: Option<&Path>, filter_tags: &[String], format: &str) -> 
     }
 
     println!(
+        "\n{} total entries{}",
+        entries.len(),
+        if !filter_tags.is_empty() {
+            " (filtered)"
+        } else {
+            ""
+        }
+    );
+
+    Ok(())
+}
+
+fn cmd_edit(
+    vault_path: Option<&Path>,
+    name: &str,
+    username: Option<&str>,
+    password: Option<&str>,
+    url: Option<&str>,
+    notes: Option<&str>,
+    tags: Option<&[String]>,
+) -> Result<()> {
+    let (path, mut vault, master_pw) = unlock_vault(vault_path)?;
+
+    let entry = vault
+        .find_by_name_mut(name)
+        .ok_or_else(|| anyhow::anyhow!("Entry '{}' not found", name))?;
+
+    if let Some(u) = username {
+        entry.username = Some(u.to_string());
+    }
+    if let Some(p) = password {
+        entry.password = p.to_string();
+    }
+    if let Some(u) = url {
