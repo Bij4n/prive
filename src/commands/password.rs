@@ -100,3 +100,38 @@ pub fn handle_pw(cmd: &PwCommand, vault_path_override: Option<&Path>) -> Result<
         PwCommand::Rm { name, force } => cmd_rm(vault_path_override, name, *force),
         PwCommand::Search { query } => cmd_search(vault_path_override, query),
         PwCommand::Totp { name } => cmd_totp(vault_path_override, name),
+        PwCommand::TotpAdd { name, secret, uri } => {
+            cmd_totp_add(vault_path_override, name, secret.as_deref(), uri.as_deref())
+        }
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn cmd_add(
+    vault_path: Option<&Path>,
+    name: &str,
+    username: Option<&str>,
+    password: Option<&str>,
+    generate: bool,
+    length: usize,
+    url: Option<&str>,
+    notes: Option<&str>,
+    tags: &[String],
+) -> Result<()> {
+    let (path, mut vault, master_pw) = unlock_vault(vault_path)?;
+
+    if vault.find_by_name(name).is_some() {
+        anyhow::bail!("Entry '{}' already exists", name);
+    }
+
+    let pw = if generate {
+        let generated = password_gen::generate_password(length, true, true, true);
+        println!("Generated password: {}", generated.dimmed());
+        generated
+    } else if let Some(p) = password {
+        p.to_string()
+    } else {
+        let p = rpassword::prompt_password("Enter password for this entry: ")?;
+        if p.is_empty() {
+            anyhow::bail!("Password cannot be empty");
+        }
