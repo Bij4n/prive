@@ -341,3 +341,37 @@ fn cmd_rm(vault_path: Option<&Path>, name: &str, force: bool) -> Result<()> {
             return Ok(());
         }
     }
+
+    vault.remove_by_name(name);
+    vault.modified_at = chrono::Utc::now();
+
+    VaultStorage::save(&path, &vault, master_pw.as_bytes())
+        .map_err(|e| anyhow::anyhow!(e))?;
+
+    println!("{} Entry '{}' deleted.", "✓".green(), name);
+    Ok(())
+}
+
+fn cmd_search(vault_path: Option<&Path>, query: &str) -> Result<()> {
+    let (_path, vault, _master_pw) = unlock_vault(vault_path)?;
+
+    let results = vault.search(query);
+
+    if results.is_empty() {
+        println!("No entries matching '{query}'.");
+        return Ok(());
+    }
+
+    let rows: Vec<EntryRow> = results
+        .iter()
+        .map(|e| EntryRow {
+            name: e.name.clone(),
+            username: e.username.clone().unwrap_or_default(),
+            url: e.url.clone().unwrap_or_default(),
+            tags: e.tags.join(", "),
+        })
+        .collect();
+
+    let table = Table::new(rows);
+    println!("{table}");
+    println!("\n{} results for '{query}'", results.len());
