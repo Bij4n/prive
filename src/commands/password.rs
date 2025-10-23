@@ -238,3 +238,37 @@ fn cmd_list(vault_path: Option<&Path>, filter_tags: &[String], format: &str) -> 
 
     if entries.is_empty() {
         println!("No entries found.");
+        return Ok(());
+    }
+
+    match format {
+        "json" => {
+            let json = serde_json::to_string_pretty(
+                &entries
+                    .iter()
+                    .map(|e| serde_json::json!({
+                        "name": e.name,
+                        "username": e.username,
+                        "url": e.url,
+                        "tags": e.tags,
+                    }))
+                    .collect::<Vec<_>>(),
+            )?;
+            println!("{json}");
+        }
+        _ => {
+            let rows: Vec<EntryRow> = entries
+                .iter()
+                .map(|e| EntryRow {
+                    name: e.name.clone(),
+                    username: e.username.clone().unwrap_or_default(),
+                    url: e.url.clone().unwrap_or_default(),
+                    tags: e.tags.join(", "),
+                })
+                .collect();
+            let table = Table::new(rows);
+            println!("{table}");
+        }
+    }
+
+    println!(
