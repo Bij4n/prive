@@ -85,3 +85,31 @@ fn cmd_list(secret_only: bool) -> Result<()> {
             "sec".yellow()
         } else {
             "pub".cyan()
+        };
+        println!("{type_label}  {}", key.key_id);
+        println!("     {} {}", "Fingerprint:".dimmed(), key.fingerprint);
+        println!("     {} {}", "UID:".dimmed(), key.uid);
+        println!("     {} {}", "Algorithm:".dimmed(), key.algorithm);
+        println!();
+    }
+
+    println!("{} key(s) total", keys.len());
+    Ok(())
+}
+
+fn cmd_export(key_id: &str, secret: bool, output: Option<&std::path::Path>) -> Result<()> {
+    let keyring = Keyring::open().map_err(|e| anyhow::anyhow!(e))?;
+    let armored = keyring
+        .export_key(key_id, secret)
+        .map_err(|e| anyhow::anyhow!(e))?;
+
+    if let Some(path) = output {
+        fs::write(path, &armored)?;
+        println!(
+            "{} Key exported to {}",
+            "✓".green(),
+            path.display()
+        );
+    } else {
+        println!("{armored}");
+    }
