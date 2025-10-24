@@ -34,3 +34,40 @@ pub fn handle_audit(args: &AuditArgs, vault_path_override: Option<&Path>) -> Res
     println!("\n{} Vault Security Audit", "===".bold());
     println!("Total entries: {}", report.total_entries);
     println!("Security score: {}/100\n", score_color);
+
+    fn print_issues(title: &str, issues: &[audit::AuditIssue]) {
+        if issues.is_empty() {
+            return;
+        }
+        println!("{}:", title.bold());
+        for issue in issues {
+            let severity_str = match issue.severity {
+                Severity::Critical => format!("[{}]", issue.severity).red(),
+                Severity::Warning => format!("[{}]", issue.severity).yellow(),
+                Severity::Info => format!("[{}]", issue.severity).cyan(),
+            };
+            println!(
+                "  {} {}: {}",
+                severity_str,
+                issue.entry_name.bold(),
+                issue.description
+            );
+        }
+        println!();
+    }
+
+    print_issues("Weak Passwords", &report.weak_passwords);
+    print_issues("Duplicate Passwords", &report.duplicate_passwords);
+    print_issues("Short Passwords", &report.short_passwords);
+    print_issues("Old Passwords", &report.old_passwords);
+    print_issues("Reused Usernames", &report.reused_usernames);
+
+    let total_issues = report.weak_passwords.len()
+        + report.duplicate_passwords.len()
+        + report.short_passwords.len()
+        + report.old_passwords.len()
+        + report.reused_usernames.len();
+
+    if total_issues == 0 {
+        println!("{} No issues found. Your vault looks great!", "✓".green());
+    } else {
