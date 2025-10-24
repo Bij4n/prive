@@ -80,3 +80,30 @@ fn cmd_set(pair: &str) -> Result<()> {
             cfg.generate.default_no_symbols = value.parse().map_err(|_| anyhow::anyhow!("Invalid bool"))?;
         }
         "generate.default_no_numbers" => {
+            cfg.generate.default_no_numbers = value.parse().map_err(|_| anyhow::anyhow!("Invalid bool"))?;
+        }
+        "generate.default_no_uppercase" => {
+            cfg.generate.default_no_uppercase = value.parse().map_err(|_| anyhow::anyhow!("Invalid bool"))?;
+        }
+        "generate.default_words" => {
+            cfg.generate.default_words = value.parse().map_err(|_| anyhow::anyhow!("Invalid usize"))?;
+        }
+        "generate.default_separator" => {
+            cfg.generate.default_separator = value.to_string();
+        }
+        "backup.auto_backup" => {
+            cfg.backup.auto_backup = value.parse().map_err(|_| anyhow::anyhow!("Invalid bool"))?;
+        }
+        "backup.max_backups" => {
+            cfg.backup.max_backups = value.parse().map_err(|_| anyhow::anyhow!("Invalid usize"))?;
+        }
+        "session.timeout_seconds" => {
+            cfg.session.timeout_seconds = value.parse().map_err(|_| anyhow::anyhow!("Invalid u64"))?;
+        }
+        "session.agent_enabled" => {
+            cfg.session.agent_enabled = value.parse().map_err(|_| anyhow::anyhow!("Invalid bool"))?;
+        }
+        _ => anyhow::bail!("Unknown config key: '{key}'"),
+    }
+
+    cfg.save().map_err(|e| anyhow::anyhow!(e))?;
