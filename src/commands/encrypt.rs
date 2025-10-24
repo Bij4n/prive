@@ -86,3 +86,32 @@ pub fn handle_decrypt(args: &DecryptArgs) -> Result<()> {
     let mut orig_filename = String::new();
 
     // Try each secret key
+    for key_info in &secret_keys {
+        if let Ok(secret_key) = keyring.load_secret_key(&key_info.key_id) {
+            let passphrase = rpassword::prompt_password(
+                format!("Passphrase for key {} (empty if none): ", &key_info.key_id)
+            )?;
+
+            match operations::decrypt_with_key(&encrypted_data, &secret_key, &passphrase) {
+                Ok((data, fname)) => {
+                    decrypted = Some(data);
+                    orig_filename = fname;
+                    break;
+                }
+                Err(_) => continue,
+            }
+        }
+    }
+
+    // If no key worked, try symmetric decryption
+    if decrypted.is_none() {
+        let passphrase = rpassword::prompt_password("Decryption passphrase: ")?;
+        match operations::decrypt_with_password(&encrypted_data, &passphrase) {
+            Ok((data, fname)) => {
+                decrypted = Some(data);
+                orig_filename = fname;
+            }
+            Err(e) => {
+                anyhow::bail!("Decryption failed: {e}");
+            }
+        }
