@@ -143,3 +143,32 @@ fn cmd_delete(key_id: &str, force: bool) -> Result<()> {
     let keyring = Keyring::open().map_err(|e| anyhow::anyhow!(e))?;
     keyring
         .delete_key(key_id)
+        .map_err(|e| anyhow::anyhow!(e))?;
+
+    println!("{} Key '{key_id}' deleted.", "✓".green());
+    Ok(())
+}
+
+fn cmd_info(key_id: &str) -> Result<()> {
+    let keyring = Keyring::open().map_err(|e| anyhow::anyhow!(e))?;
+
+    // Try secret key first
+    if let Ok(key) = keyring.load_secret_key(key_id) {
+        let fingerprint = hex::encode(key.fingerprint().as_bytes()).to_uppercase();
+        let kid = hex::encode(key.key_id().as_ref());
+
+        println!("{} {kid}", "sec".yellow());
+        println!("  {} {fingerprint}", "Fingerprint:".bold());
+        println!("  {} {:?}", "Algorithm:".bold(), key.algorithm());
+        println!("  {} {:?}", "Version:".bold(), key.version());
+
+        for user in &key.details.users {
+            let uid = String::from_utf8_lossy(user.id.id());
+            println!("  {} {uid}", "UID:".bold());
+        }
+
+        println!("  {} {}", "Subkeys:".bold(), key.secret_subkeys.len());
+        for sk in &key.secret_subkeys {
+            let sk_id = hex::encode(sk.key_id().as_ref());
+            println!("    {} {sk_id} ({:?})", "sub".dimmed(), sk.algorithm());
+        }
