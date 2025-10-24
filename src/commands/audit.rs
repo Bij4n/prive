@@ -71,3 +71,39 @@ pub fn handle_audit(args: &AuditArgs, vault_path_override: Option<&Path>) -> Res
     if total_issues == 0 {
         println!("{} No issues found. Your vault looks great!", "✓".green());
     } else {
+        println!(
+            "{} Found {} issue(s) across your vault.",
+            "!".yellow(),
+            total_issues
+        );
+    }
+
+    // Breach check
+    if args.breach {
+        println!("\n{}", "Checking passwords against Have I Been Pwned...".bold());
+        println!("(Only the first 5 characters of the SHA-1 hash are sent)\n");
+
+        for entry in &vault.entries {
+            print!("  Checking {}... ", entry.name);
+            std::io::Write::flush(&mut std::io::stdout())?;
+
+            match audit::check_breach(&entry.password) {
+                Ok(Some(count)) => {
+                    println!(
+                        "{}",
+                        format!("EXPOSED in {count} breach(es)!").red().bold()
+                    );
+                }
+                Ok(None) => {
+                    println!("{}", "OK".green());
+                }
+                Err(e) => {
+                    println!("{}", format!("Error: {e}").yellow());
+                }
+            }
+        }
+        println!();
+    }
+
+    Ok(())
+}
