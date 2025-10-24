@@ -52,3 +52,31 @@ fn cmd_set(pair: &str) -> Result<()> {
         .ok_or_else(|| anyhow::anyhow!("Expected key=value format (e.g. 'generate.default_length=24')"))?;
 
     let key = key.trim();
+    let value = value.trim();
+
+    let mut cfg = AppConfig::load();
+
+    match key {
+        "vault.path" => cfg.vault.path = Some(value.to_string()),
+        "vault.argon2_time_cost" => {
+            cfg.vault.argon2_time_cost = value.parse().map_err(|_| anyhow::anyhow!("Invalid u32"))?;
+        }
+        "vault.argon2_memory_cost" => {
+            cfg.vault.argon2_memory_cost = value.parse().map_err(|_| anyhow::anyhow!("Invalid u32"))?;
+        }
+        "vault.argon2_parallelism" => {
+            cfg.vault.argon2_parallelism = value.parse().map_err(|_| anyhow::anyhow!("Invalid u32"))?;
+        }
+        "clipboard.clear_after_seconds" => {
+            cfg.clipboard.clear_after_seconds = value.parse().map_err(|_| anyhow::anyhow!("Invalid u64"))?;
+        }
+        "clipboard.auto_clear" => {
+            cfg.clipboard.auto_clear = value.parse().map_err(|_| anyhow::anyhow!("Invalid bool"))?;
+        }
+        "generate.default_length" => {
+            cfg.generate.default_length = value.parse().map_err(|_| anyhow::anyhow!("Invalid usize"))?;
+        }
+        "generate.default_no_symbols" => {
+            cfg.generate.default_no_symbols = value.parse().map_err(|_| anyhow::anyhow!("Invalid bool"))?;
+        }
+        "generate.default_no_numbers" => {
