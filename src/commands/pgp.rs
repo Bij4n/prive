@@ -113,3 +113,33 @@ fn cmd_export(key_id: &str, secret: bool, output: Option<&std::path::Path>) -> R
     } else {
         println!("{armored}");
     }
+
+    Ok(())
+}
+
+fn cmd_import(file: &PathBuf) -> Result<()> {
+    let content = fs::read_to_string(file)?;
+    let keyring = Keyring::open().map_err(|e| anyhow::anyhow!(e))?;
+    let key_id = keyring
+        .import_key(&content)
+        .map_err(|e| anyhow::anyhow!(e))?;
+
+    println!("{} Key imported: {key_id}", "✓".green());
+    Ok(())
+}
+
+fn cmd_delete(key_id: &str, force: bool) -> Result<()> {
+    if !force {
+        print!("Delete key '{key_id}'? This cannot be undone. [y/N] ");
+        std::io::Write::flush(&mut std::io::stdout())?;
+        let mut input = String::new();
+        std::io::stdin().read_line(&mut input)?;
+        if !input.trim().eq_ignore_ascii_case("y") {
+            println!("Cancelled.");
+            return Ok(());
+        }
+    }
+
+    let keyring = Keyring::open().map_err(|e| anyhow::anyhow!(e))?;
+    keyring
+        .delete_key(key_id)
