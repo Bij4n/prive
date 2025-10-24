@@ -54,3 +54,32 @@ pub fn handle_import(args: &ImportArgs, vault_path_override: Option<&Path>) -> R
     );
     Ok(())
 }
+
+pub fn handle_export(args: &ExportArgs, vault_path_override: Option<&Path>) -> Result<()> {
+    let path = resolve_vault_path(vault_path_override);
+    let password = rpassword::prompt_password("Master password: ")?;
+    let vault = VaultStorage::load(&path, password.as_bytes())
+        .map_err(|e| anyhow::anyhow!(e))?;
+
+    let output = match args.format {
+        ExportFormat::Csv => import::export_csv(&vault),
+        ExportFormat::BitwardenJson => {
+            import::export_bitwarden_json(&vault).map_err(|e| anyhow::anyhow!(e))?
+        }
+    };
+
+    if let Some(output_path) = &args.output {
+        std::fs::write(output_path, &output)
+            .map_err(|e| anyhow::anyhow!("Failed to write to '{}': {e}", output_path.display()))?;
+        println!(
+            "{} Exported {} entries to {}.",
+            "✓".green(),
+            vault.entries.len(),
+            output_path.display()
+        );
+    } else {
+        print!("{output}");
+    }
+
+    Ok(())
+}
