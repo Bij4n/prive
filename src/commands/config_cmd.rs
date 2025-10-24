@@ -107,3 +107,30 @@ fn cmd_set(pair: &str) -> Result<()> {
     }
 
     cfg.save().map_err(|e| anyhow::anyhow!(e))?;
+
+    println!("{} Set {} = {}", "✓".green(), key, value);
+    Ok(())
+}
+
+fn cmd_reset() -> Result<()> {
+    let path = config::config_file_path();
+
+    print!("Reset config to defaults? [y/N] ");
+    std::io::Write::flush(&mut std::io::stdout())?;
+    let mut input = String::new();
+    std::io::stdin().read_line(&mut input)?;
+    if !input.trim().eq_ignore_ascii_case("y") {
+        println!("Cancelled.");
+        return Ok(());
+    }
+
+    let cfg = AppConfig::default();
+    cfg.save().map_err(|e| anyhow::anyhow!(e))?;
+
+    println!(
+        "{} Config reset to defaults at {}",
+        "✓".green(),
+        path.display()
+    );
+    Ok(())
+}
