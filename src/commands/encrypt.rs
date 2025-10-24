@@ -56,3 +56,33 @@ pub fn handle_encrypt(args: &EncryptArgs) -> Result<()> {
         p.set_extension(format!(
             "{}.{ext}",
             p.extension().unwrap_or_default().to_string_lossy()
+        ));
+        p
+    });
+
+    fs::write(&output, &encrypted)?;
+    println!(
+        "{} Encrypted {} -> {}",
+        "✓".green(),
+        args.file.display(),
+        output.display()
+    );
+
+    Ok(())
+}
+
+pub fn handle_decrypt(args: &DecryptArgs) -> Result<()> {
+    let encrypted_data = fs::read(&args.file)?;
+
+    // Try to detect if it's symmetric or key-based by trying password first if no keys exist
+    // For now, try key-based first, then fall back to password
+
+    let keyring = Keyring::open().map_err(|e| anyhow::anyhow!(e))?;
+    let secret_keys = keyring
+        .list_keys(true)
+        .map_err(|e| anyhow::anyhow!(e))?;
+
+    let mut decrypted = None;
+    let mut orig_filename = String::new();
+
+    // Try each secret key
