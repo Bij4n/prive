@@ -172,3 +172,32 @@ fn cmd_info(key_id: &str) -> Result<()> {
             let sk_id = hex::encode(sk.key_id().as_ref());
             println!("    {} {sk_id} ({:?})", "sub".dimmed(), sk.algorithm());
         }
+
+        return Ok(());
+    }
+
+    // Try public key
+    if let Ok(key) = keyring.load_public_key(key_id) {
+        let fingerprint = hex::encode(key.fingerprint().as_bytes()).to_uppercase();
+        let kid = hex::encode(key.key_id().as_ref());
+
+        println!("{} {kid}", "pub".cyan());
+        println!("  {} {fingerprint}", "Fingerprint:".bold());
+        println!("  {} {:?}", "Algorithm:".bold(), key.algorithm());
+
+        for user in &key.details.users {
+            let uid = String::from_utf8_lossy(user.id.id());
+            println!("  {} {uid}", "UID:".bold());
+        }
+
+        println!("  {} {}", "Subkeys:".bold(), key.public_subkeys.len());
+        for sk in &key.public_subkeys {
+            let sk_id = hex::encode(sk.key_id().as_ref());
+            println!("    {} {sk_id} ({:?})", "sub".dimmed(), sk.algorithm());
+        }
+
+        return Ok(());
+    }
+
+    anyhow::bail!("Key not found: {key_id}");
+}
