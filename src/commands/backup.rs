@@ -56,3 +56,31 @@ fn cmd_list() -> Result<()> {
         );
         println!("    {}", backup.path.display().to_string().dimmed());
     }
+    println!("\n{} total backup(s)", backups.len());
+
+    Ok(())
+}
+
+fn cmd_restore(backup_file: &Path, vault_path_override: Option<&Path>) -> Result<()> {
+    let vault_path = resolve_vault_path(vault_path_override);
+    let manager = BackupManager::new();
+
+    print!(
+        "Restore vault from {}? This will back up the current vault first. [y/N] ",
+        backup_file.display()
+    );
+    std::io::Write::flush(&mut std::io::stdout())?;
+    let mut input = String::new();
+    std::io::stdin().read_line(&mut input)?;
+    if !input.trim().eq_ignore_ascii_case("y") {
+        println!("Cancelled.");
+        return Ok(());
+    }
+
+    manager
+        .restore_backup(backup_file, &vault_path)
+        .map_err(|e| anyhow::anyhow!(e))?;
+
+    println!("{} Vault restored from backup.", "✓".green());
+    Ok(())
+}
