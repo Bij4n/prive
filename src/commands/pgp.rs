@@ -55,3 +55,33 @@ fn cmd_generate(name: Option<&str>, email: Option<&str>, algorithm: &str) -> Res
     println!("Generating {} keypair...", algorithm.dimmed());
     let key = generate_keypair(&name, &email, algorithm, &passphrase)
         .map_err(|e| anyhow::anyhow!(e))?;
+
+    let keyring = Keyring::open().map_err(|e| anyhow::anyhow!(e))?;
+    let key_id = keyring
+        .save_secret_key(&key)
+        .map_err(|e| anyhow::anyhow!(e))?;
+
+    let fingerprint = hex::encode(key.fingerprint().as_bytes()).to_uppercase();
+
+    println!("{} PGP keypair generated.", "✓".green());
+    println!("  Key ID:      {key_id}");
+    println!("  Fingerprint: {fingerprint}");
+    println!("  UID:         {name} <{email}>");
+
+    Ok(())
+}
+
+fn cmd_list(secret_only: bool) -> Result<()> {
+    let keyring = Keyring::open().map_err(|e| anyhow::anyhow!(e))?;
+    let keys = keyring.list_keys(secret_only).map_err(|e| anyhow::anyhow!(e))?;
+
+    if keys.is_empty() {
+        println!("No keys found.");
+        return Ok(());
+    }
+
+    for key in &keys {
+        let type_label = if key.has_secret {
+            "sec".yellow()
+        } else {
+            "pub".cyan()
