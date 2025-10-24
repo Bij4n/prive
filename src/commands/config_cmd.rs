@@ -25,3 +25,30 @@ fn cmd_init() -> Result<()> {
 
     let cfg = AppConfig::default();
     cfg.save().map_err(|e| anyhow::anyhow!(e))?;
+
+    println!(
+        "{} Config created at {}",
+        "✓".green(),
+        path.display()
+    );
+    Ok(())
+}
+
+fn cmd_show() -> Result<()> {
+    let cfg = AppConfig::load();
+    let toml_str =
+        toml::to_string_pretty(&cfg).map_err(|e| anyhow::anyhow!("Serialization error: {e}"))?;
+
+    println!("{}", "Current configuration:".bold());
+    println!("{}", config::config_file_path().display().to_string().dimmed());
+    println!();
+    println!("{toml_str}");
+    Ok(())
+}
+
+fn cmd_set(pair: &str) -> Result<()> {
+    let (key, value) = pair
+        .split_once('=')
+        .ok_or_else(|| anyhow::anyhow!("Expected key=value format (e.g. 'generate.default_length=24')"))?;
+
+    let key = key.trim();
