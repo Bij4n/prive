@@ -115,3 +115,32 @@ pub fn handle_decrypt(args: &DecryptArgs) -> Result<()> {
                 anyhow::bail!("Decryption failed: {e}");
             }
         }
+    }
+
+    let data = decrypted.unwrap();
+
+    let output = args.output.clone().unwrap_or_else(|| {
+        // Try to strip .pgp or .asc extension
+        let stem = args.file.with_extension("");
+        if stem == args.file {
+            // No extension to strip, use original filename from message
+            if !orig_filename.is_empty() {
+                PathBuf::from(&orig_filename)
+            } else {
+                PathBuf::from(format!("{}.dec", args.file.display()))
+            }
+        } else {
+            stem
+        }
+    });
+
+    fs::write(&output, &data)?;
+    println!(
+        "{} Decrypted {} -> {}",
+        "✓".green(),
+        args.file.display(),
+        output.display()
+    );
+
+    Ok(())
+}
