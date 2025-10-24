@@ -26,3 +26,31 @@ pub fn handle_import(args: &ImportArgs, vault_path_override: Option<&Path>) -> R
     let entries = match args.format {
         ImportFormat::Csv => import::import_csv(&content).map_err(|e| anyhow::anyhow!(e))?,
         ImportFormat::Bitwarden => {
+            import::import_bitwarden_json(&content).map_err(|e| anyhow::anyhow!(e))?
+        }
+        ImportFormat::Keepass => {
+            import::import_keepass_xml(&content).map_err(|e| anyhow::anyhow!(e))?
+        }
+    };
+
+    let count = entries.len();
+
+    if count == 0 {
+        println!("No entries found in the import file.");
+        return Ok(());
+    }
+
+    vault.entries.extend(entries);
+    vault.modified_at = chrono::Utc::now();
+
+    VaultStorage::save(&path, &vault, password.as_bytes())
+        .map_err(|e| anyhow::anyhow!(e))?;
+
+    println!(
+        "{} Imported {} entries from {}.",
+        "✓".green(),
+        count,
+        args.file.display()
+    );
+    Ok(())
+}
