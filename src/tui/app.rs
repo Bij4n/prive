@@ -218,3 +218,40 @@ impl App {
                 }
             }
             KeyCode::Up | KeyCode::Char('k') => {
+                self.move_selection(-1);
+            }
+            KeyCode::Down | KeyCode::Char('j') => {
+                self.move_selection(1);
+            }
+            _ => {}
+        }
+    }
+
+    fn move_selection(&mut self, delta: i32) {
+        if self.filtered_indices.is_empty() {
+            return;
+        }
+        let current = self.table_state.selected().unwrap_or(0) as i32;
+        let len = self.filtered_indices.len() as i32;
+        let next = (current + delta).rem_euclid(len) as usize;
+        self.table_state.select(Some(next));
+        self.show_password = false;
+    }
+
+    fn selected_entry(&self) -> Option<&VaultEntry> {
+        let selected = self.table_state.selected()?;
+        let &idx = self.filtered_indices.get(selected)?;
+        self.entries.get(idx)
+    }
+
+    fn apply_filter(&mut self) {
+        if self.search_query.is_empty() {
+            self.filtered_indices = (0..self.entries.len()).collect();
+        } else {
+            let matcher = SkimMatcherV2::default();
+            let mut scored: Vec<(usize, i64)> = self
+                .entries
+                .iter()
+                .enumerate()
+                .filter_map(|(i, entry)| {
+                    let haystack = format!(
