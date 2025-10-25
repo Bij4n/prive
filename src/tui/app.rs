@@ -70,3 +70,41 @@ impl App {
         disable_raw_mode()?;
         execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
         terminal.show_cursor()?;
+
+        if let Some(msg) = &self.status_message {
+            eprintln!("{}", msg);
+        }
+
+        result
+    }
+
+    fn main_loop(&mut self, terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<()> {
+        loop {
+            terminal.draw(|f| self.draw(f))?;
+
+            if event::poll(Duration::from_millis(100))? {
+                if let Event::Key(key) = event::read()? {
+                    // Only handle key press events (not release/repeat)
+                    if key.kind != KeyEventKind::Press {
+                        continue;
+                    }
+                    self.handle_key(key.code, key.modifiers);
+                }
+            }
+
+            if self.should_quit {
+                return Ok(());
+            }
+        }
+    }
+
+    fn handle_key(&mut self, code: KeyCode, modifiers: KeyModifiers) {
+        match self.mode {
+            Mode::Search => self.handle_search_key(code, modifiers),
+            Mode::Normal => self.handle_normal_key(code),
+            Mode::Detail => self.handle_detail_key(code),
+        }
+    }
+
+    fn handle_search_key(&mut self, code: KeyCode, _modifiers: KeyModifiers) {
+        match code {
