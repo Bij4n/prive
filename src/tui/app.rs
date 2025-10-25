@@ -181,3 +181,40 @@ impl App {
             }
             KeyCode::Esc => {
                 if !self.search_query.is_empty() {
+                    self.search_query.clear();
+                    self.apply_filter();
+                }
+            }
+            _ => {}
+        }
+    }
+
+    fn handle_detail_key(&mut self, code: KeyCode) {
+        match code {
+            KeyCode::Esc | KeyCode::Tab => {
+                self.mode = Mode::Normal;
+                self.show_password = false;
+            }
+            KeyCode::Char('q') => {
+                self.should_quit = true;
+            }
+            KeyCode::Char('p') => {
+                self.show_password = !self.show_password;
+            }
+            KeyCode::Enter => {
+                if let Some(entry) = self.selected_entry() {
+                    let pw = entry.password.clone();
+                    match copy_to_clipboard(&pw) {
+                        Ok(()) => {
+                            self.status_message =
+                                Some("Password copied to clipboard.".to_string());
+                        }
+                        Err(e) => {
+                            self.status_message =
+                                Some(format!("Clipboard error: {}", e));
+                        }
+                    }
+                    self.should_quit = true;
+                }
+            }
+            KeyCode::Up | KeyCode::Char('k') => {
