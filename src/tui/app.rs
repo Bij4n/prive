@@ -290,3 +290,41 @@ impl App {
 
         let body_area = outer[0];
         let status_area = outer[1];
+
+        // If in Detail mode and wide enough, split body horizontally
+        if self.mode == Mode::Detail && body_area.width > 60 {
+            let cols = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([Constraint::Percentage(55), Constraint::Percentage(45)])
+                .split(body_area);
+            self.draw_table(f, cols[0]);
+            self.draw_detail_panel(f, cols[1]);
+        } else if self.mode == Mode::Detail {
+            // Narrow terminal: overlay detail
+            self.draw_table(f, body_area);
+            let detail_area = centered_rect(80, 70, body_area);
+            f.render_widget(Clear, detail_area);
+            self.draw_detail_panel(f, detail_area);
+        } else {
+            self.draw_table(f, body_area);
+        }
+
+        self.draw_status_bar(f, status_area);
+
+        // Search input overlay
+        if self.mode == Mode::Search {
+            let search_area = Rect {
+                x: status_area.x,
+                y: status_area.y,
+                width: status_area.width,
+                height: status_area.height,
+            };
+            let search_text = format!("/ {}", self.search_query);
+            let search_widget = Paragraph::new(search_text).block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title(" Search ")
+                    .border_style(Style::default().fg(Color::Yellow)),
+            );
+            f.render_widget(search_widget, search_area);
+        }
