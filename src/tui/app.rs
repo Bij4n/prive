@@ -108,3 +108,39 @@ impl App {
 
     fn handle_search_key(&mut self, code: KeyCode, _modifiers: KeyModifiers) {
         match code {
+            KeyCode::Esc => {
+                self.mode = Mode::Normal;
+            }
+            KeyCode::Enter => {
+                self.mode = Mode::Normal;
+            }
+            KeyCode::Backspace => {
+                self.search_query.pop();
+                self.apply_filter();
+            }
+            KeyCode::Char(c) => {
+                self.search_query.push(c);
+                self.apply_filter();
+            }
+            _ => {}
+        }
+    }
+
+    fn handle_normal_key(&mut self, code: KeyCode) {
+        match code {
+            KeyCode::Char('q') => {
+                self.should_quit = true;
+            }
+            KeyCode::Char('/') => {
+                self.mode = Mode::Search;
+            }
+            KeyCode::Char('a') => {
+                self.status_message =
+                    Some("Use `prive vault add <name>` to add entries.".to_string());
+                self.should_quit = true;
+            }
+            KeyCode::Char('d') => {
+                if let Some(entry) = self.selected_entry() {
+                    self.status_message = Some(format!(
+                        "Use `prive vault delete {}` to delete this entry.",
+                        entry.name
