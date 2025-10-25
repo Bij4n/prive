@@ -144,3 +144,40 @@ impl App {
                     self.status_message = Some(format!(
                         "Use `prive vault delete {}` to delete this entry.",
                         entry.name
+                    ));
+                    self.should_quit = true;
+                }
+            }
+            KeyCode::Char('p') => {
+                self.show_password = !self.show_password;
+            }
+            KeyCode::Enter => {
+                if let Some(entry) = self.selected_entry() {
+                    let pw = entry.password.clone();
+                    match copy_to_clipboard(&pw) {
+                        Ok(()) => {
+                            self.status_message =
+                                Some("Password copied to clipboard.".to_string());
+                        }
+                        Err(e) => {
+                            self.status_message =
+                                Some(format!("Clipboard error: {}", e));
+                        }
+                    }
+                    self.should_quit = true;
+                }
+            }
+            KeyCode::Up | KeyCode::Char('k') => {
+                self.move_selection(-1);
+            }
+            KeyCode::Down | KeyCode::Char('j') => {
+                self.move_selection(1);
+            }
+            KeyCode::Tab => {
+                if !self.filtered_indices.is_empty() {
+                    self.mode = Mode::Detail;
+                    self.show_password = false;
+                }
+            }
+            KeyCode::Esc => {
+                if !self.search_query.is_empty() {
