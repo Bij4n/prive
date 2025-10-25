@@ -255,3 +255,38 @@ impl App {
                 .enumerate()
                 .filter_map(|(i, entry)| {
                     let haystack = format!(
+                        "{} {} {} {}",
+                        entry.name,
+                        entry.username.as_deref().unwrap_or(""),
+                        entry.url.as_deref().unwrap_or(""),
+                        entry.tags.join(" "),
+                    );
+                    matcher
+                        .fuzzy_match(&haystack, &self.search_query)
+                        .map(|score| (i, score))
+                })
+                .collect();
+            scored.sort_by(|a, b| b.1.cmp(&a.1));
+            self.filtered_indices = scored.into_iter().map(|(i, _)| i).collect();
+        }
+
+        if self.filtered_indices.is_empty() {
+            self.table_state.select(None);
+        } else {
+            self.table_state.select(Some(0));
+        }
+    }
+
+    // ── Drawing ──────────────────────────────────────────────────────
+
+    fn draw(&mut self, f: &mut Frame) {
+        let size = f.area();
+
+        // Main vertical layout: body + status bar
+        let outer = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Min(3), Constraint::Length(3)])
+            .split(size);
+
+        let body_area = outer[0];
+        let status_area = outer[1];
