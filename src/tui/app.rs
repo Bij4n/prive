@@ -328,3 +328,40 @@ impl App {
             );
             f.render_widget(search_widget, search_area);
         }
+    }
+
+    fn draw_table(&mut self, f: &mut Frame, area: Rect) {
+        let header_cells = ["Name", "Username", "URL", "Tags"]
+            .iter()
+            .map(|h| Cell::from(*h).style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)));
+        let header = Row::new(header_cells).height(1);
+
+        let rows: Vec<Row> = self
+            .filtered_indices
+            .iter()
+            .map(|&i| {
+                let entry = &self.entries[i];
+                let cells = vec![
+                    Cell::from(entry.name.clone()),
+                    Cell::from(
+                        entry
+                            .username
+                            .as_deref()
+                            .unwrap_or("-")
+                            .to_string(),
+                    ),
+                    Cell::from(
+                        entry.url.as_deref().unwrap_or("-").to_string(),
+                    ),
+                    Cell::from(entry.tags.join(", ")),
+                ];
+                Row::new(cells)
+            })
+            .collect();
+
+        let widths = [
+            Constraint::Percentage(25),
+            Constraint::Percentage(25),
+            Constraint::Percentage(30),
+            Constraint::Percentage(20),
+        ];
