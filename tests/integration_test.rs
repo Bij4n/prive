@@ -91,3 +91,22 @@ fn test_generate_pronounceable() {
     assert!(stdout.trim().chars().all(|c| c.is_ascii_lowercase()));
     assert_eq!(stdout.trim().len(), 10);
 }
+
+#[test]
+fn test_vault_init_no_tty() {
+    // vault init requires a TTY for password input, so it should fail gracefully
+    Command::cargo_bin("prive")
+        .unwrap()
+        .args(["vault", "init", "--vault-path", "/tmp/prive_test_nonexistent.pv"])
+        .assert()
+        .failure();
+}
+
+#[test]
+fn test_pw_get_no_vault() {
+    Command::cargo_bin("prive")
+        .unwrap()
+        .args(["pw", "get", "nonexistent", "--vault-path", "/tmp/prive_test_no_vault.pv"])
+        .assert()
+        .failure();
+}
