@@ -21,3 +21,11 @@ use commands::{
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
+
+    if cli.no_color {
+        colored::control::set_override(false);
+    }
+
+    let vault_path = cli.vault_path.as_deref();
+
+    match &cli.command {
