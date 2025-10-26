@@ -29,3 +29,11 @@ fn main() -> Result<()> {
     let vault_path = cli.vault_path.as_deref();
 
     match &cli.command {
+        Commands::Vault(args) => vault_cmd::handle_vault(&args.command, vault_path),
+        Commands::Pw(args) => password::handle_pw(&args.command, vault_path),
+        Commands::Generate(args) => password::handle_generate(args),
+        Commands::Pgp(args) => pgp_cmd::handle_pgp(&args.command),
+        Commands::Encrypt(args) => encrypt::handle_encrypt(args),
+        Commands::Decrypt(args) => encrypt::handle_decrypt(args),
+        Commands::Config(args) => config_cmd::handle_config(&args.command),
+        Commands::Audit(args) => audit::handle_audit(args, vault_path),
