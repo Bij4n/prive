@@ -365,3 +365,40 @@ impl App {
             Constraint::Percentage(30),
             Constraint::Percentage(20),
         ];
+
+        let title = if self.search_query.is_empty() {
+            " Vault Entries ".to_string()
+        } else {
+            format!(" Vault Entries (filter: {}) ", self.search_query)
+        };
+
+        let table = Table::new(rows, widths)
+            .header(header)
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title(title),
+            )
+            .row_highlight_style(
+                Style::default()
+                    .bg(Color::DarkGray)
+                    .add_modifier(Modifier::BOLD),
+            )
+            .highlight_symbol(">> ");
+
+        f.render_stateful_widget(table, area, &mut self.table_state);
+    }
+
+    fn draw_detail_panel(&self, f: &mut Frame, area: Rect) {
+        let entry = match self.selected_entry() {
+            Some(e) => e,
+            None => {
+                let empty = Paragraph::new("No entry selected.").block(
+                    Block::default()
+                        .borders(Borders::ALL)
+                        .title(" Details "),
+                );
+                f.render_widget(empty, area);
+                return;
+            }
+        };
