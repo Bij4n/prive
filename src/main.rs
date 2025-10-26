@@ -45,3 +45,10 @@ fn main() -> Result<()> {
             let path = vault_path
                 .map(|p| p.to_path_buf())
                 .unwrap_or_else(config::vault_path);
+            let password = rpassword::prompt_password("Master password: ")?;
+            let vault = vault::storage::VaultStorage::load(&path, password.as_bytes())
+                .map_err(|e| anyhow::anyhow!(e))?;
+            tui::run_tui(&vault)
+        }
+    }
+}
