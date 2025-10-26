@@ -402,3 +402,39 @@ impl App {
                 return;
             }
         };
+
+        let password_display = if self.show_password {
+            entry.password.clone()
+        } else {
+            "********".to_string()
+        };
+
+        let lines = vec![
+            Line::from(vec![
+                Span::styled("Name:     ", Style::default().fg(Color::Yellow)),
+                Span::raw(&entry.name),
+            ]),
+            Line::from(vec![
+                Span::styled("Username: ", Style::default().fg(Color::Yellow)),
+                Span::raw(entry.username.as_deref().unwrap_or("-")),
+            ]),
+            Line::from(vec![
+                Span::styled("Password: ", Style::default().fg(Color::Yellow)),
+                Span::raw(&password_display),
+            ]),
+            Line::from(vec![
+                Span::styled("URL:      ", Style::default().fg(Color::Yellow)),
+                Span::raw(entry.url.as_deref().unwrap_or("-")),
+            ]),
+            Line::from(vec![
+                Span::styled("Notes:    ", Style::default().fg(Color::Yellow)),
+                Span::raw(entry.notes.as_deref().unwrap_or("-")),
+            ]),
+            Line::from(vec![
+                Span::styled("Tags:     ", Style::default().fg(Color::Yellow)),
+                Span::raw(entry.tags.join(", ")),
+            ]),
+            Line::from(vec![
+                Span::styled("TOTP:     ", Style::default().fg(Color::Yellow)),
+                Span::raw(if entry.totp_secret.is_some() {
+                    "configured"
