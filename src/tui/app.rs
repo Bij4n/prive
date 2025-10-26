@@ -438,3 +438,39 @@ impl App {
                 Span::styled("TOTP:     ", Style::default().fg(Color::Yellow)),
                 Span::raw(if entry.totp_secret.is_some() {
                     "configured"
+                } else {
+                    "-"
+                }),
+            ]),
+            Line::from(""),
+            Line::from(vec![
+                Span::styled("Created:  ", Style::default().fg(Color::DarkGray)),
+                Span::styled(
+                    entry.created_at.format("%Y-%m-%d %H:%M").to_string(),
+                    Style::default().fg(Color::DarkGray),
+                ),
+            ]),
+            Line::from(vec![
+                Span::styled("Modified: ", Style::default().fg(Color::DarkGray)),
+                Span::styled(
+                    entry.modified_at.format("%Y-%m-%d %H:%M").to_string(),
+                    Style::default().fg(Color::DarkGray),
+                ),
+            ]),
+        ];
+
+        let toggle_hint = if self.show_password {
+            "p=hide password"
+        } else {
+            "p=reveal password"
+        };
+        let title = format!(" Details [{}] ", toggle_hint);
+
+        let detail = Paragraph::new(lines).block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title(title)
+                .border_style(Style::default().fg(Color::Cyan)),
+        );
+        f.render_widget(detail, area);
+    }
