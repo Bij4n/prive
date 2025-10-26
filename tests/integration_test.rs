@@ -73,3 +73,21 @@ fn test_generate_pin() {
         .args(["generate", "--pin", "--length", "6"])
         .output()
         .unwrap();
+
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.trim().chars().all(|c| c.is_ascii_digit()));
+    assert_eq!(stdout.trim().len(), 6);
+}
+
+#[test]
+fn test_generate_pronounceable() {
+    let output = Command::cargo_bin("prive")
+        .unwrap()
+        .args(["generate", "--pronounceable", "--length", "10"])
+        .output()
+        .unwrap();
+
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.trim().chars().all(|c| c.is_ascii_lowercase()));
+    assert_eq!(stdout.trim().len(), 10);
+}
