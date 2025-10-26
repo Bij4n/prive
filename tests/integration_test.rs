@@ -35,3 +35,22 @@ fn test_generate_default() {
 fn test_generate_custom_length() {
     Command::cargo_bin("prive")
         .unwrap()
+        .args(["generate", "--length", "32"])
+        .assert()
+        .success();
+}
+
+#[test]
+fn test_generate_passphrase() {
+    Command::cargo_bin("prive")
+        .unwrap()
+        .args(["generate", "--passphrase", "--words", "4", "--separator", "."])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("."));
+}
+
+#[test]
+fn test_generate_no_symbols() {
+    let output = Command::cargo_bin("prive")
+        .unwrap()
