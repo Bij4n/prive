@@ -37,3 +37,11 @@ fn main() -> Result<()> {
         Commands::Decrypt(args) => encrypt::handle_decrypt(args),
         Commands::Config(args) => config_cmd::handle_config(&args.command),
         Commands::Audit(args) => audit::handle_audit(args, vault_path),
+        Commands::Backup(args) => backup::handle_backup(&args.command, vault_path),
+        Commands::Import(args) => import_export::handle_import(args, vault_path),
+        Commands::Export(args) => import_export::handle_export(args, vault_path),
+        Commands::Completions(args) => completions::handle_completions(args),
+        Commands::Tui => {
+            let path = vault_path
+                .map(|p| p.to_path_buf())
+                .unwrap_or_else(config::vault_path);
