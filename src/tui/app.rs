@@ -474,3 +474,41 @@ impl App {
         );
         f.render_widget(detail, area);
     }
+
+    fn draw_status_bar(&self, f: &mut Frame, area: Rect) {
+        let total = self.entries.len();
+        let shown = self.filtered_indices.len();
+
+        let count_info = if self.search_query.is_empty() {
+            format!("{} entries", total)
+        } else {
+            format!("{}/{} entries", shown, total)
+        };
+
+        let mode_label = match self.mode {
+            Mode::Normal => "NORMAL",
+            Mode::Search => "SEARCH",
+            Mode::Detail => "DETAIL",
+        };
+
+        let keys = match self.mode {
+            Mode::Normal => "q=quit /=search Enter=copy j/k=move Tab=detail p=show a=add d=del",
+            Mode::Search => "Esc=cancel Enter=confirm",
+            Mode::Detail => "Esc/Tab=back q=quit Enter=copy p=toggle j/k=move",
+        };
+
+        let status_line = Line::from(vec![
+            Span::styled(
+                format!(" {} ", mode_label),
+                Style::default()
+                    .fg(Color::Black)
+                    .bg(Color::Cyan)
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::raw(" "),
+            Span::styled(count_info, Style::default().fg(Color::White)),
+            Span::raw("  "),
+            Span::styled(keys, Style::default().fg(Color::DarkGray)),
+        ]);
+
+        let status = Paragraph::new(status_line).block(
