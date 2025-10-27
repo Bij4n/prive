@@ -130,3 +130,22 @@ fn test_pgp_subcommand_help() {
         .success()
         .stdout(predicate::str::contains("generate"));
 }
+
+#[test]
+fn test_pw_subcommand_help() {
+    Command::cargo_bin("prive")
+        .unwrap()
+        .args(["pw", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("add"));
+}
+
+#[test]
+fn test_completions_bash() {
+    Command::cargo_bin("prive")
+        .unwrap()
+        .args(["completions", "--shell", "bash"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("complete"));
