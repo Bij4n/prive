@@ -110,3 +110,23 @@ fn test_pw_get_no_vault() {
         .assert()
         .failure();
 }
+
+#[test]
+fn test_vault_subcommand_help() {
+    Command::cargo_bin("prive")
+        .unwrap()
+        .args(["vault", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("init"));
+}
+
+#[test]
+fn test_pgp_subcommand_help() {
+    Command::cargo_bin("prive")
+        .unwrap()
+        .args(["pgp", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("generate"));
+}
