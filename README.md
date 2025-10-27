@@ -88,3 +88,34 @@ prive config show
 prive config set clipboard.auto_clear true
 prive config set clipboard.clear_after_seconds 30
 ```
+
+## Vault Security
+
+- Master password derived via **Argon2id** (t=3, m=64MiB, p=4)
+- Vault encrypted with **AES-256-GCM**
+- Fresh random nonce on every save
+- Single encrypted blob — no metadata leakage
+- Sensitive memory zeroed on drop via `zeroize`
+
+## PGP
+
+Prive includes a self-contained PGP implementation (via the `pgp` crate) — no system GPG required.
+
+- **Key types**: Ed25519/Cv25519 (default), RSA-4096
+- **Encryption**: SEIPDv1 with AES-256
+- **Key storage**: ASCII-armored files in `~/.local/share/prive/keyring/`
+- **Symmetric**: Passphrase-based file encryption
+
+## Configuration
+
+Config file location: `~/.config/prive/config.toml`
+
+```toml
+[vault]
+# path = "/custom/path/vault.pv"
+
+[clipboard]
+auto_clear = true
+clear_after_seconds = 45
+
+[generate]
