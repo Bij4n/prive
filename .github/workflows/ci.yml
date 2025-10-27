@@ -58,3 +58,33 @@ jobs:
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
+            artifact: prive
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            artifact: prive
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            artifact: prive
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            artifact: prive
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact: prive.exe
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+      - name: Install musl tools
+        if: contains(matrix.target, 'musl')
+        run: sudo apt-get install -y musl-tools
+      - name: Build
+        run: cargo build --release --target ${{ matrix.target }}
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: prive-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/${{ matrix.artifact }}
