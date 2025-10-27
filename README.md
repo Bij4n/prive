@@ -119,3 +119,33 @@ auto_clear = true
 clear_after_seconds = 45
 
 [generate]
+default_length = 20
+
+[backup]
+auto_backup = true
+max_backups = 10
+
+[session]
+timeout_seconds = 300
+```
+
+## Supported Platforms
+
+| Platform | Architecture | Status |
+|----------|-------------|--------|
+| Linux | x86_64, aarch64 | Supported |
+| macOS | x86_64, aarch64 | Supported |
+| Windows | x86_64 | Supported |
+
+## Data Storage
+
+| Data | Location |
+|------|----------|
+| Vault | `~/.local/share/prive/vault.pv` |
+| PGP Keys | `~/.local/share/prive/keyring/` |
+| Backups | `~/.local/share/prive/backups/` |
+| Config | `~/.config/prive/config.toml` |
+
+## License
+
+MIT
