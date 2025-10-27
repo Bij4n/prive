@@ -149,3 +149,22 @@ fn test_completions_bash() {
         .assert()
         .success()
         .stdout(predicate::str::contains("complete"));
+}
+
+#[test]
+fn test_completions_zsh() {
+    Command::cargo_bin("prive")
+        .unwrap()
+        .args(["completions", "--shell", "zsh"])
+        .assert()
+        .success();
+}
+
+#[test]
+fn test_completions_fish() {
+    Command::cargo_bin("prive")
+        .unwrap()
+        .args(["completions", "--shell", "fish"])
+        .assert()
+        .success();
+}
