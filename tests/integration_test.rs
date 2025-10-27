@@ -168,3 +168,21 @@ fn test_completions_fish() {
         .assert()
         .success();
 }
+
+#[test]
+fn test_config_show() {
+    Command::cargo_bin("prive")
+        .unwrap()
+        .args(["config", "show"])
+        .assert()
+        .success();
+}
+
+#[test]
+fn test_backup_list_empty() {
+    Command::cargo_bin("prive")
+        .unwrap()
+        .args(["backup", "list"])
+        .assert()
+        .success();
+}
