@@ -58,3 +58,33 @@ prive pw totp github
 # Security audit
 prive audit
 prive audit --breach    # check Have I Been Pwned
+
+# PGP
+prive pgp generate --email you@example.com
+prive pgp list
+prive encrypt secret.txt --recipient <KEY_ID>
+prive decrypt secret.txt.pgp
+
+# Import/Export
+prive import passwords.csv --format csv
+prive export --format csv --output backup.csv
+
+# Interactive mode
+prive tui
+
+# Backups
+prive backup create
+prive backup list
+prive backup restore <backup-name>
+
+# Shell completions
+prive completions --shell bash >> ~/.bashrc
+prive completions --shell zsh >> ~/.zshrc
+prive completions --shell fish > ~/.config/fish/completions/prive.fish
+
+# Configuration
+prive config init
+prive config show
+prive config set clipboard.auto_clear true
+prive config set clipboard.clear_after_seconds 30
+```
