@@ -20,7 +20,14 @@ pub fn vault_path() -> PathBuf {
     if let Some(p) = &cfg.vault.path {
         return PathBuf::from(p);
     }
+    if let Some(name) = &cfg.vault.active_vault {
+        return data_dir().join(format!("{name}.pv"));
+    }
     data_dir().join("vault.pv")
+}
+
+pub fn vault_path_for(name: &str) -> PathBuf {
+    data_dir().join(format!("{name}.pv"))
 }
 
 pub fn keyring_dir() -> PathBuf {
@@ -52,6 +59,8 @@ pub struct AppConfig {
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct VaultConfig {
     pub path: Option<String>,
+    #[serde(default)]
+    pub active_vault: Option<String>,
     #[serde(default = "default_argon2_time")]
     pub argon2_time_cost: u32,
     #[serde(default = "default_argon2_memory")]
