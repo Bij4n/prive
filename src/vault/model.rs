@@ -8,6 +8,8 @@ pub struct Vault {
     pub created_at: DateTime<Utc>,
     pub modified_at: DateTime<Utc>,
     pub entries: Vec<VaultEntry>,
+    #[serde(default)]
+    pub secure_notes: Vec<SecureNote>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -20,6 +22,24 @@ pub struct VaultEntry {
     pub notes: Option<String>,
     pub tags: Vec<String>,
     pub totp_secret: Option<String>,
+    #[serde(default)]
+    pub password_history: Vec<PasswordHistoryEntry>,
+    pub created_at: DateTime<Utc>,
+    pub modified_at: DateTime<Utc>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct PasswordHistoryEntry {
+    pub password: String,
+    pub changed_at: DateTime<Utc>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct SecureNote {
+    pub id: Uuid,
+    pub title: String,
+    pub content: String,
+    pub tags: Vec<String>,
     pub created_at: DateTime<Utc>,
     pub modified_at: DateTime<Utc>,
 }
@@ -32,6 +52,7 @@ impl Vault {
             created_at: now,
             modified_at: now,
             entries: Vec::new(),
+            secure_notes: Vec::new(),
         }
     }
 
@@ -70,6 +91,39 @@ impl Vault {
             })
             .collect()
     }
+
+    // --- Secure Notes ---
+
+    pub fn find_note_by_title(&self, title: &str) -> Option<&SecureNote> {
+        self.secure_notes
+            .iter()
+            .find(|n| n.title.eq_ignore_ascii_case(title))
+    }
+
+    pub fn find_note_by_title_mut(&mut self, title: &str) -> Option<&mut SecureNote> {
+        self.secure_notes
+            .iter_mut()
+            .find(|n| n.title.eq_ignore_ascii_case(title))
+    }
+
+    pub fn remove_note_by_title(&mut self, title: &str) -> bool {
+        let before = self.secure_notes.len();
+        self.secure_notes
+            .retain(|n| !n.title.eq_ignore_ascii_case(title));
+        self.secure_notes.len() < before
+    }
+
+    pub fn search_notes(&self, query: &str) -> Vec<&SecureNote> {
+        let q = query.to_lowercase();
+        self.secure_notes
+            .iter()
+            .filter(|n| {
+                n.title.to_lowercase().contains(&q)
+                    || n.content.to_lowercase().contains(&q)
+                    || n.tags.iter().any(|t| t.to_lowercase().contains(&q))
+            })
+            .collect()
+    }
 }
 
 impl VaultEntry {
@@ -91,8 +145,112 @@ impl VaultEntry {
             notes,
             tags,
             totp_secret: None,
+            password_history: Vec::new(),
             created_at: now,
             modified_at: now,
         }
+    }
+
+    /// Push current password to history before changing it.
+    pub fn rotate_password(&mut self, new_password: String) {
+        self.password_history.push(PasswordHistoryEntry {
+            password: self.password.clone(),
+            changed_at: Utc::now(),
+        });
+        self.password = new_password;
+        self.modified_at = Utc::now();
+    }
+}
+
+impl SecureNote {
+    pub fn new(title: String, content: String, tags: Vec<String>) -> Self {
+        let now = Utc::now();
+        Self {
+            id: Uuid::new_v4(),
+            title,
+            content,
+            tags,
+            created_at: now,
+            modified_at: now,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_vault_new() {
+        let vault = Vault::new();
+        assert_eq!(vault.version, 1);
+        assert!(vault.entries.is_empty());
+        assert!(vault.secure_notes.is_empty());
+    }
+
+    #[test]
+    fn test_password_history() {
+        let mut entry = VaultEntry::new(
+            "test".into(),
+            None,
+            "old_pass".into(),
+            None,
+            None,
+            vec![],
+        );
+        entry.rotate_password("new_pass".into());
+        assert_eq!(entry.password, "new_pass");
+        assert_eq!(entry.password_history.len(), 1);
+        assert_eq!(entry.password_history[0].password, "old_pass");
+
+        entry.rotate_password("newer_pass".into());
+        assert_eq!(entry.password, "newer_pass");
+        assert_eq!(entry.password_history.len(), 2);
+    }
+
+    #[test]
+    fn test_secure_note_crud() {
+        let mut vault = Vault::new();
+        vault.secure_notes.push(SecureNote::new(
+            "API Keys".into(),
+            "sk-1234567890".into(),
+            vec!["work".into()],
+        ));
+
+        assert!(vault.find_note_by_title("API Keys").is_some());
+        assert!(vault.find_note_by_title("api keys").is_some()); // case insensitive
+        assert!(vault.find_note_by_title("nonexistent").is_none());
+
+        let results = vault.search_notes("1234");
+        assert_eq!(results.len(), 1);
+
+        assert!(vault.remove_note_by_title("API Keys"));
+        assert!(vault.secure_notes.is_empty());
+    }
+
+    #[test]
+    fn test_vault_serde_with_new_fields() {
+        // Test that old vaults without new fields still deserialize
+        let json = r#"{
+            "version": 1,
+            "created_at": "2025-10-16T09:00:00Z",
+            "modified_at": "2025-10-16T09:00:00Z",
+            "entries": [{
+                "id": "00000000-0000-0000-0000-000000000001",
+                "name": "test",
+                "username": null,
+                "password": "pass",
+                "url": null,
+                "notes": null,
+                "tags": [],
+                "totp_secret": null,
+                "created_at": "2025-10-16T09:00:00Z",
+                "modified_at": "2025-10-16T09:00:00Z"
+            }]
+        }"#;
+        let vault: Vault = serde_json::from_str(json).unwrap();
+        assert_eq!(vault.entries.len(), 1);
+        assert!(vault.entries[0].password_history.is_empty());
+        assert!(vault.secure_notes.is_empty());
     }
 }
