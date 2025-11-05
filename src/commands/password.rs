@@ -103,6 +103,7 @@ pub fn handle_pw(cmd: &PwCommand, vault_path_override: Option<&Path>) -> Result<
         PwCommand::TotpAdd { name, secret, uri } => {
             cmd_totp_add(vault_path_override, name, secret.as_deref(), uri.as_deref())
         }
+        PwCommand::History { name, show } => cmd_history(vault_path_override, name, *show),
     }
 }
 
@@ -303,7 +304,7 @@ fn cmd_edit(
         entry.username = Some(u.to_string());
     }
     if let Some(p) = password {
-        entry.password = p.to_string();
+        entry.rotate_password(p.to_string());
     }
     if let Some(u) = url {
         entry.url = Some(u.to_string());
@@ -441,5 +442,43 @@ fn cmd_totp_add(
         .map_err(|e| anyhow::anyhow!(e))?;
 
     println!("{} TOTP secret added to '{}'.", "✓".green(), name);
+    Ok(())
+}
+
+fn cmd_history(vault_path: Option<&Path>, name: &str, show: bool) -> Result<()> {
+    let (_path, vault, _master_pw) = unlock_vault(vault_path)?;
+
+    let entry = vault
+        .find_by_name(name)
+        .ok_or_else(|| anyhow::anyhow!("Entry '{}' not found", name))?;
+
+    if entry.password_history.is_empty() {
+        println!("No password history for '{name}'.");
+        return Ok(());
+    }
+
+    println!("{}: {} ({} previous passwords)\n", "History for".bold(), name, entry.password_history.len());
+
+    for (i, hist) in entry.password_history.iter().enumerate().rev() {
+        let pw_display = if show {
+            hist.password.clone()
+        } else {
+            "*".repeat(hist.password.len().min(20))
+        };
+        let date = hist.changed_at.format("%Y-%m-%d %H:%M");
+        println!("  {}. {} (changed {})", i + 1, pw_display, date);
+    }
+
+    let current_display = if show {
+        entry.password.clone()
+    } else {
+        "*".repeat(entry.password.len().min(20))
+    };
+    println!("\n  {}: {}", "Current".green().bold(), current_display);
+
+    if !show {
+        println!("\n  {}", "Use --show to reveal passwords".dimmed());
+    }
+
     Ok(())
 }
