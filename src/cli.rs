@@ -48,6 +48,80 @@ pub enum Commands {
     Completions(CompletionsArgs),
     /// Launch interactive TUI mode
     Tui,
+    /// Manage secure notes
+    Note(NoteArgs),
+    /// Manage agent session
+    Session(SessionArgs),
+}
+
+// --- Session ---
+
+#[derive(Parser)]
+pub struct SessionArgs {
+    #[command(subcommand)]
+    pub command: SessionCommand,
+}
+
+#[derive(Subcommand)]
+pub enum SessionCommand {
+    /// Start the vault agent (keeps vault unlocked in background)
+    Start,
+    /// Stop the running agent
+    Stop,
+    /// Check agent status
+    Status,
+}
+
+// --- Notes ---
+
+#[derive(Parser)]
+pub struct NoteArgs {
+    #[command(subcommand)]
+    pub command: NoteCommand,
+}
+
+#[derive(Subcommand)]
+pub enum NoteCommand {
+    /// Add a new secure note
+    Add {
+        /// Note title
+        title: String,
+        /// Comma-separated tags
+        #[arg(short, long, value_delimiter = ',')]
+        tags: Vec<String>,
+    },
+    /// View a secure note
+    Get {
+        /// Note title
+        title: String,
+        /// Copy content to clipboard
+        #[arg(long)]
+        copy: bool,
+    },
+    /// List all notes
+    List {
+        /// Filter by tags
+        #[arg(short, long, value_delimiter = ',')]
+        tags: Vec<String>,
+    },
+    /// Edit a note
+    Edit {
+        /// Note title
+        title: String,
+    },
+    /// Delete a note
+    Rm {
+        /// Note title
+        title: String,
+        /// Skip confirmation
+        #[arg(long)]
+        force: bool,
+    },
+    /// Search notes
+    Search {
+        /// Search query
+        query: String,
+    },
 }
 
 // --- Vault ---
@@ -64,6 +138,28 @@ pub enum VaultCommand {
     Init,
     /// Change the vault master password
     ChangePassword,
+    /// List all vaults
+    List,
+    /// Switch active vault
+    Switch {
+        /// Vault name
+        name: String,
+    },
+    /// Create a named vault
+    Create {
+        /// Vault name
+        name: String,
+    },
+    /// Delete a named vault
+    Delete {
+        /// Vault name
+        name: String,
+        /// Skip confirmation
+        #[arg(long)]
+        force: bool,
+    },
+    /// Show vault info (version, entry count, file size)
+    Info,
 }
 
 // --- Password Management ---
@@ -168,6 +264,14 @@ pub enum PwCommand {
         /// otpauth:// URI
         #[arg(long)]
         uri: Option<String>,
+    },
+    /// Show password history for an entry
+    History {
+        /// Entry name
+        name: String,
+        /// Show actual passwords (default: masked)
+        #[arg(long)]
+        show: bool,
     },
 }
 
