@@ -4,6 +4,8 @@ pub mod completions;
 pub mod config_cmd;
 pub mod encrypt;
 pub mod import_export;
+pub mod notes;
 pub mod password;
 pub mod pgp;
+pub mod session;
 pub mod vault;
