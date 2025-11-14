@@ -1,6 +1,6 @@
 [package]
 name = "prive"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 description = "Cross-platform password & encryption toolkit"
 license = "MIT"
@@ -45,6 +45,12 @@ zxcvbn = "3"
 tempfile = "3"
 assert_cmd = "2"
 predicates = "3"
+criterion = { version = "0.5", features = ["html_reports"] }
+proptest = "1"
+
+[[bench]]
+name = "crypto_bench"
+harness = false
 
 [profile.release]
 opt-level = 3
