@@ -24,8 +24,19 @@ pub struct VaultEntry {
     pub totp_secret: Option<String>,
     #[serde(default)]
     pub password_history: Vec<PasswordHistoryEntry>,
+    #[serde(default)]
+    pub attachments: Vec<VaultAttachment>,
     pub created_at: DateTime<Utc>,
     pub modified_at: DateTime<Utc>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct VaultAttachment {
+    pub name: String,
+    pub mime_type: String,
+    pub data: String, // base64-encoded
+    pub size: u64,
+    pub added_at: DateTime<Utc>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -146,9 +157,40 @@ impl VaultEntry {
             tags,
             totp_secret: None,
             password_history: Vec::new(),
+            attachments: Vec::new(),
             created_at: now,
             modified_at: now,
         }
+    }
+
+    /// Add a file attachment to this entry.
+    pub fn add_attachment(&mut self, attachment: VaultAttachment) {
+        self.attachments.push(attachment);
+        self.modified_at = Utc::now();
+    }
+
+    /// Remove an attachment by name. Returns `true` if one was removed.
+    pub fn remove_attachment(&mut self, name: &str) -> bool {
+        let before = self.attachments.len();
+        self.attachments
+            .retain(|a| !a.name.eq_ignore_ascii_case(name));
+        let removed = self.attachments.len() < before;
+        if removed {
+            self.modified_at = Utc::now();
+        }
+        removed
+    }
+
+    /// Get an attachment by name.
+    pub fn get_attachment(&self, name: &str) -> Option<&VaultAttachment> {
+        self.attachments
+            .iter()
+            .find(|a| a.name.eq_ignore_ascii_case(name))
+    }
+
+    /// List all attachments.
+    pub fn list_attachments(&self) -> &[VaultAttachment] {
+        &self.attachments
     }
 
     /// Push current password to history before changing it.
@@ -251,6 +293,90 @@ mod tests {
         let vault: Vault = serde_json::from_str(json).unwrap();
         assert_eq!(vault.entries.len(), 1);
         assert!(vault.entries[0].password_history.is_empty());
+        assert!(vault.entries[0].attachments.is_empty());
         assert!(vault.secure_notes.is_empty());
+    }
+
+    fn make_attachment(name: &str) -> VaultAttachment {
+        VaultAttachment {
+            name: name.to_string(),
+            mime_type: "application/octet-stream".to_string(),
+            data: "dGVzdA==".to_string(), // base64 for "test"
+            size: 4,
+            added_at: Utc::now(),
+        }
+    }
+
+    #[test]
+    fn test_add_attachment() {
+        let mut entry = VaultEntry::new(
+            "test".into(),
+            None,
+            "pass".into(),
+            None,
+            None,
+            vec![],
+        );
+        assert!(entry.list_attachments().is_empty());
+
+        entry.add_attachment(make_attachment("readme.txt"));
+        assert_eq!(entry.list_attachments().len(), 1);
+        assert_eq!(entry.list_attachments()[0].name, "readme.txt");
+    }
+
+    #[test]
+    fn test_get_attachment() {
+        let mut entry = VaultEntry::new(
+            "test".into(),
+            None,
+            "pass".into(),
+            None,
+            None,
+            vec![],
+        );
+        entry.add_attachment(make_attachment("logo.png"));
+
+        assert!(entry.get_attachment("logo.png").is_some());
+        assert!(entry.get_attachment("LOGO.PNG").is_some()); // case insensitive
+        assert!(entry.get_attachment("missing.txt").is_none());
+    }
+
+    #[test]
+    fn test_remove_attachment() {
+        let mut entry = VaultEntry::new(
+            "test".into(),
+            None,
+            "pass".into(),
+            None,
+            None,
+            vec![],
+        );
+        entry.add_attachment(make_attachment("a.txt"));
+        entry.add_attachment(make_attachment("b.txt"));
+
+        assert!(entry.remove_attachment("a.txt"));
+        assert_eq!(entry.list_attachments().len(), 1);
+        assert_eq!(entry.list_attachments()[0].name, "b.txt");
+
+        assert!(!entry.remove_attachment("nonexistent"));
+    }
+
+    #[test]
+    fn test_attachment_serde_roundtrip() {
+        let mut entry = VaultEntry::new(
+            "serde_test".into(),
+            None,
+            "pw".into(),
+            None,
+            None,
+            vec![],
+        );
+        entry.add_attachment(make_attachment("doc.pdf"));
+
+        let json = serde_json::to_string(&entry).unwrap();
+        let deserialized: VaultEntry = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized.attachments.len(), 1);
+        assert_eq!(deserialized.attachments[0].name, "doc.pdf");
+        assert_eq!(deserialized.attachments[0].size, 4);
     }
 }
