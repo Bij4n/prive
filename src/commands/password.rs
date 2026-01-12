@@ -1,6 +1,7 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use anyhow::Result;
+use base64::Engine;
 use colored::Colorize;
 use tabled::{Table, Tabled};
 
@@ -9,7 +10,7 @@ use crate::config;
 use crate::crypto::password_gen;
 use crate::crypto::totp;
 use crate::util;
-use crate::vault::model::VaultEntry;
+use crate::vault::model::{VaultAttachment, VaultEntry};
 use crate::vault::storage::VaultStorage;
 
 pub fn handle_generate(args: &GenerateArgs) -> Result<()> {
@@ -104,6 +105,11 @@ pub fn handle_pw(cmd: &PwCommand, vault_path_override: Option<&Path>) -> Result<
             cmd_totp_add(vault_path_override, name, secret.as_deref(), uri.as_deref())
         }
         PwCommand::History { name, show } => cmd_history(vault_path_override, name, *show),
+        PwCommand::Attach { name, file } => cmd_attach(vault_path_override, name, file),
+        PwCommand::Detach { name, attachment } => {
+            cmd_detach(vault_path_override, name, attachment)
+        }
+        PwCommand::Attachments { name } => cmd_attachments(vault_path_override, name),
     }
 }
 
@@ -481,4 +487,162 @@ fn cmd_history(vault_path: Option<&Path>, name: &str, show: bool) -> Result<()> 
     }
 
     Ok(())
+}
+
+/// Maximum attachment size: 1 MB
+const MAX_ATTACHMENT_SIZE: u64 = 1_048_576;
+
+fn cmd_attach(vault_path: Option<&Path>, name: &str, file: &PathBuf) -> Result<()> {
+    let (path, mut vault, master_pw) = unlock_vault(vault_path)?;
+
+    let entry = vault
+        .find_by_name_mut(name)
+        .ok_or_else(|| anyhow::anyhow!("Entry '{}' not found", name))?;
+
+    let metadata = std::fs::metadata(file)
+        .map_err(|e| anyhow::anyhow!("Cannot read file '{}': {}", file.display(), e))?;
+
+    if metadata.len() > MAX_ATTACHMENT_SIZE {
+        anyhow::bail!(
+            "File is too large ({} bytes). Maximum attachment size is 1 MB.",
+            metadata.len()
+        );
+    }
+
+    let file_name = file
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_else(|| "attachment".to_string());
+
+    // Check for duplicate attachment names
+    if entry.get_attachment(&file_name).is_some() {
+        anyhow::bail!(
+            "Attachment '{}' already exists on entry '{}'. Remove it first.",
+            file_name,
+            name
+        );
+    }
+
+    let raw_data = std::fs::read(file)
+        .map_err(|e| anyhow::anyhow!("Failed to read file: {}", e))?;
+
+    let mime_type = detect_mime_type(&file_name);
+
+    let encoded = base64::engine::general_purpose::STANDARD.encode(&raw_data);
+
+    let attachment = VaultAttachment {
+        name: file_name.clone(),
+        mime_type,
+        data: encoded,
+        size: metadata.len(),
+        added_at: chrono::Utc::now(),
+    };
+
+    entry.add_attachment(attachment);
+    vault.modified_at = chrono::Utc::now();
+
+    VaultStorage::save(&path, &vault, master_pw.as_bytes())
+        .map_err(|e| anyhow::anyhow!(e))?;
+
+    println!(
+        "{} Attached '{}' to entry '{}'.",
+        "✓".green(),
+        file_name,
+        name
+    );
+    Ok(())
+}
+
+fn cmd_detach(vault_path: Option<&Path>, name: &str, attachment_name: &str) -> Result<()> {
+    let (path, mut vault, master_pw) = unlock_vault(vault_path)?;
+
+    let entry = vault
+        .find_by_name_mut(name)
+        .ok_or_else(|| anyhow::anyhow!("Entry '{}' not found", name))?;
+
+    if !entry.remove_attachment(attachment_name) {
+        anyhow::bail!(
+            "Attachment '{}' not found on entry '{}'",
+            attachment_name,
+            name
+        );
+    }
+
+    vault.modified_at = chrono::Utc::now();
+
+    VaultStorage::save(&path, &vault, master_pw.as_bytes())
+        .map_err(|e| anyhow::anyhow!(e))?;
+
+    println!(
+        "{} Removed attachment '{}' from entry '{}'.",
+        "✓".green(),
+        attachment_name,
+        name
+    );
+    Ok(())
+}
+
+fn cmd_attachments(vault_path: Option<&Path>, name: &str) -> Result<()> {
+    let (_path, vault, _master_pw) = unlock_vault(vault_path)?;
+
+    let entry = vault
+        .find_by_name(name)
+        .ok_or_else(|| anyhow::anyhow!("Entry '{}' not found", name))?;
+
+    let attachments = entry.list_attachments();
+
+    if attachments.is_empty() {
+        println!("No attachments for '{name}'.");
+        return Ok(());
+    }
+
+    println!("{}: {}\n", "Attachments for".bold(), name);
+    for (i, att) in attachments.iter().enumerate() {
+        let size_display = if att.size >= 1024 {
+            format!("{:.1} KB", att.size as f64 / 1024.0)
+        } else {
+            format!("{} B", att.size)
+        };
+        println!(
+            "  {}. {} ({}, {}), added {}",
+            i + 1,
+            att.name.bold(),
+            att.mime_type.dimmed(),
+            size_display,
+            att.added_at.format("%Y-%m-%d %H:%M")
+        );
+    }
+    println!("\n{} attachment(s) total", attachments.len());
+
+    Ok(())
+}
+
+/// Simple MIME type detection based on file extension.
+fn detect_mime_type(filename: &str) -> String {
+    let ext = filename
+        .rsplit('.')
+        .next()
+        .unwrap_or("")
+        .to_lowercase();
+    match ext.as_str() {
+        "txt" => "text/plain",
+        "pdf" => "application/pdf",
+        "png" => "image/png",
+        "jpg" | "jpeg" => "image/jpeg",
+        "gif" => "image/gif",
+        "svg" => "image/svg+xml",
+        "json" => "application/json",
+        "xml" => "application/xml",
+        "zip" => "application/zip",
+        "gz" | "gzip" => "application/gzip",
+        "tar" => "application/x-tar",
+        "html" | "htm" => "text/html",
+        "css" => "text/css",
+        "js" => "application/javascript",
+        "csv" => "text/csv",
+        "doc" | "docx" => "application/msword",
+        "pem" | "crt" | "key" => "application/x-pem-file",
+        _ => "application/octet-stream",
+    }
+    .to_string()
 }
