@@ -1,0 +1,43 @@
+[package]
+name = "prive-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+prive = { path = ".." }
+base32 = "0.5"
+
+[[bin]]
+name = "fuzz_vault_header"
+path = "fuzz_targets/fuzz_vault_header.rs"
+doc = false
+
+[[bin]]
+name = "fuzz_password_gen"
+path = "fuzz_targets/fuzz_password_gen.rs"
+doc = false
+
+[[bin]]
+name = "fuzz_totp"
+path = "fuzz_targets/fuzz_totp.rs"
+doc = false
+
+[[bin]]
+name = "fuzz_csv_import"
+path = "fuzz_targets/fuzz_csv_import.rs"
+doc = false
+
+[[bin]]
+name = "fuzz_otpauth_uri"
+path = "fuzz_targets/fuzz_otpauth_uri.rs"
+doc = false
+
+[[bin]]
+name = "fuzz_strength"
+path = "fuzz_targets/fuzz_strength.rs"
+doc = false
