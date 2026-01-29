@@ -1,5 +1,6 @@
 pub mod audit;
 pub mod backup;
+pub mod clip;
 pub mod completions;
 pub mod config_cmd;
 pub mod encrypt;
@@ -8,4 +9,5 @@ pub mod notes;
 pub mod password;
 pub mod pgp;
 pub mod session;
+pub mod sync_cmd;
 pub mod vault;
