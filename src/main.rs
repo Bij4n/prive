@@ -7,6 +7,7 @@ mod crypto;
 mod error;
 mod pgp;
 mod session;
+mod sync;
 mod tui;
 mod util;
 mod vault;
@@ -16,8 +17,8 @@ use clap::Parser;
 
 use cli::{Cli, Commands};
 use commands::{
-    audit, backup, completions, config_cmd, encrypt, import_export, notes, password,
-    pgp as pgp_cmd, session as session_cmd, vault as vault_cmd,
+    audit, backup, clip, completions, config_cmd, encrypt, import_export, notes, password,
+    pgp as pgp_cmd, session as session_cmd, sync_cmd, vault as vault_cmd,
 };
 
 fn main() -> Result<()> {
@@ -44,6 +45,8 @@ fn main() -> Result<()> {
         Commands::Completions(args) => completions::handle_completions(args),
         Commands::Note(args) => notes::handle_note(&args.command, vault_path),
         Commands::Session(args) => session_cmd::handle_session(&args.command, vault_path),
+        Commands::Clip(args) => clip::handle_clip(&args.command),
+        Commands::Sync(args) => sync_cmd::handle_sync(&args.command),
         Commands::Tui => {
             let path = vault_path
                 .map(|p| p.to_path_buf())
