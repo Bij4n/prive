@@ -52,6 +52,10 @@ pub enum Commands {
     Note(NoteArgs),
     /// Manage agent session
     Session(SessionArgs),
+    /// Manage clipboard
+    Clip(ClipArgs),
+    /// Sync vault via git remote
+    Sync(SyncArgs),
 }
 
 // --- Session ---
@@ -69,6 +73,45 @@ pub enum SessionCommand {
     /// Stop the running agent
     Stop,
     /// Check agent status
+    Status,
+}
+
+// --- Clipboard ---
+
+#[derive(Parser)]
+pub struct ClipArgs {
+    #[command(subcommand)]
+    pub command: ClipCommand,
+}
+
+#[derive(Subcommand)]
+pub enum ClipCommand {
+    /// Clear the clipboard immediately
+    Clear,
+    /// Show clipboard auto-clear status and timeout
+    Status,
+}
+
+// --- Sync ---
+
+#[derive(Parser)]
+pub struct SyncArgs {
+    #[command(subcommand)]
+    pub command: SyncCommand,
+}
+
+#[derive(Subcommand)]
+pub enum SyncCommand {
+    /// Initialize git-backed vault sync with a remote URL
+    Init {
+        /// Git remote URL
+        url: String,
+    },
+    /// Push vault changes to remote
+    Push,
+    /// Pull vault changes from remote
+    Pull,
+    /// Show sync status
     Status,
 }
 
@@ -272,6 +315,25 @@ pub enum PwCommand {
         /// Show actual passwords (default: masked)
         #[arg(long)]
         show: bool,
+    },
+    /// Attach a file to an entry
+    Attach {
+        /// Entry name
+        name: String,
+        /// Path to the file to attach
+        file: PathBuf,
+    },
+    /// Remove an attachment from an entry
+    Detach {
+        /// Entry name
+        name: String,
+        /// Attachment name to remove
+        attachment: String,
+    },
+    /// List attachments for an entry
+    Attachments {
+        /// Entry name
+        name: String,
     },
 }
 
