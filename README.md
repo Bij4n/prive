@@ -12,6 +12,14 @@ A cross-platform password & encryption toolkit for the terminal. Single binary, 
 - **Import/Export** — Import from Chrome, Bitwarden, KeePass. Export to CSV or Bitwarden JSON
 - **Interactive TUI** — Browse and search your vault with a terminal UI
 - **Auto-backup** — Automatic vault backups with configurable rotation
+- **Vault Sync** — Git-backed encrypted vault synchronization across devices
+- **File Attachments** — Attach files (up to 1MB) to password entries
+- **Secure Notes** — Standalone encrypted notes separate from password entries
+- **Password History** — Track and view previous passwords for each entry
+- **Multiple Vaults** — Create and switch between separate vaults (work, personal)
+- **Password Strength** — Detailed strength analysis with crack time estimation
+- **Session Agent** — Keep vault unlocked in background to avoid repeated password prompts
+- **Clipboard Manager** — Auto-clear clipboard with configurable timeout
 
 ## Installation
 
@@ -68,6 +76,43 @@ prive decrypt secret.txt.pgp
 # Import/Export
 prive import passwords.csv --format csv
 prive export --format csv --output backup.csv
+
+# Vault sync
+prive sync init git@github.com:user/vault.git
+prive sync push
+prive sync pull
+prive sync status
+
+# Attachments
+prive pw attach github ~/keys/deploy.pem
+prive pw attachments github
+prive pw detach github deploy.pem
+
+# Secure notes
+prive note add "API Keys"
+prive note get "API Keys"
+prive note list
+prive note search api
+
+# Password history
+prive pw history github --show
+
+# Multiple vaults
+prive vault create work
+prive vault switch work
+prive vault list
+
+# Password strength
+# (shown automatically when adding entries)
+
+# Session agent
+prive session start    # keeps vault unlocked in background
+prive session status
+prive session stop
+
+# Clipboard
+prive clip clear       # immediately clear clipboard
+prive clip status
 
 # Interactive mode
 prive tui
