@@ -56,6 +56,67 @@ pub enum Commands {
     Clip(ClipArgs),
     /// Sync vault via git remote
     Sync(SyncArgs),
+    /// Share entries with another user
+    Share(ShareArgs),
+    /// Manage tags
+    Tag(TagArgs),
+    /// Show vault statistics
+    Stats,
+}
+
+// --- Share ---
+
+#[derive(Parser)]
+pub struct ShareArgs {
+    #[command(subcommand)]
+    pub command: ShareCommand,
+}
+
+#[derive(Subcommand)]
+pub enum ShareCommand {
+    /// Export entries encrypted for a recipient
+    Export {
+        /// Entry names to share
+        #[arg(required = true)]
+        names: Vec<String>,
+        /// Recipient's PGP key ID
+        #[arg(long)]
+        recipient: String,
+        /// Output file path
+        #[arg(short, long)]
+        output: std::path::PathBuf,
+    },
+    /// Import shared entries from a file
+    Import {
+        /// Path to the shared file
+        file: std::path::PathBuf,
+    },
+}
+
+// --- Tags ---
+
+#[derive(Parser)]
+pub struct TagArgs {
+    #[command(subcommand)]
+    pub command: TagCommand,
+}
+
+#[derive(Subcommand)]
+pub enum TagCommand {
+    /// List all tags with entry counts
+    List,
+    /// Rename a tag across all entries and notes
+    Rename {
+        /// Current tag name
+        old: String,
+        /// New tag name
+        new: String,
+    },
+    /// Remove a tag from all entries and notes
+    Delete {
+        /// Tag to remove
+        tag: String,
+    },
 }
 
 // --- Session ---
