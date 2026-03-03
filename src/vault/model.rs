@@ -26,6 +26,8 @@ pub struct VaultEntry {
     pub password_history: Vec<PasswordHistoryEntry>,
     #[serde(default)]
     pub attachments: Vec<VaultAttachment>,
+    #[serde(default)]
+    pub expires_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
     pub modified_at: DateTime<Utc>,
 }
@@ -158,6 +160,7 @@ impl VaultEntry {
             totp_secret: None,
             password_history: Vec::new(),
             attachments: Vec::new(),
+            expires_at: None,
             created_at: now,
             modified_at: now,
         }
