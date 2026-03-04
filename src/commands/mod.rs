@@ -9,5 +9,8 @@ pub mod notes;
 pub mod password;
 pub mod pgp;
 pub mod session;
+pub mod share;
+pub mod stats;
 pub mod sync_cmd;
+pub mod tags;
 pub mod vault;
