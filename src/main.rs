@@ -18,7 +18,8 @@ use clap::Parser;
 use cli::{Cli, Commands};
 use commands::{
     audit, backup, clip, completions, config_cmd, encrypt, import_export, notes, password,
-    pgp as pgp_cmd, session as session_cmd, sync_cmd, vault as vault_cmd,
+    pgp as pgp_cmd, session as session_cmd, share, stats, sync_cmd, tags,
+    vault as vault_cmd,
 };
 
 fn main() -> Result<()> {
@@ -47,6 +48,9 @@ fn main() -> Result<()> {
         Commands::Session(args) => session_cmd::handle_session(&args.command, vault_path),
         Commands::Clip(args) => clip::handle_clip(&args.command),
         Commands::Sync(args) => sync_cmd::handle_sync(&args.command),
+        Commands::Share(args) => share::handle_share(&args.command, vault_path),
+        Commands::Tag(args) => tags::handle_tag(&args.command, vault_path),
+        Commands::Stats => stats::handle_stats(vault_path),
         Commands::Tui => {
             let path = vault_path
                 .map(|p| p.to_path_buf())
