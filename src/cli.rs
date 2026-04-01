@@ -62,6 +62,8 @@ pub enum Commands {
     Tag(TagArgs),
     /// Show vault statistics
     Stats,
+    /// Diagnose config, vault, and keyring health
+    Doctor,
 }
 
 // --- Share ---
