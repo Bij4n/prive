@@ -17,9 +17,8 @@ use clap::Parser;
 
 use cli::{Cli, Commands};
 use commands::{
-    audit, backup, clip, completions, config_cmd, doctor, encrypt, import_export, notes,
-    password, pgp as pgp_cmd, session as session_cmd, share, stats, sync_cmd, tags,
-    vault as vault_cmd,
+    audit, backup, clip, completions, config_cmd, doctor, encrypt, import_export, notes, password,
+    pgp as pgp_cmd, session as session_cmd, share, stats, sync_cmd, tags, vault as vault_cmd,
 };
 
 fn main() -> Result<()> {

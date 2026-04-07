@@ -42,7 +42,7 @@ pub fn backup_dir() -> PathBuf {
     data_dir().join("backups")
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct AppConfig {
     #[serde(default)]
     pub vault: VaultConfig,
@@ -109,27 +109,35 @@ pub struct SessionConfig {
     pub agent_enabled: bool,
 }
 
-fn default_argon2_time() -> u32 { 3 }
-fn default_argon2_memory() -> u32 { 65536 }
-fn default_argon2_parallelism() -> u32 { 4 }
-fn default_clipboard_timeout() -> u64 { 45 }
-fn default_password_length() -> usize { 20 }
-fn default_passphrase_words() -> usize { 6 }
-fn default_passphrase_separator() -> String { "-".to_string() }
-fn default_true() -> bool { true }
-fn default_max_backups() -> usize { 10 }
-fn default_session_timeout() -> u64 { 300 }
-
-impl Default for AppConfig {
-    fn default() -> Self {
-        Self {
-            vault: VaultConfig::default(),
-            clipboard: ClipboardConfig::default(),
-            generate: GenerateConfig::default(),
-            backup: BackupConfig::default(),
-            session: SessionConfig::default(),
-        }
-    }
+fn default_argon2_time() -> u32 {
+    3
+}
+fn default_argon2_memory() -> u32 {
+    65536
+}
+fn default_argon2_parallelism() -> u32 {
+    4
+}
+fn default_clipboard_timeout() -> u64 {
+    45
+}
+fn default_password_length() -> usize {
+    20
+}
+fn default_passphrase_words() -> usize {
+    6
+}
+fn default_passphrase_separator() -> String {
+    "-".to_string()
+}
+fn default_true() -> bool {
+    true
+}
+fn default_max_backups() -> usize {
+    10
+}
+fn default_session_timeout() -> u64 {
+    300
 }
 
 impl Default for ClipboardConfig {
@@ -175,12 +183,11 @@ impl Default for SessionConfig {
 impl AppConfig {
     pub fn load() -> Self {
         let path = config_file_path();
-        if path.exists() {
-            if let Ok(content) = fs::read_to_string(&path) {
-                if let Ok(config) = toml::from_str(&content) {
-                    return config;
-                }
-            }
+        if path.exists()
+            && let Ok(content) = fs::read_to_string(&path)
+            && let Ok(config) = toml::from_str(&content)
+        {
+            return config;
         }
         Self::default()
     }
@@ -190,7 +197,8 @@ impl AppConfig {
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent).map_err(|e| format!("Failed to create config dir: {e}"))?;
         }
-        let content = toml::to_string_pretty(self).map_err(|e| format!("Serialization error: {e}"))?;
+        let content =
+            toml::to_string_pretty(self).map_err(|e| format!("Serialization error: {e}"))?;
         fs::write(&path, content).map_err(|e| format!("Failed to write config: {e}"))?;
         Ok(())
     }
@@ -213,6 +221,9 @@ mod tests {
         let config = AppConfig::default();
         let toml_str = toml::to_string_pretty(&config).unwrap();
         let parsed: AppConfig = toml::from_str(&toml_str).unwrap();
-        assert_eq!(parsed.generate.default_length, config.generate.default_length);
+        assert_eq!(
+            parsed.generate.default_length,
+            config.generate.default_length
+        );
     }
 }

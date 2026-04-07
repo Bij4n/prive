@@ -17,8 +17,7 @@ fn resolve_vault_path(override_path: Option<&Path>) -> std::path::PathBuf {
 pub fn handle_audit(args: &AuditArgs, vault_path_override: Option<&Path>) -> Result<()> {
     let path = resolve_vault_path(vault_path_override);
     let password = rpassword::prompt_password("Master password: ")?;
-    let vault = VaultStorage::load(&path, password.as_bytes())
-        .map_err(|e| anyhow::anyhow!(e))?;
+    let vault = VaultStorage::load(&path, password.as_bytes()).map_err(|e| anyhow::anyhow!(e))?;
 
     let report = audit::audit_vault(&vault);
 
@@ -80,7 +79,10 @@ pub fn handle_audit(args: &AuditArgs, vault_path_override: Option<&Path>) -> Res
 
     // Breach check
     if args.breach {
-        println!("\n{}", "Checking passwords against Have I Been Pwned...".bold());
+        println!(
+            "\n{}",
+            "Checking passwords against Have I Been Pwned...".bold()
+        );
         println!("(Only the first 5 characters of the SHA-1 hash are sent)\n");
 
         for entry in &vault.entries {
@@ -89,10 +91,7 @@ pub fn handle_audit(args: &AuditArgs, vault_path_override: Option<&Path>) -> Res
 
             match audit::check_breach(&entry.password) {
                 Ok(Some(count)) => {
-                    println!(
-                        "{}",
-                        format!("EXPOSED in {count} breach(es)!").red().bold()
-                    );
+                    println!("{}", format!("EXPOSED in {count} breach(es)!").red().bold());
                 }
                 Ok(None) => {
                     println!("{}", "OK".green());

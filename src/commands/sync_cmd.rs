@@ -27,7 +27,10 @@ fn cmd_init(url: &str) -> Result<()> {
 
 fn cmd_push() -> Result<()> {
     let sync = VaultSync::new(config::data_dir());
-    let message = format!("Vault sync {}", chrono::Utc::now().format("%Y-%m-%d %H:%M:%S UTC"));
+    let message = format!(
+        "Vault sync {}",
+        chrono::Utc::now().format("%Y-%m-%d %H:%M:%S UTC")
+    );
     sync.push(&message)?;
     println!("{} Vault pushed to remote.", "✓".green());
     Ok(())
@@ -37,10 +40,7 @@ fn cmd_pull() -> Result<()> {
     let sync = VaultSync::new(config::data_dir());
     let changed = sync.pull()?;
     if changed {
-        println!(
-            "{} Vault updated from remote.",
-            "✓".green()
-        );
+        println!("{} Vault updated from remote.", "✓".green());
     } else {
         println!("Already up to date.");
     }

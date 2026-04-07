@@ -16,11 +16,12 @@ fn resolve_vault_path(override_path: Option<&Path>) -> std::path::PathBuf {
         .unwrap_or_else(config::vault_path)
 }
 
-fn unlock_vault(vault_path: Option<&Path>) -> Result<(std::path::PathBuf, crate::vault::model::Vault, String)> {
+fn unlock_vault(
+    vault_path: Option<&Path>,
+) -> Result<(std::path::PathBuf, crate::vault::model::Vault, String)> {
     let path = resolve_vault_path(vault_path);
     let password = rpassword::prompt_password("Master password: ")?;
-    let vault = VaultStorage::load(&path, password.as_bytes())
-        .map_err(|e| anyhow::anyhow!(e))?;
+    let vault = VaultStorage::load(&path, password.as_bytes()).map_err(|e| anyhow::anyhow!(e))?;
     Ok((path, vault, password))
 }
 
@@ -36,7 +37,10 @@ pub fn handle_note(cmd: &NoteCommand, vault_path: Option<&Path>) -> Result<()> {
 }
 
 fn read_multiline_input() -> Result<String> {
-    println!("{}", "(Enter note content. End with an empty line or Ctrl+D)".dimmed());
+    println!(
+        "{}",
+        "(Enter note content. End with an empty line or Ctrl+D)".dimmed()
+    );
     let stdin = io::stdin();
     let mut lines = Vec::new();
 
@@ -63,15 +67,12 @@ fn cmd_add(vault_path: Option<&Path>, title: &str, tags: &[String]) -> Result<()
         anyhow::bail!("Note content cannot be empty");
     }
 
-    vault.secure_notes.push(SecureNote::new(
-        title.to_string(),
-        content,
-        tags.to_vec(),
-    ));
+    vault
+        .secure_notes
+        .push(SecureNote::new(title.to_string(), content, tags.to_vec()));
     vault.modified_at = chrono::Utc::now();
 
-    VaultStorage::save(&path, &vault, master_pw.as_bytes())
-        .map_err(|e| anyhow::anyhow!(e))?;
+    VaultStorage::save(&path, &vault, master_pw.as_bytes()).map_err(|e| anyhow::anyhow!(e))?;
 
     println!("{} Note '{}' added.", "✓".green(), title);
     Ok(())
@@ -92,8 +93,16 @@ fn cmd_get(vault_path: Option<&Path>, title: &str, copy: bool) -> Result<()> {
         if !note.tags.is_empty() {
             println!("{}: {}", "Tags".bold(), note.tags.join(", "));
         }
-        println!("{}: {}", "Created".bold(), note.created_at.format("%Y-%m-%d %H:%M"));
-        println!("{}: {}", "Modified".bold(), note.modified_at.format("%Y-%m-%d %H:%M"));
+        println!(
+            "{}: {}",
+            "Created".bold(),
+            note.created_at.format("%Y-%m-%d %H:%M")
+        );
+        println!(
+            "{}: {}",
+            "Modified".bold(),
+            note.modified_at.format("%Y-%m-%d %H:%M")
+        );
         println!();
         println!("{}", note.content);
     }
@@ -177,8 +186,7 @@ fn cmd_edit(vault_path: Option<&Path>, title: &str) -> Result<()> {
     }
     vault.modified_at = chrono::Utc::now();
 
-    VaultStorage::save(&path, &vault, master_pw.as_bytes())
-        .map_err(|e| anyhow::anyhow!(e))?;
+    VaultStorage::save(&path, &vault, master_pw.as_bytes()).map_err(|e| anyhow::anyhow!(e))?;
 
     println!("{} Note '{}' updated.", "✓".green(), title);
     Ok(())
@@ -205,8 +213,7 @@ fn cmd_rm(vault_path: Option<&Path>, title: &str, force: bool) -> Result<()> {
     vault.remove_note_by_title(title);
     vault.modified_at = chrono::Utc::now();
 
-    VaultStorage::save(&path, &vault, master_pw.as_bytes())
-        .map_err(|e| anyhow::anyhow!(e))?;
+    VaultStorage::save(&path, &vault, master_pw.as_bytes()).map_err(|e| anyhow::anyhow!(e))?;
 
     println!("{} Note '{}' deleted.", "✓".green(), title);
     Ok(())

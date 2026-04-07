@@ -33,15 +33,17 @@ impl VaultSync {
             anyhow::bail!("Sync is already initialized in {}", self.repo_dir.display());
         }
 
-        std::fs::create_dir_all(&self.repo_dir)
-            .context("Failed to create data directory")?;
+        std::fs::create_dir_all(&self.repo_dir).context("Failed to create data directory")?;
 
         self.run_git(&["init"])?;
 
         // Create .gitignore that only tracks *.pv files
         let gitignore_path = self.repo_dir.join(".gitignore");
-        std::fs::write(&gitignore_path, "# Only track encrypted vault files\n*\n!*.pv\n!.gitignore\n")
-            .context("Failed to write .gitignore")?;
+        std::fs::write(
+            &gitignore_path,
+            "# Only track encrypted vault files\n*\n!*.pv\n!.gitignore\n",
+        )
+        .context("Failed to write .gitignore")?;
 
         self.run_git(&["remote", "add", "origin", remote_url])?;
 
@@ -129,9 +131,7 @@ impl VaultSync {
 
     fn ensure_initialized(&self) -> Result<()> {
         if !self.is_initialized() {
-            anyhow::bail!(
-                "Sync not initialized. Run `prive sync init <remote-url>` first."
-            );
+            anyhow::bail!("Sync not initialized. Run `prive sync init <remote-url>` first.");
         }
         Ok(())
     }

@@ -58,8 +58,7 @@ impl VaultStorage {
             return Err("Vault not found. Run `prive vault init` first.".to_string());
         }
 
-        let mut file =
-            fs::File::open(path).map_err(|e| format!("Failed to open vault: {e}"))?;
+        let mut file = fs::File::open(path).map_err(|e| format!("Failed to open vault: {e}"))?;
         let mut data = Vec::new();
         file.read_to_end(&mut data)
             .map_err(|e| format!("Failed to read vault: {e}"))?;
@@ -97,8 +96,8 @@ impl VaultStorage {
         };
 
         let plaintext = VaultCrypto::decrypt(&blob, password)?;
-        let vault: Vault =
-            serde_json::from_slice(&plaintext).map_err(|e| format!("Deserialization error: {e}"))?;
+        let vault: Vault = serde_json::from_slice(&plaintext)
+            .map_err(|e| format!("Deserialization error: {e}"))?;
 
         Ok(vault)
     }

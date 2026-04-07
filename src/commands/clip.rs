@@ -31,11 +31,7 @@ fn cmd_status() -> Result<()> {
             config.clipboard.clear_after_seconds
         );
     } else {
-        println!(
-            "{} Auto-clear is {}.",
-            "○".dimmed(),
-            "disabled".dimmed()
-        );
+        println!("{} Auto-clear is {}.", "○".dimmed(), "disabled".dimmed());
     }
     Ok(())
 }

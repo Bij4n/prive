@@ -1,10 +1,16 @@
-/// PGP keyserver operations.
-/// Supports querying keys.openpgp.org via HKP (HTTP Keyserver Protocol).
+//! PGP keyserver operations.
+//! Supports querying keys.openpgp.org via HKP (HTTP Keyserver Protocol).
 
 const DEFAULT_KEYSERVER: &str = "https://keys.openpgp.org";
 
 pub struct KeyserverClient {
     base_url: String,
+}
+
+impl Default for KeyserverClient {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl KeyserverClient {
@@ -22,11 +28,7 @@ impl KeyserverClient {
 
     /// Search for a key by email or key ID.
     pub fn search(&self, query: &str) -> Result<Option<String>, String> {
-        let url = format!(
-            "{}/vks/v1/by-email/{}",
-            self.base_url,
-            urlencod(query)
-        );
+        let url = format!("{}/vks/v1/by-email/{}", self.base_url, urlencod(query));
 
         let response = reqwest::blocking::Client::new()
             .get(&url)
@@ -42,20 +44,14 @@ impl KeyserverClient {
         } else if response.status().as_u16() == 404 {
             Ok(None)
         } else {
-            Err(format!(
-                "Keyserver returned status {}",
-                response.status()
-            ))
+            Err(format!("Keyserver returned status {}", response.status()))
         }
     }
 
     /// Fetch a key by fingerprint.
     pub fn get_by_fingerprint(&self, fingerprint: &str) -> Result<Option<String>, String> {
         let clean = fingerprint.replace(' ', "").to_uppercase();
-        let url = format!(
-            "{}/vks/v1/by-fingerprint/{}",
-            self.base_url, clean
-        );
+        let url = format!("{}/vks/v1/by-fingerprint/{}", self.base_url, clean);
 
         let response = reqwest::blocking::Client::new()
             .get(&url)
@@ -71,10 +67,7 @@ impl KeyserverClient {
         } else if response.status().as_u16() == 404 {
             Ok(None)
         } else {
-            Err(format!(
-                "Keyserver returned status {}",
-                response.status()
-            ))
+            Err(format!("Keyserver returned status {}", response.status()))
         }
     }
 

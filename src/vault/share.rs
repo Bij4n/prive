@@ -8,8 +8,8 @@ pub fn share_entries(
     entries: &[VaultEntry],
     recipient_key: &SignedPublicKey,
 ) -> Result<Vec<u8>, String> {
-    let json = serde_json::to_string_pretty(entries)
-        .map_err(|e| format!("Serialization error: {e}"))?;
+    let json =
+        serde_json::to_string_pretty(entries).map_err(|e| format!("Serialization error: {e}"))?;
 
     operations::encrypt_to_keys(json.as_bytes(), "shared_entries.json", &[recipient_key])
 }
@@ -20,7 +20,8 @@ pub fn receive_shared(
     secret_key: &pgp::composed::SignedSecretKey,
     passphrase: &str,
 ) -> Result<Vec<VaultEntry>, String> {
-    let (decrypted, _filename) = operations::decrypt_with_key(encrypted_data, secret_key, passphrase)?;
+    let (decrypted, _filename) =
+        operations::decrypt_with_key(encrypted_data, secret_key, passphrase)?;
 
     let entries: Vec<VaultEntry> = serde_json::from_slice(&decrypted)
         .map_err(|e| format!("Failed to parse shared entries: {e}"))?;
@@ -39,8 +40,22 @@ mod tests {
         let pub_key: SignedPublicKey = key.clone().into();
 
         let entries = vec![
-            VaultEntry::new("GitHub".into(), Some("user".into()), "secret".into(), None, None, vec![]),
-            VaultEntry::new("AWS".into(), Some("admin".into()), "pass123".into(), None, None, vec!["cloud".into()]),
+            VaultEntry::new(
+                "GitHub".into(),
+                Some("user".into()),
+                "secret".into(),
+                None,
+                None,
+                vec![],
+            ),
+            VaultEntry::new(
+                "AWS".into(),
+                Some("admin".into()),
+                "pass123".into(),
+                None,
+                None,
+                vec!["cloud".into()],
+            ),
         ];
 
         let encrypted = share_entries(&entries, &pub_key).unwrap();

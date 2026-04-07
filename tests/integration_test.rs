@@ -28,7 +28,9 @@ fn test_generate_default() {
         .arg("generate")
         .assert()
         .success()
-        .stdout(predicate::str::is_match("[a-zA-Z0-9!@#$%^&*()\\-_=+\\[\\]{}|;:,.<>?]{20}").unwrap());
+        .stdout(
+            predicate::str::is_match("[a-zA-Z0-9!@#$%^&*()\\-_=+\\[\\]{}|;:,.<>?]{20}").unwrap(),
+        );
 }
 
 #[test]
@@ -44,7 +46,14 @@ fn test_generate_custom_length() {
 fn test_generate_passphrase() {
     Command::cargo_bin("prive")
         .unwrap()
-        .args(["generate", "--passphrase", "--words", "4", "--separator", "."])
+        .args([
+            "generate",
+            "--passphrase",
+            "--words",
+            "4",
+            "--separator",
+            ".",
+        ])
         .assert()
         .success()
         .stdout(predicate::str::contains("."));
@@ -97,7 +106,12 @@ fn test_vault_init_no_tty() {
     // vault init requires a TTY for password input, so it should fail gracefully
     Command::cargo_bin("prive")
         .unwrap()
-        .args(["vault", "init", "--vault-path", "/tmp/prive_test_nonexistent.pv"])
+        .args([
+            "vault",
+            "init",
+            "--vault-path",
+            "/tmp/prive_test_nonexistent.pv",
+        ])
         .assert()
         .failure();
 }
@@ -106,7 +120,13 @@ fn test_vault_init_no_tty() {
 fn test_pw_get_no_vault() {
     Command::cargo_bin("prive")
         .unwrap()
-        .args(["pw", "get", "nonexistent", "--vault-path", "/tmp/prive_test_no_vault.pv"])
+        .args([
+            "pw",
+            "get",
+            "nonexistent",
+            "--vault-path",
+            "/tmp/prive_test_no_vault.pv",
+        ])
         .assert()
         .failure();
 }

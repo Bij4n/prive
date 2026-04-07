@@ -34,7 +34,10 @@ fn cmd_init(vault_path_override: Option<&Path>) -> Result<()> {
         anyhow::bail!("Vault already exists at {}", path.display());
     }
 
-    println!("Creating new vault at {}", path.display().to_string().dimmed());
+    println!(
+        "Creating new vault at {}",
+        path.display().to_string().dimmed()
+    );
 
     let password = rpassword::prompt_password("Enter master password: ")?;
     if password.is_empty() {
@@ -45,8 +48,7 @@ fn cmd_init(vault_path_override: Option<&Path>) -> Result<()> {
         anyhow::bail!("Passwords do not match");
     }
 
-    VaultStorage::create(&path, password.as_bytes())
-        .map_err(|e| anyhow::anyhow!(e))?;
+    VaultStorage::create(&path, password.as_bytes()).map_err(|e| anyhow::anyhow!(e))?;
 
     println!("{} Vault created successfully.", "✓".green());
     Ok(())
@@ -56,8 +58,8 @@ fn cmd_change_password(vault_path_override: Option<&Path>) -> Result<()> {
     let path = resolve_vault_path(vault_path_override);
 
     let old_password = rpassword::prompt_password("Enter current master password: ")?;
-    let vault = VaultStorage::load(&path, old_password.as_bytes())
-        .map_err(|e| anyhow::anyhow!(e))?;
+    let vault =
+        VaultStorage::load(&path, old_password.as_bytes()).map_err(|e| anyhow::anyhow!(e))?;
 
     let new_password = rpassword::prompt_password("Enter new master password: ")?;
     if new_password.is_empty() {
@@ -68,8 +70,7 @@ fn cmd_change_password(vault_path_override: Option<&Path>) -> Result<()> {
         anyhow::bail!("Passwords do not match");
     }
 
-    VaultStorage::save(&path, &vault, new_password.as_bytes())
-        .map_err(|e| anyhow::anyhow!(e))?;
+    VaultStorage::save(&path, &vault, new_password.as_bytes()).map_err(|e| anyhow::anyhow!(e))?;
 
     println!("{} Master password changed successfully.", "✓".green());
     Ok(())
@@ -99,10 +100,14 @@ fn cmd_list() -> Result<()> {
                 .to_string_lossy()
                 .to_string();
 
-            let is_active = active.is_some_and(|a| a == name)
-                || (active.is_none() && name == "vault");
+            let is_active =
+                active.is_some_and(|a| a == name) || (active.is_none() && name == "vault");
 
-            let marker = if is_active { " (active)".green().to_string() } else { String::new() };
+            let marker = if is_active {
+                " (active)".green().to_string()
+            } else {
+                String::new()
+            };
             let size = entry.metadata().map(|m| m.len()).unwrap_or(0);
             println!("  {} ({} bytes){}", name, size, marker);
             found = true;
@@ -145,8 +150,7 @@ fn cmd_create(name: &str) -> Result<()> {
         anyhow::bail!("Passwords do not match");
     }
 
-    VaultStorage::create(&path, password.as_bytes())
-        .map_err(|e| anyhow::anyhow!(e))?;
+    VaultStorage::create(&path, password.as_bytes()).map_err(|e| anyhow::anyhow!(e))?;
 
     println!("{} Vault '{name}' created.", "✓".green());
     Ok(())
@@ -185,21 +189,32 @@ fn cmd_info(vault_path_override: Option<&Path>) -> Result<()> {
         anyhow::bail!("Vault not found at {}", path.display());
     }
 
-    let header = migrate::validate_vault_header(&path)
-        .map_err(|e| anyhow::anyhow!(e))?;
+    let header = migrate::validate_vault_header(&path).map_err(|e| anyhow::anyhow!(e))?;
 
     println!("{}: {}", "Path".bold(), path.display());
     println!("{}: {}", "Format version".bold(), header.version);
     println!("{}: {} bytes", "File size".bold(), header.file_size);
-    println!("{}: {} bytes", "Ciphertext size".bold(), header.ciphertext_size);
+    println!(
+        "{}: {} bytes",
+        "Ciphertext size".bold(),
+        header.ciphertext_size
+    );
 
     // Try to load and show entry count
     let password = rpassword::prompt_password("Master password (to show details): ")?;
     if let Ok(vault) = VaultStorage::load(&path, password.as_bytes()) {
         println!("{}: {}", "Entries".bold(), vault.entries.len());
         println!("{}: {}", "Notes".bold(), vault.secure_notes.len());
-        println!("{}: {}", "Created".bold(), vault.created_at.format("%Y-%m-%d %H:%M"));
-        println!("{}: {}", "Modified".bold(), vault.modified_at.format("%Y-%m-%d %H:%M"));
+        println!(
+            "{}: {}",
+            "Created".bold(),
+            vault.created_at.format("%Y-%m-%d %H:%M")
+        );
+        println!(
+            "{}: {}",
+            "Modified".bold(),
+            vault.modified_at.format("%Y-%m-%d %H:%M")
+        );
     }
 
     Ok(())

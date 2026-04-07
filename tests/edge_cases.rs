@@ -55,7 +55,12 @@ fn test_secure_note_with_multiline_unicode() {
 fn test_vault_search_empty_query() {
     let mut vault = prive::vault::model::Vault::new();
     vault.entries.push(prive::vault::model::VaultEntry::new(
-        "test".into(), None, "pass".into(), None, None, vec![],
+        "test".into(),
+        None,
+        "pass".into(),
+        None,
+        None,
+        vec![],
     ));
     // Empty search should match everything (contains "")
     let results = vault.search("");
@@ -186,7 +191,12 @@ fn test_entry_with_special_chars() {
 #[test]
 fn test_password_history_many_rotations() {
     let mut entry = prive::vault::model::VaultEntry::new(
-        "test".into(), None, "pass_0".into(), None, None, vec![],
+        "test".into(),
+        None,
+        "pass_0".into(),
+        None,
+        None,
+        vec![],
     );
     for i in 1..=50 {
         entry.rotate_password(format!("pass_{i}"));
@@ -237,7 +247,8 @@ fn test_config_deserialize_empty_toml() {
 
 #[test]
 fn test_config_deserialize_partial_toml() {
-    let config: prive::config::AppConfig = toml::from_str("[generate]\ndefault_length = 32\n").unwrap();
+    let config: prive::config::AppConfig =
+        toml::from_str("[generate]\ndefault_length = 32\n").unwrap();
     assert_eq!(config.generate.default_length, 32);
     assert_eq!(config.clipboard.clear_after_seconds, 45); // default
 }
@@ -270,15 +281,26 @@ fn test_strength_all_same_char() {
 fn test_trust_db_overwrite() {
     let mut db = prive::pgp::trust::TrustDb::default();
     db.set_trust("KEY1", "FP1", prive::pgp::trust::TrustLevel::Marginal, None);
-    db.set_trust("KEY1", "FP1", prive::pgp::trust::TrustLevel::Full, Some("upgraded".into()));
+    db.set_trust(
+        "KEY1",
+        "FP1",
+        prive::pgp::trust::TrustLevel::Full,
+        Some("upgraded".into()),
+    );
     assert_eq!(db.get_trust("KEY1"), prive::pgp::trust::TrustLevel::Full);
     assert_eq!(db.list_trusted().len(), 1);
 }
 
 #[test]
 fn test_parse_expiry_edge_cases() {
-    assert_eq!(prive::pgp::trust::parse_expiry("0y"), Some(chrono::Duration::days(0)));
-    assert_eq!(prive::pgp::trust::parse_expiry("1d"), Some(chrono::Duration::days(1)));
+    assert_eq!(
+        prive::pgp::trust::parse_expiry("0y"),
+        Some(chrono::Duration::days(0))
+    );
+    assert_eq!(
+        prive::pgp::trust::parse_expiry("1d"),
+        Some(chrono::Duration::days(1))
+    );
     assert!(prive::pgp::trust::parse_expiry("abc").is_none());
     assert!(prive::pgp::trust::parse_expiry("").is_none());
 }

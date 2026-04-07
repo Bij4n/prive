@@ -19,8 +19,7 @@ pub fn handle_generate(args: &GenerateArgs) -> Result<()> {
     } else if args.pronounceable {
         password_gen::generate_pronounceable(args.length)
     } else if let Some(charset) = &args.charset {
-        password_gen::generate_custom(args.length, charset)
-            .map_err(|e| anyhow::anyhow!(e))?
+        password_gen::generate_custom(args.length, charset).map_err(|e| anyhow::anyhow!(e))?
     } else if args.passphrase {
         password_gen::generate_passphrase(args.words, &args.separator)
     } else {
@@ -48,11 +47,12 @@ fn resolve_vault_path(override_path: Option<&Path>) -> std::path::PathBuf {
         .unwrap_or_else(config::vault_path)
 }
 
-fn unlock_vault(vault_path: Option<&Path>) -> Result<(std::path::PathBuf, crate::vault::model::Vault, String)> {
+fn unlock_vault(
+    vault_path: Option<&Path>,
+) -> Result<(std::path::PathBuf, crate::vault::model::Vault, String)> {
     let path = resolve_vault_path(vault_path);
     let password = rpassword::prompt_password("Master password: ")?;
-    let vault = VaultStorage::load(&path, password.as_bytes())
-        .map_err(|e| anyhow::anyhow!(e))?;
+    let vault = VaultStorage::load(&path, password.as_bytes()).map_err(|e| anyhow::anyhow!(e))?;
     Ok((path, vault, password))
 }
 
@@ -78,9 +78,12 @@ pub fn handle_pw(cmd: &PwCommand, vault_path_override: Option<&Path>) -> Result<
             notes.as_deref(),
             tags,
         ),
-        PwCommand::Get { name, show, copy, field } => {
-            cmd_get(vault_path_override, name, *show, *copy, field.as_deref())
-        }
+        PwCommand::Get {
+            name,
+            show,
+            copy,
+            field,
+        } => cmd_get(vault_path_override, name, *show, *copy, field.as_deref()),
         PwCommand::List { tags, format } => cmd_list(vault_path_override, tags, format),
         PwCommand::Edit {
             name,
@@ -106,9 +109,7 @@ pub fn handle_pw(cmd: &PwCommand, vault_path_override: Option<&Path>) -> Result<
         }
         PwCommand::History { name, show } => cmd_history(vault_path_override, name, *show),
         PwCommand::Attach { name, file } => cmd_attach(vault_path_override, name, file),
-        PwCommand::Detach { name, attachment } => {
-            cmd_detach(vault_path_override, name, attachment)
-        }
+        PwCommand::Detach { name, attachment } => cmd_detach(vault_path_override, name, attachment),
         PwCommand::Attachments { name } => cmd_attachments(vault_path_override, name),
     }
 }
@@ -156,8 +157,7 @@ fn cmd_add(
     vault.entries.push(entry);
     vault.modified_at = chrono::Utc::now();
 
-    VaultStorage::save(&path, &vault, master_pw.as_bytes())
-        .map_err(|e| anyhow::anyhow!(e))?;
+    VaultStorage::save(&path, &vault, master_pw.as_bytes()).map_err(|e| anyhow::anyhow!(e))?;
 
     println!("{} Entry '{}' added.", "✓".green(), name);
     Ok(())
@@ -253,12 +253,14 @@ fn cmd_list(vault_path: Option<&Path>, filter_tags: &[String], format: &str) -> 
             let json = serde_json::to_string_pretty(
                 &entries
                     .iter()
-                    .map(|e| serde_json::json!({
-                        "name": e.name,
-                        "username": e.username,
-                        "url": e.url,
-                        "tags": e.tags,
-                    }))
+                    .map(|e| {
+                        serde_json::json!({
+                            "name": e.name,
+                            "username": e.username,
+                            "url": e.url,
+                            "tags": e.tags,
+                        })
+                    })
                     .collect::<Vec<_>>(),
             )?;
             println!("{json}");
@@ -324,8 +326,7 @@ fn cmd_edit(
     entry.modified_at = chrono::Utc::now();
     vault.modified_at = chrono::Utc::now();
 
-    VaultStorage::save(&path, &vault, master_pw.as_bytes())
-        .map_err(|e| anyhow::anyhow!(e))?;
+    VaultStorage::save(&path, &vault, master_pw.as_bytes()).map_err(|e| anyhow::anyhow!(e))?;
 
     println!("{} Entry '{}' updated.", "✓".green(), name);
     Ok(())
@@ -352,8 +353,7 @@ fn cmd_rm(vault_path: Option<&Path>, name: &str, force: bool) -> Result<()> {
     vault.remove_by_name(name);
     vault.modified_at = chrono::Utc::now();
 
-    VaultStorage::save(&path, &vault, master_pw.as_bytes())
-        .map_err(|e| anyhow::anyhow!(e))?;
+    VaultStorage::save(&path, &vault, master_pw.as_bytes()).map_err(|e| anyhow::anyhow!(e))?;
 
     println!("{} Entry '{}' deleted.", "✓".green(), name);
     Ok(())
@@ -407,10 +407,7 @@ fn cmd_totp(vault_path: Option<&Path>, name: &str) -> Result<()> {
     let remaining = totp::time_remaining(30);
 
     println!("{}: {}", "TOTP Code".bold(), code.green().bold());
-    println!(
-        "Expires in {} seconds",
-        remaining.to_string().yellow()
-    );
+    println!("Expires in {} seconds", remaining.to_string().yellow());
 
     Ok(())
 }
@@ -433,8 +430,7 @@ fn cmd_totp_add(
         params.secret
     } else if let Some(s) = secret {
         // Validate that the secret is valid base32
-        totp::decode_base32_secret(s)
-            .map_err(|e| anyhow::anyhow!("Invalid base32 secret: {e}"))?;
+        totp::decode_base32_secret(s).map_err(|e| anyhow::anyhow!("Invalid base32 secret: {e}"))?;
         s.to_string()
     } else {
         anyhow::bail!("Provide either --secret or --uri");
@@ -444,8 +440,7 @@ fn cmd_totp_add(
     entry.modified_at = chrono::Utc::now();
     vault.modified_at = chrono::Utc::now();
 
-    VaultStorage::save(&path, &vault, master_pw.as_bytes())
-        .map_err(|e| anyhow::anyhow!(e))?;
+    VaultStorage::save(&path, &vault, master_pw.as_bytes()).map_err(|e| anyhow::anyhow!(e))?;
 
     println!("{} TOTP secret added to '{}'.", "✓".green(), name);
     Ok(())
@@ -463,7 +458,12 @@ fn cmd_history(vault_path: Option<&Path>, name: &str, show: bool) -> Result<()> 
         return Ok(());
     }
 
-    println!("{}: {} ({} previous passwords)\n", "History for".bold(), name, entry.password_history.len());
+    println!(
+        "{}: {} ({} previous passwords)\n",
+        "History for".bold(),
+        name,
+        entry.password_history.len()
+    );
 
     for (i, hist) in entry.password_history.iter().enumerate().rev() {
         let pw_display = if show {
@@ -523,8 +523,8 @@ fn cmd_attach(vault_path: Option<&Path>, name: &str, file: &PathBuf) -> Result<(
         );
     }
 
-    let raw_data = std::fs::read(file)
-        .map_err(|e| anyhow::anyhow!("Failed to read file: {}", e))?;
+    let raw_data =
+        std::fs::read(file).map_err(|e| anyhow::anyhow!("Failed to read file: {}", e))?;
 
     let mime_type = detect_mime_type(&file_name);
 
@@ -541,8 +541,7 @@ fn cmd_attach(vault_path: Option<&Path>, name: &str, file: &PathBuf) -> Result<(
     entry.add_attachment(attachment);
     vault.modified_at = chrono::Utc::now();
 
-    VaultStorage::save(&path, &vault, master_pw.as_bytes())
-        .map_err(|e| anyhow::anyhow!(e))?;
+    VaultStorage::save(&path, &vault, master_pw.as_bytes()).map_err(|e| anyhow::anyhow!(e))?;
 
     println!(
         "{} Attached '{}' to entry '{}'.",
@@ -570,8 +569,7 @@ fn cmd_detach(vault_path: Option<&Path>, name: &str, attachment_name: &str) -> R
 
     vault.modified_at = chrono::Utc::now();
 
-    VaultStorage::save(&path, &vault, master_pw.as_bytes())
-        .map_err(|e| anyhow::anyhow!(e))?;
+    VaultStorage::save(&path, &vault, master_pw.as_bytes()).map_err(|e| anyhow::anyhow!(e))?;
 
     println!(
         "{} Removed attachment '{}' from entry '{}'.",
@@ -619,11 +617,7 @@ fn cmd_attachments(vault_path: Option<&Path>, name: &str) -> Result<()> {
 
 /// Simple MIME type detection based on file extension.
 fn detect_mime_type(filename: &str) -> String {
-    let ext = filename
-        .rsplit('.')
-        .next()
-        .unwrap_or("")
-        .to_lowercase();
+    let ext = filename.rsplit('.').next().unwrap_or("").to_lowercase();
     match ext.as_str() {
         "txt" => "text/plain",
         "pdf" => "application/pdf",

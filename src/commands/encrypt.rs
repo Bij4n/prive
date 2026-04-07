@@ -42,8 +42,7 @@ pub fn handle_encrypt(args: &EncryptArgs) -> Result<()> {
         }
 
         let key_refs: Vec<&pgp::composed::SignedPublicKey> = pub_keys.iter().collect();
-        operations::encrypt_to_keys(&data, &filename, &key_refs)
-            .map_err(|e| anyhow::anyhow!(e))?
+        operations::encrypt_to_keys(&data, &filename, &key_refs).map_err(|e| anyhow::anyhow!(e))?
     } else {
         anyhow::bail!(
             "Specify --recipient <KEY_ID> for PGP encryption or --symmetric for passphrase encryption"
@@ -78,9 +77,7 @@ pub fn handle_decrypt(args: &DecryptArgs) -> Result<()> {
     // For now, try key-based first, then fall back to password
 
     let keyring = Keyring::open().map_err(|e| anyhow::anyhow!(e))?;
-    let secret_keys = keyring
-        .list_keys(true)
-        .map_err(|e| anyhow::anyhow!(e))?;
+    let secret_keys = keyring.list_keys(true).map_err(|e| anyhow::anyhow!(e))?;
 
     let mut decrypted = None;
     let mut orig_filename = String::new();
@@ -88,9 +85,10 @@ pub fn handle_decrypt(args: &DecryptArgs) -> Result<()> {
     // Try each secret key
     for key_info in &secret_keys {
         if let Ok(secret_key) = keyring.load_secret_key(&key_info.key_id) {
-            let passphrase = rpassword::prompt_password(
-                format!("Passphrase for key {} (empty if none): ", &key_info.key_id)
-            )?;
+            let passphrase = rpassword::prompt_password(format!(
+                "Passphrase for key {} (empty if none): ",
+                &key_info.key_id
+            ))?;
 
             match operations::decrypt_with_key(&encrypted_data, &secret_key, &passphrase) {
                 Ok((data, fname)) => {

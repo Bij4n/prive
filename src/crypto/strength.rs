@@ -2,7 +2,7 @@
 
 #[derive(Debug, Clone)]
 pub struct StrengthReport {
-    pub score: u32,      // 0-100
+    pub score: u32, // 0-100
     pub level: StrengthLevel,
     pub feedback: Vec<String>,
     pub crack_time_display: String,
@@ -43,7 +43,9 @@ pub fn analyze_strength(password: &str) -> StrengthReport {
     } else if len >= 8 {
         score += 10;
     } else {
-        feedback.push(format!("Too short ({len} chars). Use at least 12 characters."));
+        feedback.push(format!(
+            "Too short ({len} chars). Use at least 12 characters."
+        ));
     }
 
     // Character variety
@@ -165,11 +167,35 @@ fn has_repeated_pattern(password: &str) -> bool {
 
 fn is_common_password(password: &str) -> bool {
     const COMMON: &[&str] = &[
-        "password", "123456", "12345678", "qwerty", "abc123", "monkey",
-        "1234567", "letmein", "trustno1", "dragon", "baseball", "master",
-        "michael", "shadow", "ashley", "football", "admin", "passw0rd",
-        "welcome", "login", "princess", "starwars", "solo", "hello",
-        "charlie", "donald", "sunshine", "password1", "qwerty123",
+        "password",
+        "123456",
+        "12345678",
+        "qwerty",
+        "abc123",
+        "monkey",
+        "1234567",
+        "letmein",
+        "trustno1",
+        "dragon",
+        "baseball",
+        "master",
+        "michael",
+        "shadow",
+        "ashley",
+        "football",
+        "admin",
+        "passw0rd",
+        "welcome",
+        "login",
+        "princess",
+        "starwars",
+        "solo",
+        "hello",
+        "charlie",
+        "donald",
+        "sunshine",
+        "password1",
+        "qwerty123",
     ];
     COMMON.contains(&password)
 }
@@ -209,7 +235,10 @@ mod tests {
     fn test_very_weak_password() {
         let report = analyze_strength("a");
         assert!(report.score <= 30);
-        assert!(matches!(report.level, StrengthLevel::VeryWeak | StrengthLevel::Weak));
+        assert!(matches!(
+            report.level,
+            StrengthLevel::VeryWeak | StrengthLevel::Weak
+        ));
     }
 
     #[test]

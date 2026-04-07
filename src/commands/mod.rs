@@ -1,9 +1,9 @@
 pub mod audit;
 pub mod backup;
 pub mod clip;
-pub mod doctor;
 pub mod completions;
 pub mod config_cmd;
+pub mod doctor;
 pub mod encrypt;
 pub mod import_export;
 pub mod notes;

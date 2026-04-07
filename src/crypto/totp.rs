@@ -21,8 +21,7 @@ pub fn generate_totp_at(
     let counter = unix_time / time_step;
     let counter_bytes = counter.to_be_bytes();
 
-    let mut mac =
-        HmacSha1::new_from_slice(secret).map_err(|e| format!("HMAC init error: {e}"))?;
+    let mut mac = HmacSha1::new_from_slice(secret).map_err(|e| format!("HMAC init error: {e}"))?;
     mac.update(&counter_bytes);
     let result = mac.finalize().into_bytes();
 
@@ -39,7 +38,7 @@ pub fn generate_totp_at(
 }
 
 pub fn decode_base32_secret(encoded: &str) -> Result<Vec<u8>, String> {
-    let cleaned = encoded.replace(' ', "").replace('-', "").to_uppercase();
+    let cleaned = encoded.replace([' ', '-'], "").to_uppercase();
     base32::decode(base32::Alphabet::Rfc4648 { padding: false }, &cleaned)
         .or_else(|| base32::decode(base32::Alphabet::Rfc4648 { padding: true }, &cleaned))
         .ok_or_else(|| "Invalid base32 encoding".to_string())

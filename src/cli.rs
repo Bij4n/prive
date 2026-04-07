@@ -2,7 +2,11 @@ use clap::{Parser, Subcommand, ValueEnum};
 use std::path::PathBuf;
 
 #[derive(Parser)]
-#[command(name = "prive", version, about = "Cross-platform password & encryption toolkit")]
+#[command(
+    name = "prive",
+    version,
+    about = "Cross-platform password & encryption toolkit"
+)]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,

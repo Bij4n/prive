@@ -124,7 +124,9 @@ fn test_strength_various_passwords() {
         assert!(
             expected_range.contains(&report.score),
             "Password '{}' scored {} (expected {:?})",
-            pw, report.score, expected_range
+            pw,
+            report.score,
+            expected_range
         );
     }
 }
@@ -153,7 +155,11 @@ fn test_audit_perfect_vault() {
         ));
     }
     let report = prive::crypto::audit::audit_vault(&vault);
-    assert!(report.score >= 70, "Perfect vault scored only {}", report.score);
+    assert!(
+        report.score >= 70,
+        "Perfect vault scored only {}",
+        report.score
+    );
 }
 
 #[test]
@@ -162,20 +168,40 @@ fn test_audit_all_issues() {
 
     // Weak password
     vault.entries.push(prive::vault::model::VaultEntry::new(
-        "weak".into(), None, "abc".into(), None, None, vec![],
+        "weak".into(),
+        None,
+        "abc".into(),
+        None,
+        None,
+        vec![],
     ));
 
     // Duplicate passwords
     vault.entries.push(prive::vault::model::VaultEntry::new(
-        "dup1".into(), None, "SamePass!123".into(), None, None, vec![],
+        "dup1".into(),
+        None,
+        "SamePass!123".into(),
+        None,
+        None,
+        vec![],
     ));
     vault.entries.push(prive::vault::model::VaultEntry::new(
-        "dup2".into(), None, "SamePass!123".into(), None, None, vec![],
+        "dup2".into(),
+        None,
+        "SamePass!123".into(),
+        None,
+        None,
+        vec![],
     ));
 
     // Common password
     vault.entries.push(prive::vault::model::VaultEntry::new(
-        "common".into(), None, "password123Ab!".into(), None, None, vec![],
+        "common".into(),
+        None,
+        "password123Ab!".into(),
+        None,
+        None,
+        vec![],
     ));
 
     let report = prive::crypto::audit::audit_vault(&vault);
@@ -215,14 +241,34 @@ fn test_trust_db_full_lifecycle() {
     let mut db = prive::pgp::trust::TrustDb::default();
 
     // Add keys at different trust levels
-    db.set_trust("KEY_A", "FP_A", prive::pgp::trust::TrustLevel::Full, Some("verified in person".into()));
-    db.set_trust("KEY_B", "FP_B", prive::pgp::trust::TrustLevel::Marginal, None);
-    db.set_trust("KEY_C", "FP_C", prive::pgp::trust::TrustLevel::Ultimate, Some("my key".into()));
+    db.set_trust(
+        "KEY_A",
+        "FP_A",
+        prive::pgp::trust::TrustLevel::Full,
+        Some("verified in person".into()),
+    );
+    db.set_trust(
+        "KEY_B",
+        "FP_B",
+        prive::pgp::trust::TrustLevel::Marginal,
+        None,
+    );
+    db.set_trust(
+        "KEY_C",
+        "FP_C",
+        prive::pgp::trust::TrustLevel::Ultimate,
+        Some("my key".into()),
+    );
 
     assert_eq!(db.list_trusted().len(), 3);
 
     // Upgrade trust
-    db.set_trust("KEY_B", "FP_B", prive::pgp::trust::TrustLevel::Full, Some("now verified".into()));
+    db.set_trust(
+        "KEY_B",
+        "FP_B",
+        prive::pgp::trust::TrustLevel::Full,
+        Some("now verified".into()),
+    );
     assert_eq!(db.get_trust("KEY_B"), prive::pgp::trust::TrustLevel::Full);
 
     // Remove
@@ -232,7 +278,10 @@ fn test_trust_db_full_lifecycle() {
     // Serialize roundtrip
     let json = serde_json::to_string(&db).unwrap();
     let loaded: prive::pgp::trust::TrustDb = serde_json::from_str(&json).unwrap();
-    assert_eq!(loaded.get_trust("KEY_C"), prive::pgp::trust::TrustLevel::Ultimate);
+    assert_eq!(
+        loaded.get_trust("KEY_C"),
+        prive::pgp::trust::TrustLevel::Ultimate
+    );
 }
 
 // --- Config comprehensive ---

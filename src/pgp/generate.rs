@@ -30,12 +30,12 @@ pub fn generate_keypair(
             KeyType::ECDH(pgp::crypto::ecc_curve::ECCCurve::Curve25519),
             KeyVersion::V4,
         ),
-        "rsa4096" | "rsa" => (
-            KeyType::Rsa(4096),
-            KeyType::Rsa(4096),
-            KeyVersion::V4,
-        ),
-        other => return Err(format!("Unsupported algorithm: {other}. Use cv25519 or rsa4096")),
+        "rsa4096" | "rsa" => (KeyType::Rsa(4096), KeyType::Rsa(4096), KeyVersion::V4),
+        other => {
+            return Err(format!(
+                "Unsupported algorithm: {other}. Use cv25519 or rsa4096"
+            ));
+        }
     };
 
     let key_params = SecretKeyParamsBuilder::default()
@@ -49,10 +49,7 @@ pub fn generate_keypair(
             SymmetricKeyAlgorithm::AES192,
             SymmetricKeyAlgorithm::AES128,
         ])
-        .preferred_hash_algorithms(smallvec![
-            HashAlgorithm::SHA2_512,
-            HashAlgorithm::SHA2_256,
-        ])
+        .preferred_hash_algorithms(smallvec![HashAlgorithm::SHA2_512, HashAlgorithm::SHA2_256,])
         .preferred_compression_algorithms(smallvec![
             CompressionAlgorithm::ZLIB,
             CompressionAlgorithm::ZIP,
@@ -69,7 +66,7 @@ pub fn generate_keypair(
         .map_err(|e| format!("Key params error: {e}"))?;
 
     let secret_key: SecretKey = key_params
-        .generate(&mut rng)
+        .generate(rng)
         .map_err(|e| format!("Key generation error: {e}"))?;
 
     let passphrase_clone = passphrase.to_string();

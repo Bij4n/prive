@@ -57,6 +57,12 @@ pub struct SecureNote {
     pub modified_at: DateTime<Utc>,
 }
 
+impl Default for Vault {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Vault {
     pub fn new() -> Self {
         let now = Utc::now();
@@ -83,8 +89,7 @@ impl Vault {
 
     pub fn remove_by_name(&mut self, name: &str) -> bool {
         let before = self.entries.len();
-        self.entries
-            .retain(|e| !e.name.eq_ignore_ascii_case(name));
+        self.entries.retain(|e| !e.name.eq_ignore_ascii_case(name));
         self.entries.len() < before
     }
 
@@ -235,14 +240,7 @@ mod tests {
 
     #[test]
     fn test_password_history() {
-        let mut entry = VaultEntry::new(
-            "test".into(),
-            None,
-            "old_pass".into(),
-            None,
-            None,
-            vec![],
-        );
+        let mut entry = VaultEntry::new("test".into(), None, "old_pass".into(), None, None, vec![]);
         entry.rotate_password("new_pass".into());
         assert_eq!(entry.password, "new_pass");
         assert_eq!(entry.password_history.len(), 1);
@@ -312,14 +310,7 @@ mod tests {
 
     #[test]
     fn test_add_attachment() {
-        let mut entry = VaultEntry::new(
-            "test".into(),
-            None,
-            "pass".into(),
-            None,
-            None,
-            vec![],
-        );
+        let mut entry = VaultEntry::new("test".into(), None, "pass".into(), None, None, vec![]);
         assert!(entry.list_attachments().is_empty());
 
         entry.add_attachment(make_attachment("readme.txt"));
@@ -329,14 +320,7 @@ mod tests {
 
     #[test]
     fn test_get_attachment() {
-        let mut entry = VaultEntry::new(
-            "test".into(),
-            None,
-            "pass".into(),
-            None,
-            None,
-            vec![],
-        );
+        let mut entry = VaultEntry::new("test".into(), None, "pass".into(), None, None, vec![]);
         entry.add_attachment(make_attachment("logo.png"));
 
         assert!(entry.get_attachment("logo.png").is_some());
@@ -346,14 +330,7 @@ mod tests {
 
     #[test]
     fn test_remove_attachment() {
-        let mut entry = VaultEntry::new(
-            "test".into(),
-            None,
-            "pass".into(),
-            None,
-            None,
-            vec![],
-        );
+        let mut entry = VaultEntry::new("test".into(), None, "pass".into(), None, None, vec![]);
         entry.add_attachment(make_attachment("a.txt"));
         entry.add_attachment(make_attachment("b.txt"));
 
@@ -366,14 +343,7 @@ mod tests {
 
     #[test]
     fn test_attachment_serde_roundtrip() {
-        let mut entry = VaultEntry::new(
-            "serde_test".into(),
-            None,
-            "pw".into(),
-            None,
-            None,
-            vec![],
-        );
+        let mut entry = VaultEntry::new("serde_test".into(), None, "pw".into(), None, None, vec![]);
         entry.add_attachment(make_attachment("doc.pdf"));
 
         let json = serde_json::to_string(&entry).unwrap();

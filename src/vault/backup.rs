@@ -10,6 +10,12 @@ pub struct BackupManager {
     max_backups: usize,
 }
 
+impl Default for BackupManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl BackupManager {
     pub fn new() -> Self {
         let cfg = config::AppConfig::load();
@@ -39,8 +45,7 @@ impl BackupManager {
         let backup_name = format!("vault_{timestamp}.pv.bak");
         let backup_path = self.backup_dir.join(backup_name);
 
-        fs::copy(vault_path, &backup_path)
-            .map_err(|e| format!("Failed to create backup: {e}"))?;
+        fs::copy(vault_path, &backup_path).map_err(|e| format!("Failed to create backup: {e}"))?;
 
         self.rotate_backups()?;
 
@@ -55,17 +60,21 @@ impl BackupManager {
 
         let mut backups: Vec<BackupInfo> = Vec::new();
 
-        let entries =
-            fs::read_dir(&self.backup_dir).map_err(|e| format!("Failed to read backup dir: {e}"))?;
+        let entries = fs::read_dir(&self.backup_dir)
+            .map_err(|e| format!("Failed to read backup dir: {e}"))?;
 
         for entry in entries {
             let entry = entry.map_err(|e| format!("Read dir error: {e}"))?;
             let path = entry.path();
-            let name = path.file_name().unwrap_or_default().to_string_lossy().to_string();
+            let name = path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
 
             if name.starts_with("vault_") && name.ends_with(".pv.bak") {
-                let metadata = fs::metadata(&path)
-                    .map_err(|e| format!("Failed to read metadata: {e}"))?;
+                let metadata =
+                    fs::metadata(&path).map_err(|e| format!("Failed to read metadata: {e}"))?;
                 let size = metadata.len();
                 let modified = metadata
                     .modified()
@@ -101,8 +110,7 @@ impl BackupManager {
             self.create_backup(vault_path)?;
         }
 
-        fs::copy(backup_path, vault_path)
-            .map_err(|e| format!("Failed to restore backup: {e}"))?;
+        fs::copy(backup_path, vault_path).map_err(|e| format!("Failed to restore backup: {e}"))?;
 
         Ok(())
     }

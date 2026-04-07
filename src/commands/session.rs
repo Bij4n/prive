@@ -27,17 +27,12 @@ fn cmd_start(vault_path: Option<&Path>) -> Result<()> {
         .unwrap_or_else(config::vault_path);
 
     let password = rpassword::prompt_password("Master password: ")?;
-    let vault = VaultStorage::load(&path, password.as_bytes())
-        .map_err(|e| anyhow::anyhow!(e))?;
+    let vault = VaultStorage::load(&path, password.as_bytes()).map_err(|e| anyhow::anyhow!(e))?;
 
     let cfg = config::AppConfig::load();
     let timeout = cfg.session.timeout_seconds;
 
-    println!(
-        "{} Starting agent (timeout: {}s)...",
-        "✓".green(),
-        timeout
-    );
+    println!("{} Starting agent (timeout: {}s)...", "✓".green(), timeout);
     println!("  Vault unlocked in memory. Other prive commands will use the agent.");
     println!("  Run `prive session stop` or wait for timeout to lock.");
 
@@ -59,7 +54,11 @@ fn cmd_stop() -> Result<()> {
 
 fn cmd_status() -> Result<()> {
     if session::is_agent_running() {
-        println!("{} Agent is {} running.", "●".green(), "running".green().bold());
+        println!(
+            "{} Agent is {} running.",
+            "●".green(),
+            "running".green().bold()
+        );
     } else {
         println!("{} Agent is {}.", "○".dimmed(), "not running".dimmed());
     }

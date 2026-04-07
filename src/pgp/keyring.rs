@@ -39,8 +39,7 @@ impl Keyring {
             .to_armored_string(None.into())
             .map_err(|e| format!("Armor encoding error: {e}"))?;
         let pub_path = self.dir.join(format!("{key_id}.pub.asc"));
-        fs::write(&pub_path, &pub_armor)
-            .map_err(|e| format!("Failed to write public key: {e}"))?;
+        fs::write(&pub_path, &pub_armor).map_err(|e| format!("Failed to write public key: {e}"))?;
 
         Ok(key_id)
     }
@@ -53,7 +52,11 @@ impl Keyring {
         for entry in entries {
             let entry = entry.map_err(|e| format!("Read dir error: {e}"))?;
             let path = entry.path();
-            let name = path.file_name().unwrap_or_default().to_string_lossy().to_string();
+            let name = path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
 
             if name.ends_with(".sec.asc") {
                 let content =
@@ -114,7 +117,11 @@ impl Keyring {
         for entry in entries {
             let entry = entry.map_err(|e| format!("Read dir error: {e}"))?;
             let path = entry.path();
-            let name = path.file_name().unwrap_or_default().to_string_lossy().to_lowercase();
+            let name = path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_lowercase();
 
             if name.ends_with(".sec.asc") && name.contains(&key_id_lower) {
                 let content =
@@ -136,7 +143,11 @@ impl Keyring {
         for entry in entries {
             let entry = entry.map_err(|e| format!("Read dir error: {e}"))?;
             let path = entry.path();
-            let name = path.file_name().unwrap_or_default().to_string_lossy().to_lowercase();
+            let name = path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_lowercase();
 
             if name.ends_with(".pub.asc") && name.contains(&key_id_lower) {
                 let content =
@@ -161,7 +172,11 @@ impl Keyring {
             for entry in entries {
                 let entry = entry.map_err(|e| format!("Read dir error: {e}"))?;
                 let path = entry.path();
-                let name = path.file_name().unwrap_or_default().to_string_lossy().to_lowercase();
+                let name = path
+                    .file_name()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .to_lowercase();
 
                 if name.ends_with(ext) && name.contains(&key_id_lower) {
                     fs::remove_file(&path)

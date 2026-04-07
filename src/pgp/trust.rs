@@ -30,7 +30,7 @@ impl std::fmt::Display for TrustLevel {
 }
 
 impl TrustLevel {
-    pub fn from_str(s: &str) -> Self {
+    pub fn parse_level(s: &str) -> Self {
         match s.to_lowercase().as_str() {
             "untrusted" | "never" => TrustLevel::Untrusted,
             "marginal" => TrustLevel::Marginal,
@@ -64,12 +64,11 @@ impl TrustDb {
 
     pub fn load() -> Self {
         let path = Self::db_path();
-        if path.exists() {
-            if let Ok(content) = fs::read_to_string(&path) {
-                if let Ok(db) = serde_json::from_str(&content) {
-                    return db;
-                }
-            }
+        if path.exists()
+            && let Ok(content) = fs::read_to_string(&path)
+            && let Ok(db) = serde_json::from_str(&content)
+        {
+            return db;
         }
         Self::default()
     }
@@ -77,13 +76,11 @@ impl TrustDb {
     pub fn save(&self) -> Result<(), String> {
         let path = Self::db_path();
         if let Some(parent) = path.parent() {
-            fs::create_dir_all(parent)
-                .map_err(|e| format!("Failed to create dir: {e}"))?;
+            fs::create_dir_all(parent).map_err(|e| format!("Failed to create dir: {e}"))?;
         }
-        let content = serde_json::to_string_pretty(self)
-            .map_err(|e| format!("Serialization error: {e}"))?;
-        fs::write(&path, content)
-            .map_err(|e| format!("Failed to write trust db: {e}"))?;
+        let content =
+            serde_json::to_string_pretty(self).map_err(|e| format!("Serialization error: {e}"))?;
+        fs::write(&path, content).map_err(|e| format!("Failed to write trust db: {e}"))?;
         Ok(())
     }
 
@@ -141,10 +138,13 @@ impl RevocationStore {
         config::keyring_dir().join("revocations")
     }
 
-    pub fn save_revocation(key_id: &str, certificate: &str, reason: &str) -> Result<PathBuf, String> {
+    pub fn save_revocation(
+        key_id: &str,
+        certificate: &str,
+        reason: &str,
+    ) -> Result<PathBuf, String> {
         let dir = Self::revocation_dir();
-        fs::create_dir_all(&dir)
-            .map_err(|e| format!("Failed to create revocation dir: {e}"))?;
+        fs::create_dir_all(&dir).map_err(|e| format!("Failed to create revocation dir: {e}"))?;
 
         let info = RevocationInfo {
             key_id: key_id.to_string(),
@@ -154,10 +154,9 @@ impl RevocationStore {
         };
 
         let path = dir.join(format!("{key_id}.rev.json"));
-        let content = serde_json::to_string_pretty(&info)
-            .map_err(|e| format!("Serialization error: {e}"))?;
-        fs::write(&path, content)
-            .map_err(|e| format!("Failed to write revocation: {e}"))?;
+        let content =
+            serde_json::to_string_pretty(&info).map_err(|e| format!("Serialization error: {e}"))?;
+        fs::write(&path, content).map_err(|e| format!("Failed to write revocation: {e}"))?;
 
         Ok(path)
     }
@@ -167,10 +166,10 @@ impl RevocationStore {
         if !path.exists() {
             return Ok(None);
         }
-        let content = fs::read_to_string(&path)
-            .map_err(|e| format!("Failed to read revocation: {e}"))?;
-        let info: RevocationInfo = serde_json::from_str(&content)
-            .map_err(|e| format!("Parse error: {e}"))?;
+        let content =
+            fs::read_to_string(&path).map_err(|e| format!("Failed to read revocation: {e}"))?;
+        let info: RevocationInfo =
+            serde_json::from_str(&content).map_err(|e| format!("Parse error: {e}"))?;
         Ok(Some(info))
     }
 
@@ -180,17 +179,15 @@ impl RevocationStore {
             return Ok(Vec::new());
         }
         let mut revocations = Vec::new();
-        let entries = fs::read_dir(&dir)
-            .map_err(|e| format!("Failed to read dir: {e}"))?;
+        let entries = fs::read_dir(&dir).map_err(|e| format!("Failed to read dir: {e}"))?;
         for entry in entries {
             let entry = entry.map_err(|e| format!("Read dir error: {e}"))?;
             let path = entry.path();
-            if path.extension().and_then(|e| e.to_str()) == Some("json") {
-                if let Ok(content) = fs::read_to_string(&path) {
-                    if let Ok(info) = serde_json::from_str(&content) {
-                        revocations.push(info);
-                    }
-                }
+            if path.extension().and_then(|e| e.to_str()) == Some("json")
+                && let Ok(content) = fs::read_to_string(&path)
+                && let Ok(info) = serde_json::from_str(&content)
+            {
+                revocations.push(info);
             }
         }
         Ok(revocations)
@@ -203,20 +200,20 @@ pub fn parse_expiry(expire_str: &str) -> Option<chrono::Duration> {
     if s == "never" || s == "0" || s.is_empty() {
         return None;
     }
-    if let Some(years) = s.strip_suffix('y') {
-        if let Ok(n) = years.parse::<i64>() {
-            return Some(chrono::Duration::days(n * 365));
-        }
+    if let Some(years) = s.strip_suffix('y')
+        && let Ok(n) = years.parse::<i64>()
+    {
+        return Some(chrono::Duration::days(n * 365));
     }
-    if let Some(months) = s.strip_suffix('m') {
-        if let Ok(n) = months.parse::<i64>() {
-            return Some(chrono::Duration::days(n * 30));
-        }
+    if let Some(months) = s.strip_suffix('m')
+        && let Ok(n) = months.parse::<i64>()
+    {
+        return Some(chrono::Duration::days(n * 30));
     }
-    if let Some(days) = s.strip_suffix('d') {
-        if let Ok(n) = days.parse::<i64>() {
-            return Some(chrono::Duration::days(n));
-        }
+    if let Some(days) = s.strip_suffix('d')
+        && let Ok(n) = days.parse::<i64>()
+    {
+        return Some(chrono::Duration::days(n));
     }
     None
 }
@@ -234,9 +231,9 @@ mod tests {
 
     #[test]
     fn test_trust_level_from_str() {
-        assert_eq!(TrustLevel::from_str("full"), TrustLevel::Full);
-        assert_eq!(TrustLevel::from_str("MARGINAL"), TrustLevel::Marginal);
-        assert_eq!(TrustLevel::from_str("garbage"), TrustLevel::Unknown);
+        assert_eq!(TrustLevel::parse_level("full"), TrustLevel::Full);
+        assert_eq!(TrustLevel::parse_level("MARGINAL"), TrustLevel::Marginal);
+        assert_eq!(TrustLevel::parse_level("garbage"), TrustLevel::Unknown);
     }
 
     #[test]

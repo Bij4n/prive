@@ -93,43 +93,64 @@ mod tests {
 
     #[test]
     fn test_exit_code_not_found() {
-        let err = PriveError::VaultNotFound { path: "/tmp/v".into() };
+        let err = PriveError::VaultNotFound {
+            path: "/tmp/v".into(),
+        };
         assert_eq!(err.exit_code(), 3);
 
-        let err = PriveError::EntryNotFound { name: "github".into() };
+        let err = PriveError::EntryNotFound {
+            name: "github".into(),
+        };
         assert_eq!(err.exit_code(), 3);
 
-        let err = PriveError::NoteNotFound { title: "todo".into() };
+        let err = PriveError::NoteNotFound {
+            title: "todo".into(),
+        };
         assert_eq!(err.exit_code(), 3);
 
-        let err = PriveError::KeyNotFound { key_id: "ABC123".into() };
+        let err = PriveError::KeyNotFound {
+            key_id: "ABC123".into(),
+        };
         assert_eq!(err.exit_code(), 3);
     }
 
     #[test]
     fn test_display_messages() {
-        let err = PriveError::VaultNotFound { path: "/home/user/.prive/vault.pv".into() };
+        let err = PriveError::VaultNotFound {
+            path: "/home/user/.prive/vault.pv".into(),
+        };
         assert_eq!(
             err.to_string(),
             "Vault not found at /home/user/.prive/vault.pv"
         );
 
-        let err = PriveError::VaultAlreadyExists { path: "/tmp/v.pv".into() };
+        let err = PriveError::VaultAlreadyExists {
+            path: "/tmp/v.pv".into(),
+        };
         assert_eq!(err.to_string(), "Vault already exists at /tmp/v.pv");
 
         let err = PriveError::InvalidPassword;
         assert_eq!(err.to_string(), "Invalid master password");
 
-        let err = PriveError::EntryNotFound { name: "github".into() };
+        let err = PriveError::EntryNotFound {
+            name: "github".into(),
+        };
         assert_eq!(err.to_string(), "Entry not found: github");
 
-        let err = PriveError::EntryAlreadyExists { name: "github".into() };
+        let err = PriveError::EntryAlreadyExists {
+            name: "github".into(),
+        };
         assert_eq!(err.to_string(), "Entry already exists: github");
 
-        let err = PriveError::NoteNotFound { title: "my note".into() };
+        let err = PriveError::NoteNotFound {
+            title: "my note".into(),
+        };
         assert_eq!(err.to_string(), "Note not found: my note");
 
-        let err = PriveError::AttachmentTooLarge { size: 2000, max: 1000 };
+        let err = PriveError::AttachmentTooLarge {
+            size: 2000,
+            max: 1000,
+        };
         assert_eq!(
             err.to_string(),
             "Attachment too large: 2000 bytes (max 1000 bytes)"

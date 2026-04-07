@@ -1,5 +1,5 @@
-use std::path::Path;
 use std::io::Read;
+use std::path::Path;
 
 pub const CURRENT_VERSION: u8 = 1;
 const MAGIC: &[u8; 8] = b"PRIVEVLT";
@@ -10,8 +10,7 @@ pub fn needs_migration(path: &Path) -> Result<bool, String> {
         return Err("Vault file not found".to_string());
     }
 
-    let mut file = std::fs::File::open(path)
-        .map_err(|e| format!("Failed to open vault: {e}"))?;
+    let mut file = std::fs::File::open(path).map_err(|e| format!("Failed to open vault: {e}"))?;
 
     let mut header = [0u8; 9]; // magic (8) + version (1)
     file.read_exact(&mut header)
@@ -31,8 +30,7 @@ pub fn vault_version(path: &Path) -> Result<u8, String> {
         return Err("Vault file not found".to_string());
     }
 
-    let mut file = std::fs::File::open(path)
-        .map_err(|e| format!("Failed to open vault: {e}"))?;
+    let mut file = std::fs::File::open(path).map_err(|e| format!("Failed to open vault: {e}"))?;
 
     let mut header = [0u8; 9];
     file.read_exact(&mut header)
@@ -50,7 +48,7 @@ pub fn vault_version(path: &Path) -> Result<u8, String> {
 /// for future format changes.
 pub fn migrate_if_needed(
     path: &Path,
-    password: &[u8],
+    _password: &[u8],
 ) -> Result<Option<crate::vault::model::Vault>, String> {
     let version = vault_version(path)?;
 
@@ -66,10 +64,7 @@ pub fn migrate_if_needed(
 
     // Future migration logic goes here
     // For now, all vaults are v1, so nothing to migrate
-    match version {
-        // 0 => migrate_v0_to_v1(path, password),
-        _ => Err(format!("Cannot migrate vault version {version}")),
-    }
+    Err(format!("Cannot migrate vault version {version}"))
 }
 
 /// Validate vault file integrity without decrypting.
@@ -78,8 +73,7 @@ pub fn validate_vault_header(path: &Path) -> Result<VaultHeaderInfo, String> {
         return Err("Vault file not found".to_string());
     }
 
-    let mut file = std::fs::File::open(path)
-        .map_err(|e| format!("Failed to open vault: {e}"))?;
+    let mut file = std::fs::File::open(path).map_err(|e| format!("Failed to open vault: {e}"))?;
 
     let mut data = Vec::new();
     file.read_to_end(&mut data)

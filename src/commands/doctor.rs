@@ -16,7 +16,11 @@ pub fn handle_doctor() -> Result<()> {
     if data_dir.exists() {
         println!("  {} Data directory: {}", "✓".green(), data_dir.display());
     } else {
-        println!("  {} Data directory missing: {}", "✗".red(), data_dir.display());
+        println!(
+            "  {} Data directory missing: {}",
+            "✗".red(),
+            data_dir.display()
+        );
         issues += 1;
     }
 
@@ -128,11 +132,7 @@ pub fn handle_doctor() -> Result<()> {
     if issues == 0 {
         println!("{}", "All checks passed.".green());
     } else {
-        println!(
-            "{} {} issue(s) found.",
-            "!".yellow(),
-            issues
-        );
+        println!("{} {} issue(s) found.", "!".yellow(), issues);
     }
 
     Ok(())

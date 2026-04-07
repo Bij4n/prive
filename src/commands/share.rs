@@ -35,8 +35,7 @@ fn cmd_export(
 ) -> Result<()> {
     let path = resolve_vault_path(vault_path);
     let password = rpassword::prompt_password("Master password: ")?;
-    let vault = VaultStorage::load(&path, password.as_bytes())
-        .map_err(|e| anyhow::anyhow!(e))?;
+    let vault = VaultStorage::load(&path, password.as_bytes()).map_err(|e| anyhow::anyhow!(e))?;
 
     // Find the entries to share
     let mut entries_to_share = Vec::new();
@@ -57,8 +56,8 @@ fn cmd_export(
         .load_public_key(recipient_key_id)
         .map_err(|e| anyhow::anyhow!(e))?;
 
-    let encrypted = share::share_entries(&entries_to_share, &pub_key)
-        .map_err(|e| anyhow::anyhow!(e))?;
+    let encrypted =
+        share::share_entries(&entries_to_share, &pub_key).map_err(|e| anyhow::anyhow!(e))?;
 
     fs::write(output, &encrypted)?;
 
@@ -75,8 +74,8 @@ fn cmd_export(
 fn cmd_import(vault_path: Option<&Path>, file: &Path) -> Result<()> {
     let path = resolve_vault_path(vault_path);
     let master_password = rpassword::prompt_password("Master password: ")?;
-    let mut vault = VaultStorage::load(&path, master_password.as_bytes())
-        .map_err(|e| anyhow::anyhow!(e))?;
+    let mut vault =
+        VaultStorage::load(&path, master_password.as_bytes()).map_err(|e| anyhow::anyhow!(e))?;
 
     let encrypted_data = fs::read(file)?;
 
@@ -88,9 +87,10 @@ fn cmd_import(vault_path: Option<&Path>, file: &Path) -> Result<()> {
 
     for key_info in &keys {
         if let Ok(secret_key) = keyring.load_secret_key(&key_info.key_id) {
-            let passphrase = rpassword::prompt_password(
-                format!("Passphrase for key {} (empty if none): ", &key_info.key_id),
-            )?;
+            let passphrase = rpassword::prompt_password(format!(
+                "Passphrase for key {} (empty if none): ",
+                &key_info.key_id
+            ))?;
 
             match share::receive_shared(&encrypted_data, &secret_key, &passphrase) {
                 Ok(e) => {
@@ -102,7 +102,8 @@ fn cmd_import(vault_path: Option<&Path>, file: &Path) -> Result<()> {
         }
     }
 
-    let entries = entries.ok_or_else(|| anyhow::anyhow!("Could not decrypt shared entries with any key"))?;
+    let entries =
+        entries.ok_or_else(|| anyhow::anyhow!("Could not decrypt shared entries with any key"))?;
 
     let count = entries.len();
     for entry in entries {

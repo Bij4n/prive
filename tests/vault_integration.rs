@@ -48,7 +48,12 @@ fn test_vault_password_rotation() {
     let mut vault = prive::vault::storage::VaultStorage::load(&path, b"pass").unwrap();
 
     vault.entries.push(prive::vault::model::VaultEntry::new(
-        "Test".into(), None, "old_pass".into(), None, None, vec![],
+        "Test".into(),
+        None,
+        "old_pass".into(),
+        None,
+        None,
+        vec![],
     ));
 
     // Rotate password
@@ -70,11 +75,13 @@ fn test_vault_secure_notes() {
     prive::vault::storage::VaultStorage::create(&path, b"pass").unwrap();
     let mut vault = prive::vault::storage::VaultStorage::load(&path, b"pass").unwrap();
 
-    vault.secure_notes.push(prive::vault::model::SecureNote::new(
-        "API Keys".into(),
-        "sk-1234567890abcdef".into(),
-        vec!["work".into()],
-    ));
+    vault
+        .secure_notes
+        .push(prive::vault::model::SecureNote::new(
+            "API Keys".into(),
+            "sk-1234567890abcdef".into(),
+            vec!["work".into()],
+        ));
 
     prive::vault::storage::VaultStorage::save(&path, &vault, b"pass").unwrap();
 
@@ -92,16 +99,28 @@ fn test_vault_search() {
     let mut vault = prive::vault::storage::VaultStorage::load(&path, b"pass").unwrap();
 
     vault.entries.push(prive::vault::model::VaultEntry::new(
-        "GitHub".into(), Some("johnd".into()), "pass1".into(),
-        Some("https://github.com".into()), None, vec!["dev".into()],
+        "GitHub".into(),
+        Some("johnd".into()),
+        "pass1".into(),
+        Some("https://github.com".into()),
+        None,
+        vec!["dev".into()],
     ));
     vault.entries.push(prive::vault::model::VaultEntry::new(
-        "Gmail".into(), Some("johnd@gmail.com".into()), "pass2".into(),
-        Some("https://gmail.com".into()), None, vec!["email".into()],
+        "Gmail".into(),
+        Some("johnd@gmail.com".into()),
+        "pass2".into(),
+        Some("https://gmail.com".into()),
+        None,
+        vec!["email".into()],
     ));
     vault.entries.push(prive::vault::model::VaultEntry::new(
-        "AWS".into(), Some("admin".into()), "pass3".into(),
-        None, None, vec!["cloud".into(), "dev".into()],
+        "AWS".into(),
+        Some("admin".into()),
+        "pass3".into(),
+        None,
+        None,
+        vec!["cloud".into(), "dev".into()],
     ));
 
     // Search by name
@@ -181,7 +200,11 @@ fn test_totp_generation() {
 #[test]
 fn test_password_strength_analysis() {
     let weak = prive::crypto::strength::analyze_strength("a");
-    assert!(matches!(weak.level, prive::crypto::strength::StrengthLevel::VeryWeak | prive::crypto::strength::StrengthLevel::Weak));
+    assert!(matches!(
+        weak.level,
+        prive::crypto::strength::StrengthLevel::VeryWeak
+            | prive::crypto::strength::StrengthLevel::Weak
+    ));
 
     let strong = prive::crypto::strength::analyze_strength("Xk9#mP2$vL7@nQ4!wR8%");
     assert!(strong.score > weak.score);
@@ -192,13 +215,28 @@ fn test_password_strength_analysis() {
 fn test_audit_vault() {
     let mut vault = prive::vault::model::Vault::new();
     vault.entries.push(prive::vault::model::VaultEntry::new(
-        "weak".into(), None, "abc".into(), None, None, vec![],
+        "weak".into(),
+        None,
+        "abc".into(),
+        None,
+        None,
+        vec![],
     ));
     vault.entries.push(prive::vault::model::VaultEntry::new(
-        "dup1".into(), None, "same_password!".into(), None, None, vec![],
+        "dup1".into(),
+        None,
+        "same_password!".into(),
+        None,
+        None,
+        vec![],
     ));
     vault.entries.push(prive::vault::model::VaultEntry::new(
-        "dup2".into(), None, "same_password!".into(), None, None, vec![],
+        "dup2".into(),
+        None,
+        "same_password!".into(),
+        None,
+        None,
+        vec![],
     ));
 
     let report = prive::crypto::audit::audit_vault(&vault);

@@ -1,4 +1,3 @@
-
 use crate::vault::model::{Vault, VaultEntry};
 
 /// Import entries from a CSV file (Chrome, Bitwarden, generic format).
@@ -40,10 +39,7 @@ pub fn import_csv(content: &str) -> Result<Vec<VaultEntry>, String> {
             .and_then(|i| record.get(i))
             .map(|s| s.to_string())
             .filter(|s| !s.is_empty());
-        let password = record
-            .get(password_col)
-            .unwrap_or("")
-            .to_string();
+        let password = record.get(password_col).unwrap_or("").to_string();
         let notes = notes_col
             .and_then(|i| record.get(i))
             .map(|s| s.to_string())
@@ -53,7 +49,14 @@ pub fn import_csv(content: &str) -> Result<Vec<VaultEntry>, String> {
             continue;
         }
 
-        entries.push(VaultEntry::new(name, username, password, url, notes, vec!["imported".to_string()]));
+        entries.push(VaultEntry::new(
+            name,
+            username,
+            password,
+            url,
+            notes,
+            vec!["imported".to_string()],
+        ));
     }
 
     Ok(entries)
@@ -263,12 +266,12 @@ fn find_column(headers: &[String], candidates: &[&str]) -> Option<usize> {
 fn extract_xml_value(line: &str, tag: &str) -> Option<String> {
     let open = format!("<{tag}>");
     let close = format!("</{tag}>");
-    if let Some(start) = line.find(&open) {
-        if let Some(end) = line.find(&close) {
-            let value_start = start + open.len();
-            if value_start < end {
-                return Some(xml_unescape(&line[value_start..end]));
-            }
+    if let Some(start) = line.find(&open)
+        && let Some(end) = line.find(&close)
+    {
+        let value_start = start + open.len();
+        if value_start < end {
+            return Some(xml_unescape(&line[value_start..end]));
         }
     }
     None

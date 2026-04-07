@@ -5,17 +5,17 @@ use anyhow::Result;
 use crossterm::{
     event::{self, Event, KeyCode, KeyEventKind, KeyModifiers},
     execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
-use fuzzy_matcher::skim::SkimMatcherV2;
 use fuzzy_matcher::FuzzyMatcher;
+use fuzzy_matcher::skim::SkimMatcherV2;
 use ratatui::{
+    Frame, Terminal,
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Cell, Clear, Paragraph, Row, Table, TableState},
-    Frame, Terminal,
 };
 
 use crate::vault::model::{Vault, VaultEntry};
@@ -82,14 +82,14 @@ impl App {
         loop {
             terminal.draw(|f| self.draw(f))?;
 
-            if event::poll(Duration::from_millis(100))? {
-                if let Event::Key(key) = event::read()? {
-                    // Only handle key press events (not release/repeat)
-                    if key.kind != KeyEventKind::Press {
-                        continue;
-                    }
-                    self.handle_key(key.code, key.modifiers);
+            if event::poll(Duration::from_millis(100))?
+                && let Event::Key(key) = event::read()?
+            {
+                // Only handle key press events (not release/repeat)
+                if key.kind != KeyEventKind::Press {
+                    continue;
                 }
+                self.handle_key(key.code, key.modifiers);
             }
 
             if self.should_quit {
@@ -156,12 +156,10 @@ impl App {
                     let pw = entry.password.clone();
                     match copy_to_clipboard(&pw) {
                         Ok(()) => {
-                            self.status_message =
-                                Some("Password copied to clipboard.".to_string());
+                            self.status_message = Some("Password copied to clipboard.".to_string());
                         }
                         Err(e) => {
-                            self.status_message =
-                                Some(format!("Clipboard error: {}", e));
+                            self.status_message = Some(format!("Clipboard error: {}", e));
                         }
                     }
                     self.should_quit = true;
@@ -206,12 +204,10 @@ impl App {
                     let pw = entry.password.clone();
                     match copy_to_clipboard(&pw) {
                         Ok(()) => {
-                            self.status_message =
-                                Some("Password copied to clipboard.".to_string());
+                            self.status_message = Some("Password copied to clipboard.".to_string());
                         }
                         Err(e) => {
-                            self.status_message =
-                                Some(format!("Clipboard error: {}", e));
+                            self.status_message = Some(format!("Clipboard error: {}", e));
                         }
                     }
                     self.should_quit = true;
@@ -331,9 +327,13 @@ impl App {
     }
 
     fn draw_table(&mut self, f: &mut Frame, area: Rect) {
-        let header_cells = ["Name", "Username", "URL", "Tags"]
-            .iter()
-            .map(|h| Cell::from(*h).style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)));
+        let header_cells = ["Name", "Username", "URL", "Tags"].iter().map(|h| {
+            Cell::from(*h).style(
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD),
+            )
+        });
         let header = Row::new(header_cells).height(1);
 
         let rows: Vec<Row> = self
@@ -343,16 +343,8 @@ impl App {
                 let entry = &self.entries[i];
                 let cells = vec![
                     Cell::from(entry.name.clone()),
-                    Cell::from(
-                        entry
-                            .username
-                            .as_deref()
-                            .unwrap_or("-")
-                            .to_string(),
-                    ),
-                    Cell::from(
-                        entry.url.as_deref().unwrap_or("-").to_string(),
-                    ),
+                    Cell::from(entry.username.as_deref().unwrap_or("-").to_string()),
+                    Cell::from(entry.url.as_deref().unwrap_or("-").to_string()),
                     Cell::from(entry.tags.join(", ")),
                 ];
                 Row::new(cells)
@@ -374,11 +366,7 @@ impl App {
 
         let table = Table::new(rows, widths)
             .header(header)
-            .block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .title(title),
-            )
+            .block(Block::default().borders(Borders::ALL).title(title))
             .row_highlight_style(
                 Style::default()
                     .bg(Color::DarkGray)
@@ -393,11 +381,8 @@ impl App {
         let entry = match self.selected_entry() {
             Some(e) => e,
             None => {
-                let empty = Paragraph::new("No entry selected.").block(
-                    Block::default()
-                        .borders(Borders::ALL)
-                        .title(" Details "),
-                );
+                let empty = Paragraph::new("No entry selected.")
+                    .block(Block::default().borders(Borders::ALL).title(" Details "));
                 f.render_widget(empty, area);
                 return;
             }

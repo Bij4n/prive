@@ -14,8 +14,7 @@ pub fn handle_stats(vault_path: Option<&Path>) -> Result<()> {
         .unwrap_or_else(config::vault_path);
 
     let password = rpassword::prompt_password("Master password: ")?;
-    let vault = VaultStorage::load(&path, password.as_bytes())
-        .map_err(|e| anyhow::anyhow!(e))?;
+    let vault = VaultStorage::load(&path, password.as_bytes()).map_err(|e| anyhow::anyhow!(e))?;
 
     println!("{}", "Vault Statistics".bold().underline());
     println!();
@@ -33,11 +32,7 @@ pub fn handle_stats(vault_path: Option<&Path>) -> Result<()> {
     println!("  {}: {}", "Entries with TOTP".bold(), totp_count);
 
     // Attachment stats
-    let attachment_count: usize = vault
-        .entries
-        .iter()
-        .map(|e| e.attachments.len())
-        .sum();
+    let attachment_count: usize = vault.entries.iter().map(|e| e.attachments.len()).sum();
     let attachment_size: u64 = vault
         .entries
         .iter()
@@ -85,7 +80,11 @@ pub fn handle_stats(vault_path: Option<&Path>) -> Result<()> {
         }
 
         let avg_length = total_length / vault.entries.len();
-        println!("  {}: {} chars", "Average password length".bold(), avg_length);
+        println!(
+            "  {}: {} chars",
+            "Average password length".bold(),
+            avg_length
+        );
         println!("  {}: {} chars", "Shortest password".bold(), min_length);
         println!("  {}: {} chars", "Longest password".bold(), max_length);
         println!(
@@ -102,13 +101,13 @@ pub fn handle_stats(vault_path: Option<&Path>) -> Result<()> {
         );
 
         // Password history stats
-        let history_count: usize = vault
-            .entries
-            .iter()
-            .map(|e| e.password_history.len())
-            .sum();
+        let history_count: usize = vault.entries.iter().map(|e| e.password_history.len()).sum();
         if history_count > 0 {
-            println!("  {}: {} total rotations", "Password history".bold(), history_count);
+            println!(
+                "  {}: {} total rotations",
+                "Password history".bold(),
+                history_count
+            );
         }
     }
 
@@ -138,8 +137,16 @@ pub fn handle_stats(vault_path: Option<&Path>) -> Result<()> {
     println!();
     println!("{}", "Vault Info".bold().underline());
     println!();
-    println!("  {}: {}", "Created".bold(), vault.created_at.format("%Y-%m-%d %H:%M"));
-    println!("  {}: {}", "Last modified".bold(), vault.modified_at.format("%Y-%m-%d %H:%M"));
+    println!(
+        "  {}: {}",
+        "Created".bold(),
+        vault.created_at.format("%Y-%m-%d %H:%M")
+    );
+    println!(
+        "  {}: {}",
+        "Last modified".bold(),
+        vault.modified_at.format("%Y-%m-%d %H:%M")
+    );
     println!("  {}: {}", "Format version".bold(), vault.version);
     println!("  {}: {}", "Path".bold(), path.display());
 

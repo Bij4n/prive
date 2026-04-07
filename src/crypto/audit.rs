@@ -117,8 +117,8 @@ fn check_weak_passwords(entries: &[VaultEntry], report: &mut AuditReport) {
         // Check for common patterns
         let lower = pw.to_lowercase();
         let common = [
-            "password", "123456", "qwerty", "admin", "letmein", "welcome",
-            "monkey", "dragon", "master", "abc123", "login", "princess",
+            "password", "123456", "qwerty", "admin", "letmein", "welcome", "monkey", "dragon",
+            "master", "abc123", "login", "princess",
         ];
         for pattern in &common {
             if lower.contains(pattern) {
@@ -138,12 +138,10 @@ fn check_duplicate_passwords(entries: &[VaultEntry], report: &mut AuditReport) {
 
     for entry in entries {
         let hash = hex::encode(Sha256::digest(entry.password.as_bytes()));
-        seen.entry(hash)
-            .or_default()
-            .push(entry.name.clone());
+        seen.entry(hash).or_default().push(entry.name.clone());
     }
 
-    for (_hash, names) in &seen {
+    for names in seen.values() {
         if names.len() > 1 {
             for name in names {
                 report.duplicate_passwords.push(AuditIssue {
@@ -171,19 +169,13 @@ fn check_old_passwords(entries: &[VaultEntry], report: &mut AuditReport) {
             report.old_passwords.push(AuditIssue {
                 entry_name: entry.name.clone(),
                 severity: Severity::Warning,
-                description: format!(
-                    "Password not changed in {} days",
-                    age.num_days()
-                ),
+                description: format!("Password not changed in {} days", age.num_days()),
             });
         } else if age > ninety_days {
             report.old_passwords.push(AuditIssue {
                 entry_name: entry.name.clone(),
                 severity: Severity::Info,
-                description: format!(
-                    "Password is {} days old",
-                    age.num_days()
-                ),
+                description: format!("Password is {} days old", age.num_days()),
             });
         }
     }
@@ -214,9 +206,7 @@ fn check_reused_usernames(entries: &[VaultEntry], report: &mut AuditReport) {
     for entry in entries {
         if let Some(username) = &entry.username {
             let lower = username.to_lowercase();
-            seen.entry(lower)
-                .or_default()
-                .push(entry.name.clone());
+            seen.entry(lower).or_default().push(entry.name.clone());
         }
     }
 
@@ -259,11 +249,11 @@ pub fn check_breach(password: &str) -> Result<Option<u64>, String> {
         .map_err(|e| format!("Failed to read response: {e}"))?;
 
     for line in response.lines() {
-        if let Some((hash_suffix, count_str)) = line.split_once(':') {
-            if hash_suffix.trim() == suffix {
-                let count: u64 = count_str.trim().parse().unwrap_or(0);
-                return Ok(Some(count));
-            }
+        if let Some((hash_suffix, count_str)) = line.split_once(':')
+            && hash_suffix.trim() == suffix
+        {
+            let count: u64 = count_str.trim().parse().unwrap_or(0);
+            return Ok(Some(count));
         }
     }
 

@@ -1,5 +1,5 @@
-/// Encrypted single-file vault export.
-/// Bundles the vault + keyring into one portable encrypted file.
+//! Encrypted single-file vault export.
+//! Bundles the vault + keyring into one portable encrypted file.
 
 use std::fs;
 use std::path::Path;
@@ -14,7 +14,7 @@ use crate::vault::crypto::VaultCrypto;
 struct ExportBundle {
     version: u32,
     created_at: String,
-    vault_data: String,        // base64-encoded encrypted vault file
+    vault_data: String,          // base64-encoded encrypted vault file
     keyring_files: Vec<KeyFile>, // armored key files
 }
 
@@ -30,30 +30,26 @@ pub fn create_bundle(vault_path: &Path, password: &[u8]) -> Result<Vec<u8>, Stri
     if !vault_path.exists() {
         return Err("Vault file not found".to_string());
     }
-    let vault_data = fs::read(vault_path)
-        .map_err(|e| format!("Failed to read vault: {e}"))?;
-    let vault_b64 = base64::Engine::encode(
-        &base64::engine::general_purpose::STANDARD,
-        &vault_data,
-    );
+    let vault_data = fs::read(vault_path).map_err(|e| format!("Failed to read vault: {e}"))?;
+    let vault_b64 = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &vault_data);
 
     // Read keyring files
     let keyring_dir = config::keyring_dir();
     let mut keyring_files = Vec::new();
-    if keyring_dir.exists() {
-        if let Ok(entries) = fs::read_dir(&keyring_dir) {
-            for entry in entries.flatten() {
-                let path = entry.path();
-                if path.extension().and_then(|e| e.to_str()) == Some("asc") {
-                    if let Ok(content) = fs::read_to_string(&path) {
-                        let name = path
-                            .file_name()
-                            .unwrap_or_default()
-                            .to_string_lossy()
-                            .to_string();
-                        keyring_files.push(KeyFile { name, content });
-                    }
-                }
+    if keyring_dir.exists()
+        && let Ok(entries) = fs::read_dir(&keyring_dir)
+    {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension().and_then(|e| e.to_str()) == Some("asc")
+                && let Ok(content) = fs::read_to_string(&path)
+            {
+                let name = path
+                    .file_name()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .to_string();
+                keyring_files.push(KeyFile { name, content });
             }
         }
     }
@@ -65,8 +61,7 @@ pub fn create_bundle(vault_path: &Path, password: &[u8]) -> Result<Vec<u8>, Stri
         keyring_files,
     };
 
-    let json = serde_json::to_string(&bundle)
-        .map_err(|e| format!("Serialization error: {e}"))?;
+    let json = serde_json::to_string(&bundle).map_err(|e| format!("Serialization error: {e}"))?;
 
     // Encrypt the bundle with the vault password
     let blob = VaultCrypto::encrypt(json.as_bytes(), password)?;
@@ -117,8 +112,8 @@ pub fn restore_bundle(
     };
 
     let plaintext = VaultCrypto::decrypt(&blob, password)?;
-    let bundle: ExportBundle = serde_json::from_slice(&plaintext)
-        .map_err(|e| format!("Failed to parse bundle: {e}"))?;
+    let bundle: ExportBundle =
+        serde_json::from_slice(&plaintext).map_err(|e| format!("Failed to parse bundle: {e}"))?;
 
     // Restore vault
     let vault_bytes = base64::Engine::decode(
@@ -128,16 +123,13 @@ pub fn restore_bundle(
     .map_err(|e| format!("Failed to decode vault data: {e}"))?;
 
     if let Some(parent) = vault_path.parent() {
-        fs::create_dir_all(parent)
-            .map_err(|e| format!("Failed to create directory: {e}"))?;
+        fs::create_dir_all(parent).map_err(|e| format!("Failed to create directory: {e}"))?;
     }
-    fs::write(vault_path, &vault_bytes)
-        .map_err(|e| format!("Failed to write vault: {e}"))?;
+    fs::write(vault_path, &vault_bytes).map_err(|e| format!("Failed to write vault: {e}"))?;
 
     // Restore keyring files
     let keyring_dir = config::keyring_dir();
-    fs::create_dir_all(&keyring_dir)
-        .map_err(|e| format!("Failed to create keyring dir: {e}"))?;
+    fs::create_dir_all(&keyring_dir).map_err(|e| format!("Failed to create keyring dir: {e}"))?;
 
     let mut key_count = 0;
     for key_file in &bundle.keyring_files {

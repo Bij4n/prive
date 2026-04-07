@@ -23,7 +23,14 @@ pub fn encrypt_to_keys(
     let encrypted = if enc_keys.is_empty() {
         // No subkeys — encrypt to primary keys
         message
-            .encrypt_to_keys_seipdv1(&mut rng, SymmetricKeyAlgorithm::AES256, &recipients.iter().map(|r| &r.primary_key).collect::<Vec<_>>())
+            .encrypt_to_keys_seipdv1(
+                &mut rng,
+                SymmetricKeyAlgorithm::AES256,
+                &recipients
+                    .iter()
+                    .map(|r| &r.primary_key)
+                    .collect::<Vec<_>>(),
+            )
             .map_err(|e| format!("Encryption error: {e}"))?
     } else {
         message
@@ -45,9 +52,7 @@ pub fn encrypt_symmetric(data: &[u8], filename: &str, passphrase: &str) -> Resul
     let pw = passphrase.to_string();
 
     let encrypted = message
-        .encrypt_with_password_seipdv1(&mut rng, s2k, SymmetricKeyAlgorithm::AES256, || {
-            pw.clone()
-        })
+        .encrypt_with_password_seipdv1(rng, s2k, SymmetricKeyAlgorithm::AES256, || pw.clone())
         .map_err(|e| format!("Encryption error: {e}"))?;
 
     encrypted
@@ -121,7 +126,12 @@ pub fn sign_data(
 
     let pw = key_passphrase.to_string();
     let signed = message
-        .sign(&mut rng, &secret_key.primary_key, || pw, pgp::crypto::hash::HashAlgorithm::SHA2_256)
+        .sign(
+            &mut rng,
+            &secret_key.primary_key,
+            || pw,
+            pgp::crypto::hash::HashAlgorithm::SHA2_256,
+        )
         .map_err(|e| format!("Signing error: {e}"))?;
 
     signed

@@ -17,8 +17,8 @@ fn resolve_vault_path(override_path: Option<&Path>) -> std::path::PathBuf {
 pub fn handle_import(args: &ImportArgs, vault_path_override: Option<&Path>) -> Result<()> {
     let path = resolve_vault_path(vault_path_override);
     let password = rpassword::prompt_password("Master password: ")?;
-    let mut vault = VaultStorage::load(&path, password.as_bytes())
-        .map_err(|e| anyhow::anyhow!(e))?;
+    let mut vault =
+        VaultStorage::load(&path, password.as_bytes()).map_err(|e| anyhow::anyhow!(e))?;
 
     let content = std::fs::read_to_string(&args.file)
         .map_err(|e| anyhow::anyhow!("Failed to read file '{}': {e}", args.file.display()))?;
@@ -43,8 +43,7 @@ pub fn handle_import(args: &ImportArgs, vault_path_override: Option<&Path>) -> R
     vault.entries.extend(entries);
     vault.modified_at = chrono::Utc::now();
 
-    VaultStorage::save(&path, &vault, password.as_bytes())
-        .map_err(|e| anyhow::anyhow!(e))?;
+    VaultStorage::save(&path, &vault, password.as_bytes()).map_err(|e| anyhow::anyhow!(e))?;
 
     println!(
         "{} Imported {} entries from {}.",
@@ -58,8 +57,7 @@ pub fn handle_import(args: &ImportArgs, vault_path_override: Option<&Path>) -> R
 pub fn handle_export(args: &ExportArgs, vault_path_override: Option<&Path>) -> Result<()> {
     let path = resolve_vault_path(vault_path_override);
     let password = rpassword::prompt_password("Master password: ")?;
-    let vault = VaultStorage::load(&path, password.as_bytes())
-        .map_err(|e| anyhow::anyhow!(e))?;
+    let vault = VaultStorage::load(&path, password.as_bytes()).map_err(|e| anyhow::anyhow!(e))?;
 
     let output = match args.format {
         ExportFormat::Csv => import::export_csv(&vault),

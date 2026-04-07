@@ -53,8 +53,8 @@ fn cmd_generate(name: Option<&str>, email: Option<&str>, algorithm: &str) -> Res
     let passphrase = rpassword::prompt_password("Key passphrase (empty for none): ")?;
 
     println!("Generating {} keypair...", algorithm.dimmed());
-    let key = generate_keypair(&name, &email, algorithm, &passphrase)
-        .map_err(|e| anyhow::anyhow!(e))?;
+    let key =
+        generate_keypair(&name, &email, algorithm, &passphrase).map_err(|e| anyhow::anyhow!(e))?;
 
     let keyring = Keyring::open().map_err(|e| anyhow::anyhow!(e))?;
     let key_id = keyring
@@ -73,7 +73,9 @@ fn cmd_generate(name: Option<&str>, email: Option<&str>, algorithm: &str) -> Res
 
 fn cmd_list(secret_only: bool) -> Result<()> {
     let keyring = Keyring::open().map_err(|e| anyhow::anyhow!(e))?;
-    let keys = keyring.list_keys(secret_only).map_err(|e| anyhow::anyhow!(e))?;
+    let keys = keyring
+        .list_keys(secret_only)
+        .map_err(|e| anyhow::anyhow!(e))?;
 
     if keys.is_empty() {
         println!("No keys found.");
@@ -105,11 +107,7 @@ fn cmd_export(key_id: &str, secret: bool, output: Option<&std::path::Path>) -> R
 
     if let Some(path) = output {
         fs::write(path, &armored)?;
-        println!(
-            "{} Key exported to {}",
-            "✓".green(),
-            path.display()
-        );
+        println!("{} Key exported to {}", "✓".green(), path.display());
     } else {
         println!("{armored}");
     }
@@ -141,9 +139,7 @@ fn cmd_delete(key_id: &str, force: bool) -> Result<()> {
     }
 
     let keyring = Keyring::open().map_err(|e| anyhow::anyhow!(e))?;
-    keyring
-        .delete_key(key_id)
-        .map_err(|e| anyhow::anyhow!(e))?;
+    keyring.delete_key(key_id).map_err(|e| anyhow::anyhow!(e))?;
 
     println!("{} Key '{key_id}' deleted.", "✓".green());
     Ok(())

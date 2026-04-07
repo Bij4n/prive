@@ -1,6 +1,6 @@
+use std::io::{BufRead, BufReader, Write};
 #[cfg(unix)]
 use std::os::unix::net::{UnixListener, UnixStream};
-use std::io::{BufRead, BufReader, Write};
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
@@ -101,12 +101,10 @@ pub fn start_agent(vault: &Vault, timeout_secs: u64) -> Result<(), String> {
     }
 
     if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent)
-            .map_err(|e| format!("Failed to create socket dir: {e}"))?;
+        std::fs::create_dir_all(parent).map_err(|e| format!("Failed to create socket dir: {e}"))?;
     }
 
-    let listener = UnixListener::bind(&path)
-        .map_err(|e| format!("Failed to bind socket: {e}"))?;
+    let listener = UnixListener::bind(&path).map_err(|e| format!("Failed to bind socket: {e}"))?;
 
     // Set permissions to user-only
     #[cfg(unix)]
@@ -115,8 +113,8 @@ pub fn start_agent(vault: &Vault, timeout_secs: u64) -> Result<(), String> {
         let _ = std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600));
     }
 
-    let vault_json = serde_json::to_string(vault)
-        .map_err(|e| format!("Serialization error: {e}"))?;
+    let vault_json =
+        serde_json::to_string(vault).map_err(|e| format!("Serialization error: {e}"))?;
 
     let start = Instant::now();
     let timeout = Duration::from_secs(timeout_secs);
@@ -134,11 +132,11 @@ pub fn start_agent(vault: &Vault, timeout_secs: u64) -> Result<(), String> {
         match listener.accept() {
             Ok((stream, _)) => {
                 let _ = stream.set_read_timeout(Some(Duration::from_secs(5)));
-                if let Err(should_exit) = handle_client(stream, &vault_json) {
-                    if should_exit {
-                        let _ = std::fs::remove_file(&path);
-                        return Ok(());
-                    }
+                if let Err(should_exit) = handle_client(stream, &vault_json)
+                    && should_exit
+                {
+                    let _ = std::fs::remove_file(&path);
+                    return Ok(());
                 }
             }
             Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
@@ -152,10 +150,7 @@ pub fn start_agent(vault: &Vault, timeout_secs: u64) -> Result<(), String> {
 }
 
 #[cfg(unix)]
-fn handle_client(
-    stream: UnixStream,
-    vault_json: &str,
-) -> Result<(), bool> {
+fn handle_client(stream: UnixStream, vault_json: &str) -> Result<(), bool> {
     let mut reader = BufReader::new(&stream);
     let mut line = String::new();
 

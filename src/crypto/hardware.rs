@@ -1,5 +1,5 @@
-/// Hardware key integration for vault unlock.
-/// Currently a stub — prepared for Yubikey/FIDO2 integration.
+//! Hardware key integration for vault unlock.
+//! Currently a stub — prepared for Yubikey/FIDO2 integration.
 
 pub trait HardwareKeyProvider {
     fn name(&self) -> &str;

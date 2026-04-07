@@ -29,11 +29,7 @@ fn cmd_create(vault_path_override: Option<&Path>) -> Result<()> {
         .create_backup(&path)
         .map_err(|e| anyhow::anyhow!(e))?;
 
-    println!(
-        "{} Backup created: {}",
-        "✓".green(),
-        backup_path.display()
-    );
+    println!("{} Backup created: {}", "✓".green(), backup_path.display());
     Ok(())
 }
 
@@ -49,11 +45,7 @@ fn cmd_list() -> Result<()> {
     println!("{}", "Available backups:".bold());
     for backup in &backups {
         let size_kb = backup.size as f64 / 1024.0;
-        println!(
-            "  {} ({:.1} KB)",
-            backup.name.bold(),
-            size_kb
-        );
+        println!("  {} ({:.1} KB)", backup.name.bold(), size_kb);
         println!("    {}", backup.path.display().to_string().dimmed());
     }
     println!("\n{} total backup(s)", backups.len());

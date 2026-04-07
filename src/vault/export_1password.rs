@@ -128,11 +128,9 @@ mod tests {
             None,
             vec![],
         ));
-        vault.secure_notes.push(SecureNote::new(
-            "API Key".into(),
-            "sk-12345".into(),
-            vec![],
-        ));
+        vault
+            .secure_notes
+            .push(SecureNote::new("API Key".into(), "sk-12345".into(), vec![]));
 
         let csv = export_1password_csv(&vault);
         assert!(csv.contains("Test"));

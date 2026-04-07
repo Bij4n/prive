@@ -25,8 +25,7 @@ fn resolve_vault_path(override_path: Option<&Path>) -> std::path::PathBuf {
 fn cmd_list(vault_path: Option<&Path>) -> Result<()> {
     let path = resolve_vault_path(vault_path);
     let password = rpassword::prompt_password("Master password: ")?;
-    let vault = VaultStorage::load(&path, password.as_bytes())
-        .map_err(|e| anyhow::anyhow!(e))?;
+    let vault = VaultStorage::load(&path, password.as_bytes()).map_err(|e| anyhow::anyhow!(e))?;
 
     let mut tag_counts: HashMap<String, usize> = HashMap::new();
 
@@ -60,8 +59,8 @@ fn cmd_list(vault_path: Option<&Path>) -> Result<()> {
 fn cmd_rename(vault_path: Option<&Path>, old: &str, new: &str) -> Result<()> {
     let path = resolve_vault_path(vault_path);
     let password = rpassword::prompt_password("Master password: ")?;
-    let mut vault = VaultStorage::load(&path, password.as_bytes())
-        .map_err(|e| anyhow::anyhow!(e))?;
+    let mut vault =
+        VaultStorage::load(&path, password.as_bytes()).map_err(|e| anyhow::anyhow!(e))?;
 
     let mut count = 0;
 
@@ -88,8 +87,7 @@ fn cmd_rename(vault_path: Option<&Path>, old: &str, new: &str) -> Result<()> {
     }
 
     vault.modified_at = chrono::Utc::now();
-    VaultStorage::save(&path, &vault, password.as_bytes())
-        .map_err(|e| anyhow::anyhow!(e))?;
+    VaultStorage::save(&path, &vault, password.as_bytes()).map_err(|e| anyhow::anyhow!(e))?;
 
     println!(
         "{} Renamed tag '{}' -> '{}' ({} occurrences).",
@@ -104,8 +102,8 @@ fn cmd_rename(vault_path: Option<&Path>, old: &str, new: &str) -> Result<()> {
 fn cmd_delete(vault_path: Option<&Path>, tag: &str) -> Result<()> {
     let path = resolve_vault_path(vault_path);
     let password = rpassword::prompt_password("Master password: ")?;
-    let mut vault = VaultStorage::load(&path, password.as_bytes())
-        .map_err(|e| anyhow::anyhow!(e))?;
+    let mut vault =
+        VaultStorage::load(&path, password.as_bytes()).map_err(|e| anyhow::anyhow!(e))?;
 
     let mut count = 0;
 
@@ -126,8 +124,7 @@ fn cmd_delete(vault_path: Option<&Path>, tag: &str) -> Result<()> {
     }
 
     vault.modified_at = chrono::Utc::now();
-    VaultStorage::save(&path, &vault, password.as_bytes())
-        .map_err(|e| anyhow::anyhow!(e))?;
+    VaultStorage::save(&path, &vault, password.as_bytes()).map_err(|e| anyhow::anyhow!(e))?;
 
     println!(
         "{} Removed tag '{}' ({} occurrences).",
