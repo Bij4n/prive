@@ -28,7 +28,10 @@ fn main() -> Result<()> {
         colored::control::set_override(false);
     }
 
-    let vault_path = cli.vault_path.as_deref();
+    // Resolve vault path: --vault-path takes precedence, then --vault <name>
+    let vault_name_buf: Option<std::path::PathBuf> =
+        cli.vault.as_ref().map(|n| config::vault_path_for(n));
+    let vault_path = cli.vault_path.as_deref().or(vault_name_buf.as_deref());
 
     match &cli.command {
         Commands::Vault(args) => vault_cmd::handle_vault(&args.command, vault_path),

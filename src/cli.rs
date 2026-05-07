@@ -11,9 +11,13 @@ pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
 
-    /// Override default vault file location
+    /// Override default vault file location (full path)
     #[arg(long, global = true)]
     pub vault_path: Option<PathBuf>,
+
+    /// Select a named vault (e.g. "work", "personal")
+    #[arg(long, global = true, conflicts_with = "vault_path")]
+    pub vault: Option<String>,
 
     /// Disable colored output
     #[arg(long, global = true)]
@@ -402,6 +406,16 @@ pub enum PwCommand {
         /// Entry name
         name: String,
     },
+    /// Export (download) an attachment to a file
+    GetAttachment {
+        /// Entry name
+        name: String,
+        /// Attachment name
+        attachment: String,
+        /// Output file path (defaults to attachment name in current dir)
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+    },
 }
 
 // --- Password Generation ---
@@ -513,6 +527,37 @@ pub enum PgpCommand {
         /// Key ID or fingerprint
         key_id: String,
     },
+    /// Set trust level for a key
+    Trust {
+        /// Key ID or fingerprint
+        key_id: String,
+        /// Trust level: unknown, untrusted, marginal, full, ultimate
+        #[arg(long, default_value = "full")]
+        level: String,
+        /// Optional reason
+        #[arg(long)]
+        reason: Option<String>,
+    },
+    /// Remove trust for a key
+    Untrust {
+        /// Key ID or fingerprint
+        key_id: String,
+    },
+    /// List trusted keys
+    TrustList,
+    /// Generate a revocation certificate for a key
+    GenRevoke {
+        /// Key ID or fingerprint
+        key_id: String,
+        /// Reason for revocation
+        #[arg(long, default_value = "Key no longer used")]
+        reason: String,
+        /// Output file (defaults to <key_id>.rev.asc)
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+    },
+    /// List stored revocation certificates
+    Revocations,
 }
 
 // --- File Encryption ---

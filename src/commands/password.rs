@@ -111,6 +111,11 @@ pub fn handle_pw(cmd: &PwCommand, vault_path_override: Option<&Path>) -> Result<
         PwCommand::Attach { name, file } => cmd_attach(vault_path_override, name, file),
         PwCommand::Detach { name, attachment } => cmd_detach(vault_path_override, name, attachment),
         PwCommand::Attachments { name } => cmd_attachments(vault_path_override, name),
+        PwCommand::GetAttachment {
+            name,
+            attachment,
+            output,
+        } => cmd_get_attachment(vault_path_override, name, attachment, output.as_deref()),
     }
 }
 
@@ -612,6 +617,47 @@ fn cmd_attachments(vault_path: Option<&Path>, name: &str) -> Result<()> {
     }
     println!("\n{} attachment(s) total", attachments.len());
 
+    Ok(())
+}
+
+fn cmd_get_attachment(
+    vault_path: Option<&Path>,
+    name: &str,
+    attachment_name: &str,
+    output: Option<&Path>,
+) -> Result<()> {
+    let (_path, vault, _master_pw) = unlock_vault(vault_path)?;
+
+    let entry = vault
+        .find_by_name(name)
+        .ok_or_else(|| anyhow::anyhow!("Entry '{}' not found", name))?;
+
+    let att = entry.get_attachment(attachment_name).ok_or_else(|| {
+        anyhow::anyhow!(
+            "Attachment '{}' not found on entry '{}'",
+            attachment_name,
+            name
+        )
+    })?;
+
+    let data = base64::engine::general_purpose::STANDARD
+        .decode(&att.data)
+        .map_err(|e| anyhow::anyhow!("Failed to decode attachment data: {e}"))?;
+
+    let out_path = output
+        .map(|p| p.to_path_buf())
+        .unwrap_or_else(|| std::path::PathBuf::from(&att.name));
+
+    std::fs::write(&out_path, &data)
+        .map_err(|e| anyhow::anyhow!("Failed to write '{}': {e}", out_path.display()))?;
+
+    println!(
+        "{} Saved attachment '{}' to {} ({} bytes).",
+        "✓".green(),
+        att.name,
+        out_path.display(),
+        data.len()
+    );
     Ok(())
 }
 

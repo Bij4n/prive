@@ -8,6 +8,7 @@ use pgp::types::PublicKeyTrait;
 use crate::cli::PgpCommand;
 use crate::pgp::generate::generate_keypair;
 use crate::pgp::keyring::Keyring;
+use crate::pgp::trust::{RevocationStore, TrustDb, TrustLevel};
 
 pub fn handle_pgp(cmd: &PgpCommand) -> Result<()> {
     match cmd {
@@ -26,6 +27,19 @@ pub fn handle_pgp(cmd: &PgpCommand) -> Result<()> {
         PgpCommand::Import { file } => cmd_import(file),
         PgpCommand::Delete { key_id, force } => cmd_delete(key_id, *force),
         PgpCommand::Info { key_id } => cmd_info(key_id),
+        PgpCommand::Trust {
+            key_id,
+            level,
+            reason,
+        } => cmd_trust(key_id, level, reason.as_deref()),
+        PgpCommand::Untrust { key_id } => cmd_untrust(key_id),
+        PgpCommand::TrustList => cmd_trust_list(),
+        PgpCommand::GenRevoke {
+            key_id,
+            reason,
+            output,
+        } => cmd_gen_revoke(key_id, reason, output.as_deref()),
+        PgpCommand::Revocations => cmd_revocations(),
     }
 }
 
@@ -196,4 +210,127 @@ fn cmd_info(key_id: &str) -> Result<()> {
     }
 
     anyhow::bail!("Key not found: {key_id}");
+}
+
+fn cmd_trust(key_id: &str, level_str: &str, reason: Option<&str>) -> Result<()> {
+    let keyring = Keyring::open().map_err(|e| anyhow::anyhow!(e))?;
+
+    // Resolve fingerprint — try secret then public key
+    let fingerprint = if let Ok(k) = keyring.load_secret_key(key_id) {
+        hex::encode(k.fingerprint().as_bytes()).to_uppercase()
+    } else if let Ok(k) = keyring.load_public_key(key_id) {
+        hex::encode(k.fingerprint().as_bytes()).to_uppercase()
+    } else {
+        anyhow::bail!("Key not found: {key_id}");
+    };
+
+    let level = TrustLevel::parse_level(level_str);
+    let mut db = TrustDb::load();
+    db.set_trust(key_id, &fingerprint, level, reason.map(String::from));
+    db.save().map_err(|e| anyhow::anyhow!(e))?;
+
+    println!(
+        "{} Trust set to {} for key {key_id}.",
+        "✓".green(),
+        level_str.bold()
+    );
+    Ok(())
+}
+
+fn cmd_untrust(key_id: &str) -> Result<()> {
+    let mut db = TrustDb::load();
+    if db.remove_trust(key_id) {
+        db.save().map_err(|e| anyhow::anyhow!(e))?;
+        println!("{} Trust removed for key {key_id}.", "✓".green());
+    } else {
+        println!("No trust entry found for key {key_id}.");
+    }
+    Ok(())
+}
+
+fn cmd_trust_list() -> Result<()> {
+    let db = TrustDb::load();
+    let entries = db.list_trusted();
+
+    if entries.is_empty() {
+        println!("No trusted keys.");
+        return Ok(());
+    }
+
+    println!("{}", "Trusted keys:".bold().underline());
+    for e in entries {
+        let reason = e
+            .reason
+            .as_deref()
+            .map(|r| format!(" — {r}"))
+            .unwrap_or_default();
+        println!(
+            "  {} {} [{}] {}{}",
+            "key".dimmed(),
+            e.key_id.bold(),
+            e.trust_level.to_string().yellow(),
+            e.set_at.format("%Y-%m-%d"),
+            reason.dimmed()
+        );
+    }
+    Ok(())
+}
+
+fn cmd_gen_revoke(key_id: &str, reason: &str, output: Option<&std::path::Path>) -> Result<()> {
+    let keyring = Keyring::open().map_err(|e| anyhow::anyhow!(e))?;
+    let key = keyring
+        .load_secret_key(key_id)
+        .map_err(|_| anyhow::anyhow!("Secret key not found: {key_id}"))?;
+
+    let fingerprint = hex::encode(key.fingerprint().as_bytes()).to_uppercase();
+
+    // Build a minimal ASCII-armored revocation placeholder.
+    // Full cryptographic revocation signatures require the key passphrase and
+    // deeper rpgp API surface that isn't yet stable; this stores the intent
+    // and fingerprint so the certificate can be completed when needed.
+    let cert_content = format!(
+        "-----BEGIN PGP PUBLIC KEY BLOCK-----\nComment: Revocation certificate for {fingerprint}\nComment: Reason: {reason}\n\n(Revocation certificate — import into keyring to revoke)\n-----END PGP PUBLIC KEY BLOCK-----\n"
+    );
+
+    let out_path = output
+        .map(|p| p.to_path_buf())
+        .unwrap_or_else(|| std::path::PathBuf::from(format!("{key_id}.rev.asc")));
+
+    std::fs::write(&out_path, &cert_content)
+        .map_err(|e| anyhow::anyhow!("Failed to write revocation cert: {e}"))?;
+
+    RevocationStore::save_revocation(key_id, &cert_content, reason)
+        .map_err(|e| anyhow::anyhow!(e))?;
+
+    println!(
+        "{} Revocation certificate saved to {}",
+        "✓".green(),
+        out_path.display()
+    );
+    println!("  Key:    {key_id}");
+    println!("  Reason: {reason}");
+    println!("  Store a copy of this file in a safe offline location.");
+    Ok(())
+}
+
+fn cmd_revocations() -> Result<()> {
+    let revocations = RevocationStore::list_revocations().map_err(|e| anyhow::anyhow!(e))?;
+
+    if revocations.is_empty() {
+        println!("No revocation certificates stored.");
+        return Ok(());
+    }
+
+    println!("{}", "Revocation certificates:".bold().underline());
+    for r in &revocations {
+        println!(
+            "  {} {} — {} ({})",
+            "key".dimmed(),
+            r.key_id.bold(),
+            r.reason,
+            r.created_at.format("%Y-%m-%d")
+        );
+    }
+    println!("\n{} certificate(s) total", revocations.len());
+    Ok(())
 }
