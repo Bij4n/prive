@@ -126,7 +126,7 @@ pub fn handle_stats(vault_path: Option<&Path>) -> Result<()> {
         println!("  {}: {}", "Unique tags".bold(), tag_counts.len());
 
         let mut tags: Vec<(String, usize)> = tag_counts.into_iter().collect();
-        tags.sort_by(|a, b| b.1.cmp(&a.1));
+        tags.sort_by_key(|b| std::cmp::Reverse(b.1));
         let top = tags.iter().take(5);
         for (tag, count) in top {
             println!("  {}: {count} entries", tag.dimmed());

@@ -95,7 +95,7 @@ impl BackupManager {
             }
         }
 
-        backups.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
+        backups.sort_by_key(|b| std::cmp::Reverse(b.timestamp));
         Ok(backups)
     }
 

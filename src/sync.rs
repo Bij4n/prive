@@ -37,6 +37,13 @@ impl VaultSync {
 
         self.run_git(&["init"])?;
 
+        // Set repo-local identity if no global config exists, so commits work
+        // on systems (e.g. CI runners) without a configured git identity.
+        if self.run_git(&["config", "user.email"]).is_err() {
+            let _ = self.run_git(&["config", "user.email", "prive-sync@localhost"]);
+            let _ = self.run_git(&["config", "user.name", "Prive Sync"]);
+        }
+
         // Create .gitignore that only tracks *.pv files
         let gitignore_path = self.repo_dir.join(".gitignore");
         std::fs::write(

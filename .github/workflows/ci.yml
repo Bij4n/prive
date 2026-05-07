@@ -58,9 +58,9 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Smoke-test completion generation
         run: |
-          cargo run -- completions --shell bash > /dev/null
-          cargo run -- completions --shell zsh > /dev/null
-          cargo run -- completions --shell fish > /dev/null
+          cargo run --bin prive -- completions --shell bash > /dev/null
+          cargo run --bin prive -- completions --shell zsh > /dev/null
+          cargo run --bin prive -- completions --shell fish > /dev/null
 
   build-release:
     name: Build Release (${{ matrix.target }})

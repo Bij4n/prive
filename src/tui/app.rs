@@ -171,17 +171,13 @@ impl App {
             KeyCode::Down | KeyCode::Char('j') => {
                 self.move_selection(1);
             }
-            KeyCode::Tab => {
-                if !self.filtered_indices.is_empty() {
-                    self.mode = Mode::Detail;
-                    self.show_password = false;
-                }
+            KeyCode::Tab if !self.filtered_indices.is_empty() => {
+                self.mode = Mode::Detail;
+                self.show_password = false;
             }
-            KeyCode::Esc => {
-                if !self.search_query.is_empty() {
-                    self.search_query.clear();
-                    self.apply_filter();
-                }
+            KeyCode::Esc if !self.search_query.is_empty() => {
+                self.search_query.clear();
+                self.apply_filter();
             }
             _ => {}
         }
@@ -262,7 +258,7 @@ impl App {
                         .map(|score| (i, score))
                 })
                 .collect();
-            scored.sort_by(|a, b| b.1.cmp(&a.1));
+            scored.sort_by_key(|b| std::cmp::Reverse(b.1));
             self.filtered_indices = scored.into_iter().map(|(i, _)| i).collect();
         }
 

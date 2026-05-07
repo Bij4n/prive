@@ -1,7 +1,9 @@
+#[cfg(unix)]
 use std::io::{BufRead, BufReader, Write};
 #[cfg(unix)]
 use std::os::unix::net::{UnixListener, UnixStream};
 use std::path::PathBuf;
+#[cfg(unix)]
 use std::time::{Duration, Instant};
 
 use crate::config;
