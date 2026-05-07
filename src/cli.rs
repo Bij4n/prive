@@ -560,6 +560,17 @@ pub enum PgpCommand {
     },
     /// List stored revocation certificates
     Revocations,
+    /// Fetch a public key from a keyserver by email or fingerprint
+    Fetch {
+        /// Email address or fingerprint to search
+        query: String,
+        /// Search by fingerprint instead of email
+        #[arg(long)]
+        fingerprint: bool,
+        /// Keyserver URL (default: https://keys.openpgp.org)
+        #[arg(long)]
+        keyserver: Option<String>,
+    },
 }
 
 // --- File Encryption ---

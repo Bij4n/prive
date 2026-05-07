@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.0] - 2026-05-07
+
+### Added
+- `prive pgp fetch <email>` — fetch and import public keys from keys.openpgp.org (HKP) by email or fingerprint
+- `prive pgp fetch --fingerprint <fp>` — fetch by fingerprint with optional `--keyserver` override
+- `prive doctor` — master password strength check with score, crack time, and improvement tips
+- `prive audit` — credential expiry detection: Critical for expired, Warning for expiring within 30 days
+- CI: shell completions smoke-test job (bash, zsh, fish)
+- Release workflow: man page generation job bundles `gen-man` output as tarball artifact
+- Packaging manifests: Homebrew formula, AUR PKGBUILD, WinGet manifest
+- 14 new integration tests covering notes, tags, password history, expiry auditing, and vault search
+- New fuzz target: `fuzz_pgp_armor` — fuzzes PGP armored key parsing and keyring import
+
+### Changed
+- Bumped version to 0.5.0
+
 ## [0.4.0] - 2026-04-06
 
 ### Added

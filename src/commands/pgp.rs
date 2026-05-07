@@ -8,6 +8,7 @@ use pgp::types::PublicKeyTrait;
 use crate::cli::PgpCommand;
 use crate::pgp::generate::generate_keypair;
 use crate::pgp::keyring::Keyring;
+use crate::pgp::keyserver::KeyserverClient;
 use crate::pgp::trust::{RevocationStore, TrustDb, TrustLevel};
 
 pub fn handle_pgp(cmd: &PgpCommand) -> Result<()> {
@@ -40,6 +41,11 @@ pub fn handle_pgp(cmd: &PgpCommand) -> Result<()> {
             output,
         } => cmd_gen_revoke(key_id, reason, output.as_deref()),
         PgpCommand::Revocations => cmd_revocations(),
+        PgpCommand::Fetch {
+            query,
+            fingerprint,
+            keyserver,
+        } => cmd_fetch(query, *fingerprint, keyserver.as_deref()),
     }
 }
 
@@ -361,5 +367,44 @@ fn cmd_revocations() -> Result<()> {
         );
     }
     println!("\n{} certificate(s) total", revocations.len());
+    Ok(())
+}
+
+fn cmd_fetch(query: &str, by_fingerprint: bool, keyserver_url: Option<&str>) -> Result<()> {
+    let client = match keyserver_url {
+        Some(url) => KeyserverClient::with_url(url),
+        None => KeyserverClient::new(),
+    };
+
+    println!(
+        "Searching {} for '{}'...",
+        client.url().dimmed(),
+        query.bold()
+    );
+
+    let armored = if by_fingerprint {
+        client
+            .get_by_fingerprint(query)
+            .map_err(|e| anyhow::anyhow!(e))?
+    } else {
+        client.search(query).map_err(|e| anyhow::anyhow!(e))?
+    };
+
+    let Some(armored) = armored else {
+        println!("{} No key found for '{query}'.", "○".dimmed());
+        return Ok(());
+    };
+
+    let keyring = Keyring::open().map_err(|e| anyhow::anyhow!(e))?;
+    let key_id = keyring
+        .import_key(&armored)
+        .map_err(|e| anyhow::anyhow!(e))?;
+
+    println!(
+        "{} Fetched and imported key: {}",
+        "✓".green(),
+        key_id.bold()
+    );
+    println!("  Run `prive pgp trust {key_id}` to set a trust level.");
     Ok(())
 }

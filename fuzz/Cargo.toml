@@ -11,6 +11,8 @@ cargo-fuzz = true
 libfuzzer-sys = "0.4"
 prive = { path = ".." }
 base32 = "0.5"
+pgp = "0.14"
+tempfile = "3"
 
 [[bin]]
 name = "fuzz_vault_header"
@@ -40,4 +42,9 @@ doc = false
 [[bin]]
 name = "fuzz_strength"
 path = "fuzz_targets/fuzz_strength.rs"
+doc = false
+
+[[bin]]
+name = "fuzz_pgp_armor"
+path = "fuzz_targets/fuzz_pgp_armor.rs"
 doc = false
