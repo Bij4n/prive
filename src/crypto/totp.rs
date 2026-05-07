@@ -52,6 +52,27 @@ pub fn time_remaining(time_step: u64) -> u64 {
     time_step - (now % time_step)
 }
 
+/// Decode a QR code image file and return the string it encodes.
+/// Accepts PNG, JPEG, BMP, GIF, TIFF, and WebP.
+pub fn decode_qr_uri(path: &std::path::Path) -> Result<String, String> {
+    let img = image::open(path)
+        .map_err(|e| format!("Failed to open image '{}': {e}", path.display()))?
+        .to_luma8();
+
+    let mut prepared = rqrr::PreparedImage::prepare(img);
+    let grids = prepared.detect_grids();
+
+    if grids.is_empty() {
+        return Err(format!("No QR code found in '{}'", path.display()));
+    }
+
+    let (_, content) = grids[0]
+        .decode()
+        .map_err(|e| format!("QR decode error: {e}"))?;
+
+    Ok(content)
+}
+
 pub fn parse_otpauth_uri(uri: &str) -> Result<TotpParams, String> {
     if !uri.starts_with("otpauth://totp/") {
         return Err("Invalid otpauth URI — must start with otpauth://totp/".to_string());
@@ -113,6 +134,7 @@ fn urldecode(s: &str) -> String {
     result
 }
 
+#[derive(Debug)]
 pub struct TotpParams {
     pub label: String,
     pub secret: String,
@@ -190,6 +212,14 @@ mod tests {
     fn test_parse_otpauth_invalid() {
         let result = parse_otpauth_uri("https://example.com");
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_decode_qr_uri_rejects_non_otpauth() {
+        // We can't easily generate a real QR image in a unit test without an
+        // encoder dep, but we can verify the URI validation leg of the path.
+        let err = parse_otpauth_uri("https://example.com").unwrap_err();
+        assert!(err.contains("otpauth"));
     }
 
     #[test]

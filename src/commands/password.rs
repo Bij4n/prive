@@ -104,9 +104,18 @@ pub fn handle_pw(cmd: &PwCommand, vault_path_override: Option<&Path>) -> Result<
         PwCommand::Rm { name, force } => cmd_rm(vault_path_override, name, *force),
         PwCommand::Search { query } => cmd_search(vault_path_override, query),
         PwCommand::Totp { name } => cmd_totp(vault_path_override, name),
-        PwCommand::TotpAdd { name, secret, uri } => {
-            cmd_totp_add(vault_path_override, name, secret.as_deref(), uri.as_deref())
-        }
+        PwCommand::TotpAdd {
+            name,
+            secret,
+            uri,
+            qr,
+        } => cmd_totp_add(
+            vault_path_override,
+            name,
+            secret.as_deref(),
+            uri.as_deref(),
+            qr.as_deref(),
+        ),
         PwCommand::History { name, show } => cmd_history(vault_path_override, name, *show),
         PwCommand::Attach { name, file } => cmd_attach(vault_path_override, name, file),
         PwCommand::Detach { name, attachment } => cmd_detach(vault_path_override, name, attachment),
@@ -422,6 +431,7 @@ fn cmd_totp_add(
     name: &str,
     secret: Option<&str>,
     uri: Option<&str>,
+    qr: Option<&Path>,
 ) -> Result<()> {
     let (path, mut vault, master_pw) = unlock_vault(vault_path)?;
 
@@ -429,16 +439,22 @@ fn cmd_totp_add(
         .find_by_name_mut(name)
         .ok_or_else(|| anyhow::anyhow!("Entry '{}' not found", name))?;
 
-    let totp_secret = if let Some(uri_str) = uri {
+    let totp_secret = if let Some(qr_path) = qr {
+        let decoded =
+            totp::decode_qr_uri(qr_path).map_err(|e| anyhow::anyhow!("QR decode failed: {e}"))?;
+        let params = totp::parse_otpauth_uri(&decoded)
+            .map_err(|e| anyhow::anyhow!("QR code does not contain a valid otpauth URI: {e}"))?;
+        println!("  QR decoded: {}", decoded.dimmed());
+        params.secret
+    } else if let Some(uri_str) = uri {
         let params = totp::parse_otpauth_uri(uri_str)
             .map_err(|e| anyhow::anyhow!("Failed to parse otpauth URI: {e}"))?;
         params.secret
     } else if let Some(s) = secret {
-        // Validate that the secret is valid base32
         totp::decode_base32_secret(s).map_err(|e| anyhow::anyhow!("Invalid base32 secret: {e}"))?;
         s.to_string()
     } else {
-        anyhow::bail!("Provide either --secret or --uri");
+        anyhow::bail!("Provide --secret, --uri, or --qr");
     };
 
     entry.totp_secret = Some(totp_secret);

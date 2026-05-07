@@ -380,6 +380,9 @@ pub enum PwCommand {
         /// otpauth:// URI
         #[arg(long)]
         uri: Option<String>,
+        /// Path to a QR code image (PNG, JPEG, BMP, GIF, TIFF, WebP)
+        #[arg(long)]
+        qr: Option<PathBuf>,
     },
     /// Show password history for an entry
     History {
