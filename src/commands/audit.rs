@@ -55,13 +55,15 @@ pub fn handle_audit(args: &AuditArgs, vault_path_override: Option<&Path>) -> Res
         println!();
     }
 
+    print_issues("Expired / Expiring", &report.expiring_entries);
     print_issues("Weak Passwords", &report.weak_passwords);
     print_issues("Duplicate Passwords", &report.duplicate_passwords);
     print_issues("Short Passwords", &report.short_passwords);
     print_issues("Old Passwords", &report.old_passwords);
     print_issues("Reused Usernames", &report.reused_usernames);
 
-    let total_issues = report.weak_passwords.len()
+    let total_issues = report.expiring_entries.len()
+        + report.weak_passwords.len()
         + report.duplicate_passwords.len()
         + report.short_passwords.len()
         + report.old_passwords.len()

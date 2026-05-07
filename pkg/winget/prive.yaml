@@ -1,0 +1,31 @@
+PackageIdentifier: Bij4n.Prive
+PackageVersion: 0.4.0
+PackageName: prive
+Publisher: Bij4n
+PublisherUrl: https://github.com/Bij4n
+ShortDescription: Cross-platform CLI password manager and PGP encryption toolkit
+Description: |-
+  Prive is a single-binary, zero-runtime-dependency CLI password manager and PGP
+  encryption toolkit. Features include AES-256-GCM encrypted vaults, PGP key management,
+  password generation (random, passphrase, pronounceable, PIN), TOTP/2FA support,
+  security auditing with Have I Been Pwned breach detection, and an interactive TUI.
+License: MIT
+LicenseUrl: https://github.com/Bij4n/prive-app/blob/master/LICENSE
+PackageUrl: https://github.com/Bij4n/prive-app
+ReleaseNotesUrl: https://github.com/Bij4n/prive-app/blob/master/CHANGELOG.md
+Tags:
+  - password
+  - password-manager
+  - pgp
+  - encryption
+  - security
+  - cli
+  - totp
+  - 2fa
+Installers:
+  - Architecture: x64
+    InstallerType: portable
+    InstallerUrl: https://github.com/Bij4n/prive-app/releases/download/v0.4.0/prive-windows-x86_64.exe
+    InstallerSha256: REPLACE_WITH_ACTUAL_SHA256
+ManifestType: singleton
+ManifestVersion: 1.6.0

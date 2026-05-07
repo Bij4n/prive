@@ -4,6 +4,7 @@ use anyhow::Result;
 use colored::Colorize;
 
 use crate::config;
+use crate::crypto::strength::{StrengthLevel, analyze_strength};
 use crate::pgp::keyring::Keyring;
 use crate::pgp::trust::{RevocationStore, TrustDb, TrustLevel};
 use crate::vault::migrate;
@@ -70,6 +71,39 @@ pub fn handle_doctor() -> Result<()> {
             "  {} No vault found. Run `prive vault init` to create one.",
             "○".dimmed()
         );
+    }
+
+    // Check master password strength (prompt only when vault exists)
+    if vault_path.exists()
+        && let Ok(password) = rpassword::prompt_password("  Master password (strength check): ")
+    {
+        let report = analyze_strength(&password);
+        let level_display = match report.level {
+            StrengthLevel::VeryWeak | StrengthLevel::Weak => {
+                report.level.to_string().red().to_string()
+            }
+            StrengthLevel::Fair => report.level.to_string().yellow().to_string(),
+            StrengthLevel::Strong | StrengthLevel::VeryStrong => {
+                report.level.to_string().green().to_string()
+            }
+        };
+        println!(
+            "  {} Master password: {} (score {}/100, crack time: {})",
+            if report.score >= 61 {
+                "✓".green()
+            } else {
+                "!".yellow()
+            },
+            level_display,
+            report.score,
+            report.crack_time_display
+        );
+        if report.score < 61 {
+            for tip in &report.feedback {
+                println!("      {}", tip.dimmed());
+            }
+            issues += 1;
+        }
     }
 
     // Check keyring + trust status

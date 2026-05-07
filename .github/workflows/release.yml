@@ -56,9 +56,26 @@ jobs:
           name: ${{ matrix.artifact }}
           path: ${{ matrix.artifact }}
 
+  man-pages:
+    name: Generate Man Pages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Generate man pages
+        run: cargo run --bin gen-man -- man/
+      - name: Create man page tarball
+        run: tar czf prive-man-pages.tar.gz man/
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: prive-man-pages
+          path: prive-man-pages.tar.gz
+
   release:
     name: Create Release
-    needs: build
+    needs: [build, man-pages]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

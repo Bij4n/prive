@@ -10,6 +10,7 @@ pub struct AuditReport {
     pub old_passwords: Vec<AuditIssue>,
     pub short_passwords: Vec<AuditIssue>,
     pub reused_usernames: Vec<AuditIssue>,
+    pub expiring_entries: Vec<AuditIssue>,
     pub score: u32,
 }
 
@@ -45,6 +46,7 @@ pub fn audit_vault(vault: &Vault) -> AuditReport {
         old_passwords: Vec::new(),
         short_passwords: Vec::new(),
         reused_usernames: Vec::new(),
+        expiring_entries: Vec::new(),
         score: 100,
     };
 
@@ -57,6 +59,7 @@ pub fn audit_vault(vault: &Vault) -> AuditReport {
     check_old_passwords(&vault.entries, &mut report);
     check_short_passwords(&vault.entries, &mut report);
     check_reused_usernames(&vault.entries, &mut report);
+    check_expiring_entries(&vault.entries, &mut report);
 
     // Calculate score
     let _total_issues = report.weak_passwords.len()
@@ -74,6 +77,7 @@ pub fn audit_vault(vault: &Vault) -> AuditReport {
         .chain(report.duplicate_passwords.iter())
         .chain(report.old_passwords.iter())
         .chain(report.short_passwords.iter())
+        .chain(report.expiring_entries.iter())
     {
         match issue.severity {
             Severity::Critical => penalty += penalty_per_critical,
@@ -220,6 +224,32 @@ fn check_reused_usernames(entries: &[VaultEntry], report: &mut AuditReport) {
                     names.len(),
                     names.join(", ")
                 ),
+            });
+        }
+    }
+}
+
+fn check_expiring_entries(entries: &[VaultEntry], report: &mut AuditReport) {
+    let now = chrono::Utc::now();
+    let soon = chrono::Duration::days(30);
+
+    for entry in entries {
+        let Some(expires_at) = entry.expires_at else {
+            continue;
+        };
+        if expires_at < now {
+            let days_ago = (now - expires_at).num_days();
+            report.expiring_entries.push(AuditIssue {
+                entry_name: entry.name.clone(),
+                severity: Severity::Critical,
+                description: format!("Expired {days_ago} day(s) ago — update this credential"),
+            });
+        } else if expires_at - now < soon {
+            let days_left = (expires_at - now).num_days();
+            report.expiring_entries.push(AuditIssue {
+                entry_name: entry.name.clone(),
+                severity: Severity::Warning,
+                description: format!("Expires in {days_left} day(s)"),
             });
         }
     }

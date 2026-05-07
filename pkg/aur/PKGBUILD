@@ -1,0 +1,36 @@
+# Maintainer: Bij4n <bobbybouche@duck.com>
+pkgname=prive
+pkgver=0.4.0
+pkgrel=1
+pkgdesc="Cross-platform CLI password manager and PGP encryption toolkit"
+arch=('x86_64')
+url="https://github.com/Bij4n/prive-app"
+license=('MIT')
+depends=()
+makedepends=('rust' 'cargo')
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('SKIP')
+
+build() {
+    cd "$pkgname-app-$pkgver"
+    cargo build --release --locked
+}
+
+package() {
+    cd "$pkgname-app-$pkgver"
+    install -Dm755 "target/release/$pkgname" "$pkgdir/usr/bin/$pkgname"
+
+    # Shell completions
+    install -Dm644 <(target/release/$pkgname completions --shell bash) \
+        "$pkgdir/usr/share/bash-completion/completions/$pkgname"
+    install -Dm644 <(target/release/$pkgname completions --shell zsh) \
+        "$pkgdir/usr/share/zsh/site-functions/_$pkgname"
+    install -Dm644 <(target/release/$pkgname completions --shell fish) \
+        "$pkgdir/usr/share/fish/vendor_completions.d/$pkgname.fish"
+
+    # Man pages
+    cargo run --bin gen-man -- man/
+    for f in man/*.1; do
+        install -Dm644 "$f" "$pkgdir/usr/share/man/man1/$(basename $f)"
+    done
+}
