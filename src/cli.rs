@@ -571,6 +571,14 @@ pub enum PgpCommand {
         #[arg(long)]
         keyserver: Option<String>,
     },
+    /// Publish a public key to a keyserver
+    Publish {
+        /// Key ID or fingerprint to publish
+        key_id: String,
+        /// Keyserver URL (default: https://keys.openpgp.org)
+        #[arg(long)]
+        keyserver: Option<String>,
+    },
 }
 
 // --- File Encryption ---

@@ -71,10 +71,68 @@ impl KeyserverClient {
         }
     }
 
+    /// Upload a public key to the keyserver.
+    ///
+    /// keys.openpgp.org requires email verification after upload — the server
+    /// sends a verification link to each UID address. The returned token can
+    /// be used to request re-verification via /vks/v1/request-verify.
+    pub fn upload(&self, armored: &str) -> Result<UploadResponse, String> {
+        let url = format!("{}/vks/v1/upload", self.base_url);
+
+        let body = serde_json::json!({ "keytext": armored });
+
+        let response = reqwest::blocking::Client::new()
+            .post(&url)
+            .header("Content-Type", "application/json")
+            .header("User-Agent", "prive-password-manager")
+            .body(body.to_string())
+            .send()
+            .map_err(|e| format!("Keyserver upload failed: {e}"))?;
+
+        if response.status().is_success() {
+            let text = response
+                .text()
+                .map_err(|e| format!("Failed to read response: {e}"))?;
+            let parsed: serde_json::Value =
+                serde_json::from_str(&text).map_err(|e| format!("Invalid response JSON: {e}"))?;
+            Ok(UploadResponse {
+                token: parsed
+                    .get("token")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_string(),
+                key_fpr: parsed
+                    .get("key_fpr")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_string(),
+                status: parsed
+                    .get("status")
+                    .and_then(|v| v.as_object())
+                    .map(|m| {
+                        m.iter()
+                            .filter_map(|(k, v)| v.as_str().map(|s| (k.clone(), s.to_string())))
+                            .collect()
+                    })
+                    .unwrap_or_default(),
+            })
+        } else {
+            Err(format!("Keyserver returned status {}", response.status()))
+        }
+    }
+
     /// Get the keyserver URL being used.
     pub fn url(&self) -> &str {
         &self.base_url
     }
+}
+
+#[derive(Debug)]
+pub struct UploadResponse {
+    pub token: String,
+    pub key_fpr: String,
+    /// Map of email address -> verification status ("unpublished", "published", etc.)
+    pub status: std::collections::HashMap<String, String>,
 }
 
 fn urlencod(s: &str) -> String {

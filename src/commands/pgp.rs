@@ -8,7 +8,7 @@ use pgp::types::PublicKeyTrait;
 use crate::cli::PgpCommand;
 use crate::pgp::generate::generate_keypair;
 use crate::pgp::keyring::Keyring;
-use crate::pgp::keyserver::KeyserverClient;
+use crate::pgp::keyserver::{KeyserverClient, UploadResponse};
 use crate::pgp::trust::{RevocationStore, TrustDb, TrustLevel};
 
 pub fn handle_pgp(cmd: &PgpCommand) -> Result<()> {
@@ -46,6 +46,7 @@ pub fn handle_pgp(cmd: &PgpCommand) -> Result<()> {
             fingerprint,
             keyserver,
         } => cmd_fetch(query, *fingerprint, keyserver.as_deref()),
+        PgpCommand::Publish { key_id, keyserver } => cmd_publish(key_id, keyserver.as_deref()),
     }
 }
 
@@ -406,5 +407,60 @@ fn cmd_fetch(query: &str, by_fingerprint: bool, keyserver_url: Option<&str>) -> 
         key_id.bold()
     );
     println!("  Run `prive pgp trust {key_id}` to set a trust level.");
+    Ok(())
+}
+
+fn cmd_publish(key_id: &str, keyserver_url: Option<&str>) -> Result<()> {
+    let client = match keyserver_url {
+        Some(url) => KeyserverClient::with_url(url),
+        None => KeyserverClient::new(),
+    };
+
+    let keyring = Keyring::open().map_err(|e| anyhow::anyhow!(e))?;
+    let armored = keyring
+        .export_key(key_id, false)
+        .map_err(|e| anyhow::anyhow!("Key not found or export failed: {e}"))?;
+
+    println!(
+        "Uploading key {} to {}...",
+        key_id.bold(),
+        client.url().dimmed()
+    );
+
+    let UploadResponse {
+        token: _,
+        key_fpr,
+        status,
+    } = client.upload(&armored).map_err(|e| anyhow::anyhow!(e))?;
+
+    println!("{} Key uploaded.", "✓".green());
+    if !key_fpr.is_empty() {
+        println!("  Fingerprint: {key_fpr}");
+    }
+
+    if status.is_empty() {
+        println!(
+            "  {} Check your email to complete verification.",
+            "!".yellow()
+        );
+    } else {
+        println!("  Verification status per address:");
+        for (addr, st) in &status {
+            let st_display = if st == "published" {
+                st.green().to_string()
+            } else {
+                st.yellow().to_string()
+            };
+            println!("    {addr}: {st_display}");
+        }
+        let needs_verify = status.values().any(|s| s != "published");
+        if needs_verify {
+            println!(
+                "  {} Verification emails sent — click the link in each to publish.",
+                "!".yellow()
+            );
+        }
+    }
+
     Ok(())
 }
