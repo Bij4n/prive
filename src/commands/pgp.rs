@@ -96,13 +96,22 @@ fn cmd_list(secret_only: bool) -> Result<()> {
         return Ok(());
     }
 
+    let trust_db = TrustDb::load();
+
     for key in &keys {
         let type_label = if key.has_secret {
             "sec".yellow()
         } else {
             "pub".cyan()
         };
-        println!("{type_label}  {}", key.key_id);
+        let trust = trust_db.get_trust(&key.key_id);
+        let trust_display = match trust {
+            TrustLevel::Unknown => trust.to_string().dimmed().to_string(),
+            TrustLevel::Untrusted => trust.to_string().red().to_string(),
+            TrustLevel::Marginal => trust.to_string().yellow().to_string(),
+            TrustLevel::Full | TrustLevel::Ultimate => trust.to_string().green().to_string(),
+        };
+        println!("{type_label}  {} [trust: {trust_display}]", key.key_id);
         println!("     {} {}", "Fingerprint:".dimmed(), key.fingerprint);
         println!("     {} {}", "UID:".dimmed(), key.uid);
         println!("     {} {}", "Algorithm:".dimmed(), key.algorithm);
@@ -161,6 +170,10 @@ fn cmd_delete(key_id: &str, force: bool) -> Result<()> {
 
 fn cmd_info(key_id: &str) -> Result<()> {
     let keyring = Keyring::open().map_err(|e| anyhow::anyhow!(e))?;
+    let trust_db = TrustDb::load();
+    let revoked = RevocationStore::load_revocation(key_id)
+        .unwrap_or(None)
+        .is_some();
 
     // Try secret key first
     if let Ok(key) = keyring.load_secret_key(key_id) {
@@ -171,6 +184,14 @@ fn cmd_info(key_id: &str) -> Result<()> {
         println!("  {} {fingerprint}", "Fingerprint:".bold());
         println!("  {} {:?}", "Algorithm:".bold(), key.algorithm());
         println!("  {} {:?}", "Version:".bold(), key.version());
+        println!(
+            "  {} {}",
+            "Trust:".bold(),
+            trust_db.get_trust(&kid).to_string().yellow()
+        );
+        if revoked {
+            println!("  {} {}", "Status:".bold(), "REVOKED".red().bold());
+        }
 
         for user in &key.details.users {
             let uid = String::from_utf8_lossy(user.id.id());
@@ -194,6 +215,14 @@ fn cmd_info(key_id: &str) -> Result<()> {
         println!("{} {kid}", "pub".cyan());
         println!("  {} {fingerprint}", "Fingerprint:".bold());
         println!("  {} {:?}", "Algorithm:".bold(), key.algorithm());
+        println!(
+            "  {} {}",
+            "Trust:".bold(),
+            trust_db.get_trust(&kid).to_string().yellow()
+        );
+        if revoked {
+            println!("  {} {}", "Status:".bold(), "REVOKED".red().bold());
+        }
 
         for user in &key.details.users {
             let uid = String::from_utf8_lossy(user.id.id());

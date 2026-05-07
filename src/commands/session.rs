@@ -13,6 +13,7 @@ pub fn handle_session(cmd: &SessionCommand, vault_path: Option<&Path>) -> Result
         SessionCommand::Start => cmd_start(vault_path),
         SessionCommand::Stop => cmd_stop(),
         SessionCommand::Status => cmd_status(),
+        SessionCommand::Env => cmd_env(),
     }
 }
 
@@ -62,5 +63,17 @@ fn cmd_status() -> Result<()> {
     } else {
         println!("{} Agent is {}.", "○".dimmed(), "not running".dimmed());
     }
+    Ok(())
+}
+
+fn cmd_env() -> Result<()> {
+    let sock = config::data_dir().join("agent.sock");
+    let active = session::is_agent_running();
+
+    // Output eval-able shell variable assignments.
+    // Usage: eval $(prive session env)
+    println!("PRIVE_AGENT_SOCK={}", sock.display());
+    println!("PRIVE_SESSION_ACTIVE={}", if active { "1" } else { "0" });
+    println!("export PRIVE_AGENT_SOCK PRIVE_SESSION_ACTIVE");
     Ok(())
 }

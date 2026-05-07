@@ -145,6 +145,8 @@ pub enum SessionCommand {
     Stop,
     /// Check agent status
     Status,
+    /// Print shell environment variables for agent integration (use with eval)
+    Env,
 }
 
 // --- Clipboard ---
