@@ -627,6 +627,17 @@ pub enum ImportFormat {
     Csv,
     Bitwarden,
     Keepass,
+    /// LastPass CSV export (File > Export > LastPass CSV File)
+    Lastpass,
+    /// 1Password CSV export
+    #[value(name = "1password")]
+    OnePassword,
+    /// Dashlane CSV export
+    Dashlane,
+    /// Apple iCloud Passwords / Safari CSV export
+    Apple,
+    /// Firefox CSV export (about:logins > Export)
+    Firefox,
 }
 
 // --- Export ---
@@ -646,6 +657,8 @@ pub struct ExportArgs {
 pub enum ExportFormat {
     Csv,
     BitwardenJson,
+    /// LastPass-compatible CSV export
+    Lastpass,
 }
 
 // --- Completions ---

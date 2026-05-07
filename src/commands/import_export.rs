@@ -31,6 +31,21 @@ pub fn handle_import(args: &ImportArgs, vault_path_override: Option<&Path>) -> R
         ImportFormat::Keepass => {
             import::import_keepass_xml(&content).map_err(|e| anyhow::anyhow!(e))?
         }
+        ImportFormat::Lastpass => {
+            import::import_lastpass_csv(&content).map_err(|e| anyhow::anyhow!(e))?
+        }
+        ImportFormat::OnePassword => {
+            import::import_onepassword_csv(&content).map_err(|e| anyhow::anyhow!(e))?
+        }
+        ImportFormat::Dashlane => {
+            import::import_dashlane_csv(&content).map_err(|e| anyhow::anyhow!(e))?
+        }
+        ImportFormat::Apple => {
+            import::import_apple_csv(&content).map_err(|e| anyhow::anyhow!(e))?
+        }
+        ImportFormat::Firefox => {
+            import::import_firefox_csv(&content).map_err(|e| anyhow::anyhow!(e))?
+        }
     };
 
     let count = entries.len();
@@ -64,6 +79,7 @@ pub fn handle_export(args: &ExportArgs, vault_path_override: Option<&Path>) -> R
         ExportFormat::BitwardenJson => {
             import::export_bitwarden_json(&vault).map_err(|e| anyhow::anyhow!(e))?
         }
+        ExportFormat::Lastpass => import::export_lastpass_csv(&vault),
     };
 
     if let Some(output_path) = &args.output {

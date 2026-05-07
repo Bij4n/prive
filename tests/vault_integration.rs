@@ -186,7 +186,7 @@ fn test_import_export_csv_roundtrip() {
 
     // Re-import
     let entries = prive::vault::import::import_csv(&csv).unwrap();
-    assert!(entries.len() >= 1);
+    assert!(!entries.is_empty());
 }
 
 #[test]

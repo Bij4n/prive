@@ -1,7 +1,32 @@
 use crate::vault::model::{Vault, VaultEntry};
 
-/// Import entries from a CSV file (Chrome, Bitwarden, generic format).
+/// Import entries from a CSV file.
+/// Handles Chrome, Bitwarden CSV, LastPass, 1Password, Dashlane, Apple, Firefox, and generic formats.
 pub fn import_csv(content: &str) -> Result<Vec<VaultEntry>, String> {
+    import_csv_with_source(content, "imported")
+}
+
+pub fn import_lastpass_csv(content: &str) -> Result<Vec<VaultEntry>, String> {
+    import_csv_with_source(content, "lastpass")
+}
+
+pub fn import_onepassword_csv(content: &str) -> Result<Vec<VaultEntry>, String> {
+    import_csv_with_source(content, "1password")
+}
+
+pub fn import_dashlane_csv(content: &str) -> Result<Vec<VaultEntry>, String> {
+    import_csv_with_source(content, "dashlane")
+}
+
+pub fn import_apple_csv(content: &str) -> Result<Vec<VaultEntry>, String> {
+    import_csv_with_source(content, "apple")
+}
+
+pub fn import_firefox_csv(content: &str) -> Result<Vec<VaultEntry>, String> {
+    import_csv_with_source(content, "firefox")
+}
+
+fn import_csv_with_source(content: &str, source: &str) -> Result<Vec<VaultEntry>, String> {
     let mut reader = csv::ReaderBuilder::new()
         .flexible(true)
         .from_reader(content.as_bytes());
@@ -11,14 +36,59 @@ pub fn import_csv(content: &str) -> Result<Vec<VaultEntry>, String> {
         .map_err(|e| format!("Failed to read CSV headers: {e}"))?
         .clone();
 
-    let header_lower: Vec<String> = headers.iter().map(|h| h.to_lowercase()).collect();
+    let header_lower: Vec<String> = headers.iter().map(|h| h.trim().to_lowercase()).collect();
 
-    // Detect format by headers
-    let name_col = find_column(&header_lower, &["name", "title", "login_name"]);
-    let url_col = find_column(&header_lower, &["url", "login_uri", "website"]);
-    let username_col = find_column(&header_lower, &["username", "login_username", "user"]);
-    let password_col = find_column(&header_lower, &["password", "login_password", "pass"]);
-    let notes_col = find_column(&header_lower, &["notes", "note", "comments"]);
+    // Column detection covers all major password managers:
+    //   Chrome/Edge: name,url,username,password
+    //   Bitwarden CSV: folder,favorite,type,name,notes,fields,reprompt,login_uri,login_username,login_password,login_totp
+    //   LastPass: url,username,password,totp,extra,name,grouping,fav
+    //   1Password CSV: Title,Website,Username,Password,Notes,OTPAuth
+    //   Dashlane: username,title,password,note,url,category,subcategory
+    //   Apple iCloud Passwords: Title,URL,Username,Password,Notes,OTPAuth
+    //   Firefox: url,username,password,httpRealm,formActionOrigin,...
+    let name_col = find_column(
+        &header_lower,
+        &["name", "title", "login_name", "site name", "service"],
+    );
+    let url_col = find_column(
+        &header_lower,
+        &[
+            "url",
+            "login_uri",
+            "website",
+            "web_site",
+            "location",
+            "homepage",
+            "login_url",
+        ],
+    );
+    let username_col = find_column(
+        &header_lower,
+        &[
+            "username",
+            "login_username",
+            "user",
+            "login",
+            "email",
+            "login_email",
+        ],
+    );
+    let password_col = find_column(
+        &header_lower,
+        &["password", "login_password", "pass", "passwd"],
+    );
+    let notes_col = find_column(
+        &header_lower,
+        &["notes", "note", "comments", "extra", "memo"],
+    );
+    let totp_col = find_column(
+        &header_lower,
+        &["totp", "login_totp", "otp", "otpauth", "one_time_password"],
+    );
+    let group_col = find_column(
+        &header_lower,
+        &["grouping", "group", "folder", "category", "collection"],
+    );
 
     let password_col = password_col.ok_or_else(|| "Could not find password column".to_string())?;
 
@@ -27,14 +97,24 @@ pub fn import_csv(content: &str) -> Result<Vec<VaultEntry>, String> {
     for result in reader.records() {
         let record = result.map_err(|e| format!("CSV parse error: {e}"))?;
 
-        let name = name_col
-            .and_then(|i| record.get(i))
-            .unwrap_or("Imported")
-            .to_string();
-        let url = url_col
+        let raw_url = url_col
             .and_then(|i| record.get(i))
             .map(|s| s.to_string())
-            .filter(|s| !s.is_empty());
+            .filter(|s| !s.is_empty() && s != "http://sn");
+
+        // For Firefox (no name col), derive name from URL hostname
+        let name = name_col
+            .and_then(|i| record.get(i))
+            .filter(|s| !s.is_empty())
+            .map(|s| s.to_string())
+            .or_else(|| {
+                raw_url
+                    .as_deref()
+                    .and_then(|u| url_hostname(u))
+                    .map(|h| h.to_string())
+            })
+            .unwrap_or_else(|| "Imported".to_string());
+
         let username = username_col
             .and_then(|i| record.get(i))
             .map(|s| s.to_string())
@@ -44,22 +124,44 @@ pub fn import_csv(content: &str) -> Result<Vec<VaultEntry>, String> {
             .and_then(|i| record.get(i))
             .map(|s| s.to_string())
             .filter(|s| !s.is_empty());
+        let totp = totp_col
+            .and_then(|i| record.get(i))
+            .map(|s| s.to_string())
+            .filter(|s| !s.is_empty());
 
         if password.is_empty() {
             continue;
         }
 
-        entries.push(VaultEntry::new(
-            name,
-            username,
-            password,
-            url,
-            notes,
-            vec!["imported".to_string()],
-        ));
+        let mut tags = vec!["imported".to_string()];
+        if source != "imported" {
+            tags.push(source.to_string());
+        }
+
+        // Map grouping/category/folder into tags
+        if let Some(group) = group_col
+            .and_then(|i| record.get(i))
+            .filter(|s| !s.is_empty())
+        {
+            tags.push(format!("folder:{group}"));
+        }
+
+        let mut entry = VaultEntry::new(name, username, password, raw_url, notes, tags);
+        entry.totp_secret = totp;
+        entries.push(entry);
     }
 
     Ok(entries)
+}
+
+fn url_hostname(url: &str) -> Option<&str> {
+    let without_scheme = url
+        .strip_prefix("https://")
+        .or_else(|| url.strip_prefix("http://"))
+        .unwrap_or(url);
+    let host = without_scheme.split('/').next()?;
+    // strip www. prefix
+    Some(host.strip_prefix("www.").unwrap_or(host))
 }
 
 /// Import from Bitwarden JSON export.
@@ -220,6 +322,34 @@ pub fn export_csv(vault: &Vault) -> String {
             csv_escape(entry.url.as_deref().unwrap_or("")),
             csv_escape(entry.notes.as_deref().unwrap_or("")),
             csv_escape(&entry.tags.join(";")),
+        ));
+    }
+
+    output
+}
+
+/// Export vault to LastPass-compatible CSV format.
+/// Columns: url,username,password,totp,extra,name,grouping,fav
+pub fn export_lastpass_csv(vault: &Vault) -> String {
+    let mut output = String::from("url,username,password,totp,extra,name,grouping,fav\n");
+
+    for entry in &vault.entries {
+        let grouping = entry
+            .tags
+            .iter()
+            .find(|t| t.starts_with("folder:"))
+            .map(|t| t.trim_start_matches("folder:"))
+            .unwrap_or("");
+
+        output.push_str(&format!(
+            "{},{},{},{},{},{},{},0\n",
+            csv_escape(entry.url.as_deref().unwrap_or("")),
+            csv_escape(entry.username.as_deref().unwrap_or("")),
+            csv_escape(&entry.password),
+            csv_escape(entry.totp_secret.as_deref().unwrap_or("")),
+            csv_escape(entry.notes.as_deref().unwrap_or("")),
+            csv_escape(&entry.name),
+            csv_escape(grouping),
         ));
     }
 
