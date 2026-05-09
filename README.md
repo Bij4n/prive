@@ -82,9 +82,10 @@ prive pw search github
 
 # TOTP
 prive pw totp-add github --secret JBSWY3DPEHPK3PXP   # from base32 secret
-prive pw totp-add github --uri "otpauth://totp/..."   # from otpauth URI
+prive pw totp-add github --uri "otpauth://totp/..."   # from otpauth URI (SHA-256/SHA-512 supported)
 prive pw totp-add github --qr ~/Downloads/qr.png      # from QR code image
-prive pw totp github
+prive pw totp github                                   # show current code
+prive pw get github --totp                             # get password + TOTP in one step
 
 # Security audit
 prive audit
