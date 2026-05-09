@@ -2,11 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.5.0] - 2026-05-07
+## [0.5.0] - 2026-05-09
 
 ### Added
 - `prive pgp fetch <email>` — fetch and import public keys from keys.openpgp.org (HKP) by email or fingerprint
 - `prive pgp fetch --fingerprint <fp>` — fetch by fingerprint with optional `--keyserver` override
+- `prive pgp publish <key-id>` — publish a public key to keys.openpgp.org
+- `prive pw totp-add --qr <image>` — import TOTP from a QR code image (PNG/JPEG/BMP/GIF/TIFF/WebP)
 - `prive doctor` — master password strength check with score, crack time, and improvement tips
 - `prive audit` — credential expiry detection: Critical for expired, Warning for expiring within 30 days
 - CI: shell completions smoke-test job (bash, zsh, fish)
