@@ -130,7 +130,7 @@ proptest! {
     #[test]
     fn totp_digit_count(digits in 4u32..10, time in 0u64..2000000000) {
         let secret = b"12345678901234567890";
-        let code = prive::crypto::totp::generate_totp_at(secret, time, 30, digits).unwrap();
+        let code = prive::crypto::totp::generate_totp_at(secret, time, 30, digits, prive::crypto::totp::TotpAlgorithm::Sha1).unwrap();
         prop_assert_eq!(code.len(), digits as usize);
         prop_assert!(code.chars().all(|c| c.is_ascii_digit()));
     }
@@ -141,8 +141,8 @@ proptest! {
         let secret = b"test_secret_key_123";
         let step = 30u64;
         let aligned = (base_time / step) * step;
-        let code1 = prive::crypto::totp::generate_totp_at(secret, aligned, step, 6).unwrap();
-        let code2 = prive::crypto::totp::generate_totp_at(secret, aligned + step - 1, step, 6).unwrap();
+        let code1 = prive::crypto::totp::generate_totp_at(secret, aligned, step, 6, prive::crypto::totp::TotpAlgorithm::Sha1).unwrap();
+        let code2 = prive::crypto::totp::generate_totp_at(secret, aligned + step - 1, step, 6, prive::crypto::totp::TotpAlgorithm::Sha1).unwrap();
         prop_assert_eq!(code1, code2);
     }
 

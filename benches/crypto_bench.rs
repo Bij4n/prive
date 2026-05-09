@@ -89,6 +89,7 @@ fn bench_totp(c: &mut Criterion) {
                 black_box(1234567890),
                 black_box(30),
                 black_box(6),
+                prive::crypto::totp::TotpAlgorithm::Sha1,
             )
         });
     });

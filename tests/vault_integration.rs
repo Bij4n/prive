@@ -192,7 +192,14 @@ fn test_import_export_csv_roundtrip() {
 #[test]
 fn test_totp_generation() {
     let secret = b"12345678901234567890";
-    let code = prive::crypto::totp::generate_totp_at(secret, 59, 30, 6).unwrap();
+    let code = prive::crypto::totp::generate_totp_at(
+        secret,
+        59,
+        30,
+        6,
+        prive::crypto::totp::TotpAlgorithm::Sha1,
+    )
+    .unwrap();
     assert_eq!(code.len(), 6);
     assert!(code.chars().all(|c| c.is_ascii_digit()));
 }

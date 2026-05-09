@@ -83,7 +83,15 @@ pub fn handle_pw(cmd: &PwCommand, vault_path_override: Option<&Path>) -> Result<
             show,
             copy,
             field,
-        } => cmd_get(vault_path_override, name, *show, *copy, field.as_deref()),
+            totp,
+        } => cmd_get(
+            vault_path_override,
+            name,
+            *show,
+            *copy,
+            field.as_deref(),
+            *totp,
+        ),
         PwCommand::List { tags, format } => cmd_list(vault_path_override, tags, format),
         PwCommand::Edit {
             name,
@@ -183,6 +191,7 @@ fn cmd_get(
     show: bool,
     copy: bool,
     field: Option<&str>,
+    show_totp: bool,
 ) -> Result<()> {
     let (_path, vault, _master_pw) = unlock_vault(vault_path)?;
 
@@ -200,7 +209,6 @@ fn cmd_get(
 
     if show {
         if field.is_none() {
-            // Show full entry details
             println!("{}: {}", "Name".bold(), entry.name);
             if let Some(u) = &entry.username {
                 println!("{}: {u}", "Username".bold());
@@ -223,6 +231,29 @@ fn cmd_get(
         println!("{} Password copied to clipboard.", "✓".green());
     } else {
         println!("{value}");
+    }
+
+    if show_totp {
+        match &entry.totp_secret {
+            None => println!("{} No TOTP secret configured for '{name}'.", "!".yellow()),
+            Some(secret_str) => {
+                let alg = entry.totp_algorithm.clone().unwrap_or_default();
+                match totp::decode_base32_secret(secret_str)
+                    .and_then(|b| totp::generate_totp(&b, 30, 6, alg))
+                {
+                    Ok(code) => {
+                        let remaining = totp::time_remaining(30);
+                        println!(
+                            "{}: {} ({}s remaining)",
+                            "TOTP".bold(),
+                            code.green().bold(),
+                            remaining.to_string().yellow()
+                        );
+                    }
+                    Err(e) => println!("{} TOTP error: {e}", "!".red()),
+                }
+            }
+        }
     }
 
     Ok(())
@@ -412,10 +443,11 @@ fn cmd_totp(vault_path: Option<&Path>, name: &str) -> Result<()> {
         .as_deref()
         .ok_or_else(|| anyhow::anyhow!("Entry '{}' has no TOTP secret configured", name))?;
 
+    let alg = entry.totp_algorithm.clone().unwrap_or_default();
     let secret_bytes = totp::decode_base32_secret(secret_str)
         .map_err(|e| anyhow::anyhow!("Failed to decode TOTP secret: {e}"))?;
 
-    let code = totp::generate_totp(&secret_bytes, 30, 6)
+    let code = totp::generate_totp(&secret_bytes, 30, 6, alg)
         .map_err(|e| anyhow::anyhow!("Failed to generate TOTP: {e}"))?;
 
     let remaining = totp::time_remaining(30);
@@ -439,25 +471,26 @@ fn cmd_totp_add(
         .find_by_name_mut(name)
         .ok_or_else(|| anyhow::anyhow!("Entry '{}' not found", name))?;
 
-    let totp_secret = if let Some(qr_path) = qr {
+    let (totp_secret, totp_algorithm) = if let Some(qr_path) = qr {
         let decoded =
             totp::decode_qr_uri(qr_path).map_err(|e| anyhow::anyhow!("QR decode failed: {e}"))?;
         let params = totp::parse_otpauth_uri(&decoded)
             .map_err(|e| anyhow::anyhow!("QR code does not contain a valid otpauth URI: {e}"))?;
         println!("  QR decoded: {}", decoded.dimmed());
-        params.secret
+        (params.secret, Some(params.algorithm))
     } else if let Some(uri_str) = uri {
         let params = totp::parse_otpauth_uri(uri_str)
             .map_err(|e| anyhow::anyhow!("Failed to parse otpauth URI: {e}"))?;
-        params.secret
+        (params.secret, Some(params.algorithm))
     } else if let Some(s) = secret {
         totp::decode_base32_secret(s).map_err(|e| anyhow::anyhow!("Invalid base32 secret: {e}"))?;
-        s.to_string()
+        (s.to_string(), None)
     } else {
         anyhow::bail!("Provide --secret, --uri, or --qr");
     };
 
     entry.totp_secret = Some(totp_secret);
+    entry.totp_algorithm = totp_algorithm;
     entry.modified_at = chrono::Utc::now();
     vault.modified_at = chrono::Utc::now();
 

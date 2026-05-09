@@ -56,15 +56,36 @@ fn test_totp_rfc6238_all_vectors() {
     let secret = b"12345678901234567890";
 
     // Time=59, digits=8 -> 94287082
-    let code = prive::crypto::totp::generate_totp_at(secret, 59, 30, 8).unwrap();
+    let code = prive::crypto::totp::generate_totp_at(
+        secret,
+        59,
+        30,
+        8,
+        prive::crypto::totp::TotpAlgorithm::Sha1,
+    )
+    .unwrap();
     assert_eq!(code, "94287082");
 
     // Time=1111111109, digits=8 -> 07081804
-    let code = prive::crypto::totp::generate_totp_at(secret, 1111111109, 30, 8).unwrap();
+    let code = prive::crypto::totp::generate_totp_at(
+        secret,
+        1111111109,
+        30,
+        8,
+        prive::crypto::totp::TotpAlgorithm::Sha1,
+    )
+    .unwrap();
     assert_eq!(code, "07081804");
 
     // Time=1234567890, digits=8 -> 89005924
-    let code = prive::crypto::totp::generate_totp_at(secret, 1234567890, 30, 8).unwrap();
+    let code = prive::crypto::totp::generate_totp_at(
+        secret,
+        1234567890,
+        30,
+        8,
+        prive::crypto::totp::TotpAlgorithm::Sha1,
+    )
+    .unwrap();
     assert_eq!(code, "89005924");
 }
 
@@ -72,8 +93,22 @@ fn test_totp_rfc6238_all_vectors() {
 fn test_totp_different_periods() {
     let secret = b"testsecret12345678";
 
-    let code_30 = prive::crypto::totp::generate_totp_at(secret, 1000, 30, 6).unwrap();
-    let code_60 = prive::crypto::totp::generate_totp_at(secret, 1000, 60, 6).unwrap();
+    let code_30 = prive::crypto::totp::generate_totp_at(
+        secret,
+        1000,
+        30,
+        6,
+        prive::crypto::totp::TotpAlgorithm::Sha1,
+    )
+    .unwrap();
+    let code_60 = prive::crypto::totp::generate_totp_at(
+        secret,
+        1000,
+        60,
+        6,
+        prive::crypto::totp::TotpAlgorithm::Sha1,
+    )
+    .unwrap();
 
     // Different periods may produce different codes
     // (they might coincidentally match, but very unlikely)

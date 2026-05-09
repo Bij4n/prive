@@ -212,21 +212,42 @@ fn test_password_history_many_rotations() {
 #[test]
 fn test_totp_at_epoch_zero() {
     let secret = b"12345678901234567890";
-    let code = prive::crypto::totp::generate_totp_at(secret, 0, 30, 6).unwrap();
+    let code = prive::crypto::totp::generate_totp_at(
+        secret,
+        0,
+        30,
+        6,
+        prive::crypto::totp::TotpAlgorithm::Sha1,
+    )
+    .unwrap();
     assert_eq!(code.len(), 6);
 }
 
 #[test]
 fn test_totp_at_max_time() {
     let secret = b"12345678901234567890";
-    let code = prive::crypto::totp::generate_totp_at(secret, u64::MAX / 30, 30, 6).unwrap();
+    let code = prive::crypto::totp::generate_totp_at(
+        secret,
+        u64::MAX / 30,
+        30,
+        6,
+        prive::crypto::totp::TotpAlgorithm::Sha1,
+    )
+    .unwrap();
     assert_eq!(code.len(), 6);
 }
 
 #[test]
 fn test_totp_8_digits() {
     let secret = b"12345678901234567890";
-    let code = prive::crypto::totp::generate_totp_at(secret, 59, 30, 8).unwrap();
+    let code = prive::crypto::totp::generate_totp_at(
+        secret,
+        59,
+        30,
+        8,
+        prive::crypto::totp::TotpAlgorithm::Sha1,
+    )
+    .unwrap();
     assert_eq!(code.len(), 8);
     assert_eq!(code, "94287082"); // RFC 6238 vector
 }

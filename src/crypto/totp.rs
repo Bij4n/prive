@@ -1,15 +1,33 @@
 use hmac::{Hmac, Mac};
+use serde::{Deserialize, Serialize};
 use sha1::Sha1;
+use sha2::{Sha256, Sha512};
 
 type HmacSha1 = Hmac<Sha1>;
+type HmacSha256 = Hmac<Sha256>;
+type HmacSha512 = Hmac<Sha512>;
 
-pub fn generate_totp(secret: &[u8], time_step: u64, digits: u32) -> Result<String, String> {
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum TotpAlgorithm {
+    #[default]
+    Sha1,
+    Sha256,
+    Sha512,
+}
+
+pub fn generate_totp(
+    secret: &[u8],
+    time_step: u64,
+    digits: u32,
+    algorithm: TotpAlgorithm,
+) -> Result<String, String> {
     let time = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map_err(|e| format!("Time error: {e}"))?
         .as_secs();
 
-    generate_totp_at(secret, time, time_step, digits)
+    generate_totp_at(secret, time, time_step, digits, algorithm)
 }
 
 pub fn generate_totp_at(
@@ -17,13 +35,31 @@ pub fn generate_totp_at(
     unix_time: u64,
     time_step: u64,
     digits: u32,
+    algorithm: TotpAlgorithm,
 ) -> Result<String, String> {
     let counter = unix_time / time_step;
     let counter_bytes = counter.to_be_bytes();
 
-    let mut mac = HmacSha1::new_from_slice(secret).map_err(|e| format!("HMAC init error: {e}"))?;
-    mac.update(&counter_bytes);
-    let result = mac.finalize().into_bytes();
+    let result: Vec<u8> = match algorithm {
+        TotpAlgorithm::Sha1 => {
+            let mut mac =
+                HmacSha1::new_from_slice(secret).map_err(|e| format!("HMAC init error: {e}"))?;
+            mac.update(&counter_bytes);
+            mac.finalize().into_bytes().to_vec()
+        }
+        TotpAlgorithm::Sha256 => {
+            let mut mac =
+                HmacSha256::new_from_slice(secret).map_err(|e| format!("HMAC init error: {e}"))?;
+            mac.update(&counter_bytes);
+            mac.finalize().into_bytes().to_vec()
+        }
+        TotpAlgorithm::Sha512 => {
+            let mut mac =
+                HmacSha512::new_from_slice(secret).map_err(|e| format!("HMAC init error: {e}"))?;
+            mac.update(&counter_bytes);
+            mac.finalize().into_bytes().to_vec()
+        }
+    };
 
     let offset = (result[result.len() - 1] & 0x0f) as usize;
     let code = ((result[offset] as u32 & 0x7f) << 24)
@@ -89,6 +125,7 @@ pub fn parse_otpauth_uri(uri: &str) -> Result<TotpParams, String> {
     let mut issuer = None;
     let mut digits = 6u32;
     let mut period = 30u64;
+    let mut algorithm = TotpAlgorithm::Sha1;
 
     for param in query.split('&') {
         if let Some((key, value)) = param.split_once('=') {
@@ -97,6 +134,13 @@ pub fn parse_otpauth_uri(uri: &str) -> Result<TotpParams, String> {
                 "issuer" => issuer = Some(urldecode(value)),
                 "digits" => digits = value.parse().unwrap_or(6),
                 "period" => period = value.parse().unwrap_or(30),
+                "algorithm" => {
+                    algorithm = match value.to_uppercase().as_str() {
+                        "SHA256" => TotpAlgorithm::Sha256,
+                        "SHA512" => TotpAlgorithm::Sha512,
+                        _ => TotpAlgorithm::Sha1,
+                    }
+                }
                 _ => {}
             }
         }
@@ -110,6 +154,7 @@ pub fn parse_otpauth_uri(uri: &str) -> Result<TotpParams, String> {
         issuer,
         digits,
         period,
+        algorithm,
     })
 }
 
@@ -141,6 +186,7 @@ pub struct TotpParams {
     pub issuer: Option<String>,
     pub digits: u32,
     pub period: u64,
+    pub algorithm: TotpAlgorithm,
 }
 
 #[cfg(test)]
@@ -148,33 +194,57 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_totp_rfc6238_vector() {
+    fn test_totp_rfc6238_sha1_vector() {
         let secret = b"12345678901234567890";
-        let code = generate_totp_at(secret, 59, 30, 8).unwrap();
+        let code = generate_totp_at(secret, 59, 30, 8, TotpAlgorithm::Sha1).unwrap();
         assert_eq!(code, "94287082");
+    }
+
+    #[test]
+    fn test_totp_rfc6238_sha256_vector() {
+        // HMAC-SHA256 with the 20-byte RFC 6238 seed, T=59, 8 digits
+        let secret = b"12345678901234567890";
+        let code = generate_totp_at(secret, 59, 30, 8, TotpAlgorithm::Sha256).unwrap();
+        assert_eq!(code, "32247374");
+    }
+
+    #[test]
+    fn test_totp_rfc6238_sha512_vector() {
+        // HMAC-SHA512 with the 20-byte RFC 6238 seed, T=59, 8 digits
+        let secret = b"12345678901234567890";
+        let code = generate_totp_at(secret, 59, 30, 8, TotpAlgorithm::Sha512).unwrap();
+        assert_eq!(code, "69342147");
     }
 
     #[test]
     fn test_totp_6_digits() {
         let secret = b"12345678901234567890";
-        let code = generate_totp_at(secret, 59, 30, 6).unwrap();
+        let code = generate_totp_at(secret, 59, 30, 6, TotpAlgorithm::Sha1).unwrap();
         assert_eq!(code.len(), 6);
     }
 
     #[test]
     fn test_totp_different_times() {
         let secret = b"testsecret123456";
-        let code1 = generate_totp_at(secret, 1000, 30, 6).unwrap();
-        let code2 = generate_totp_at(secret, 2000, 30, 6).unwrap();
+        let code1 = generate_totp_at(secret, 1000, 30, 6, TotpAlgorithm::Sha1).unwrap();
+        let code2 = generate_totp_at(secret, 2000, 30, 6, TotpAlgorithm::Sha1).unwrap();
         assert_ne!(code1, code2);
     }
 
     #[test]
     fn test_totp_same_time_step() {
         let secret = b"testsecret123456";
-        let code1 = generate_totp_at(secret, 30, 30, 6).unwrap();
-        let code2 = generate_totp_at(secret, 59, 30, 6).unwrap();
+        let code1 = generate_totp_at(secret, 30, 30, 6, TotpAlgorithm::Sha1).unwrap();
+        let code2 = generate_totp_at(secret, 59, 30, 6, TotpAlgorithm::Sha1).unwrap();
         assert_eq!(code1, code2);
+    }
+
+    #[test]
+    fn test_totp_sha256_differs_from_sha1() {
+        let secret = b"testsecret1234567890123456789012";
+        let sha1 = generate_totp_at(secret, 1000, 30, 6, TotpAlgorithm::Sha1).unwrap();
+        let sha256 = generate_totp_at(secret, 1000, 30, 6, TotpAlgorithm::Sha256).unwrap();
+        assert_ne!(sha1, sha256);
     }
 
     #[test]
@@ -197,6 +267,21 @@ mod tests {
         assert_eq!(params.digits, 6);
         assert_eq!(params.period, 30);
         assert_eq!(params.issuer, Some("Example".to_string()));
+        assert_eq!(params.algorithm, TotpAlgorithm::Sha1);
+    }
+
+    #[test]
+    fn test_parse_otpauth_uri_sha256() {
+        let uri = "otpauth://totp/myapp?secret=ABC123&algorithm=SHA256";
+        let params = parse_otpauth_uri(uri).unwrap();
+        assert_eq!(params.algorithm, TotpAlgorithm::Sha256);
+    }
+
+    #[test]
+    fn test_parse_otpauth_uri_sha512() {
+        let uri = "otpauth://totp/myapp?secret=ABC123&algorithm=SHA512";
+        let params = parse_otpauth_uri(uri).unwrap();
+        assert_eq!(params.algorithm, TotpAlgorithm::Sha512);
     }
 
     #[test]
@@ -206,6 +291,7 @@ mod tests {
         assert_eq!(params.secret, "ABC123");
         assert_eq!(params.digits, 6);
         assert_eq!(params.period, 30);
+        assert_eq!(params.algorithm, TotpAlgorithm::Sha1);
     }
 
     #[test]
@@ -216,8 +302,6 @@ mod tests {
 
     #[test]
     fn test_decode_qr_uri_rejects_non_otpauth() {
-        // We can't easily generate a real QR image in a unit test without an
-        // encoder dep, but we can verify the URI validation leg of the path.
         let err = parse_otpauth_uri("https://example.com").unwrap_err();
         assert!(err.contains("otpauth"));
     }

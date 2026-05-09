@@ -2,6 +2,8 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+pub use crate::crypto::totp::TotpAlgorithm;
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Vault {
     pub version: u32,
@@ -22,6 +24,8 @@ pub struct VaultEntry {
     pub notes: Option<String>,
     pub tags: Vec<String>,
     pub totp_secret: Option<String>,
+    #[serde(default)]
+    pub totp_algorithm: Option<TotpAlgorithm>,
     #[serde(default)]
     pub password_history: Vec<PasswordHistoryEntry>,
     #[serde(default)]
@@ -163,6 +167,7 @@ impl VaultEntry {
             notes,
             tags,
             totp_secret: None,
+            totp_algorithm: None,
             password_history: Vec::new(),
             attachments: Vec::new(),
             expires_at: None,

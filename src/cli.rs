@@ -327,6 +327,9 @@ pub enum PwCommand {
         /// Retrieve a specific field
         #[arg(long)]
         field: Option<String>,
+        /// Also display the current TOTP code (if configured)
+        #[arg(long)]
+        totp: bool,
     },
     /// List all entries
     List {
