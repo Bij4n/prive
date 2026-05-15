@@ -1,6 +1,6 @@
 # Prive
 
-A cross-platform password & encryption toolkit for the terminal. Single binary, zero runtime dependencies.
+Prive is a cross-platform password manager and PGP encryption toolkit that lives entirely in your terminal. Your vault stays on your machine — encrypted with AES-256-GCM and locked behind Argon2id key derivation — with no cloud sync, no accounts, and no external dependencies. Just a single binary that does everything: generate strong passwords, manage TOTP codes, encrypt files with PGP, audit your security posture, and share secrets safely. Because your passwords shouldn't need the internet's permission to exist.
 
 ## Features
 
