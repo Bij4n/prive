@@ -2,7 +2,9 @@
 
 use zeroize::Zeroizing;
 
-#[derive(Debug, Clone, Default)]
+/// `Debug` never prints the password or protected values, so a stray `{:?}` in an error or
+/// log can't leak them.
+#[derive(Clone, Default)]
 pub struct Entry {
     pub uuid: String,
     /// Group path without the root group, e.g. `Work/Cloud`. Empty for the root.
@@ -17,12 +19,40 @@ pub struct Entry {
     pub custom: Vec<CustomField>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct CustomField {
     pub name: String,
     pub value: Zeroizing<String>,
     /// KeePass "protected" flag: shown hidden by default.
     pub protected: bool,
+}
+
+impl std::fmt::Debug for Entry {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Entry")
+            .field("uuid", &self.uuid)
+            .field("path", &self.path())
+            .field("username", &self.username)
+            .field("url", &self.url)
+            .field("password", &"<hidden>")
+            .field("tags", &self.tags)
+            .field("custom", &self.custom)
+            .finish_non_exhaustive()
+    }
+}
+
+impl std::fmt::Debug for CustomField {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let value: &dyn std::fmt::Debug = if self.protected {
+            &"<hidden>"
+        } else {
+            &self.value.as_str()
+        };
+        f.debug_struct("CustomField")
+            .field("name", &self.name)
+            .field("value", value)
+            .finish()
+    }
 }
 
 impl Entry {
@@ -109,5 +139,27 @@ mod tests {
         ];
         assert_eq!(e.field("API Key"), Some("exact"));
         assert_eq!(e.field("Api KEY"), Some("lower"));
+    }
+
+    #[test]
+    fn debug_output_hides_secrets() {
+        let mut e = sample();
+        e.custom = vec![
+            CustomField {
+                name: "pin".into(),
+                value: Zeroizing::new("4321".into()),
+                protected: true,
+            },
+            CustomField {
+                name: "plan".into(),
+                value: Zeroizing::new("basic".into()),
+                protected: false,
+            },
+        ];
+        let shown = format!("{e:?}");
+        assert!(!shown.contains("s3cret"));
+        assert!(!shown.contains("4321"));
+        assert!(shown.contains("basic"));
+        assert!(shown.contains("Work/Cloud/AWS"));
     }
 }
