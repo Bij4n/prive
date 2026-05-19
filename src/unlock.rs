@@ -3,11 +3,13 @@
 //! Password sources, first match wins:
 //! 1. `--password-stdin`: the first line of stdin.
 //! 2. `PRIVE_PASSWORD_FILE`: the first line of that file.
+//! 3. A hidden prompt, only when stdin is a terminal. Otherwise we fail at once instead of
+//!    blocking on a prompt nobody can answer.
 //!
 //! There is deliberately no `PRIVE_PASSWORD` variable: environment variables are readable by
 //! other processes of the same user through `/proc`.
 
-use std::io::BufRead;
+use std::io::{BufRead, IsTerminal};
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
@@ -63,8 +65,11 @@ impl KeySource {
             let first = Zeroizing::new(text.lines().next().unwrap_or("").to_string());
             return Ok(first);
         }
-        let _ = prompt;
-        Err(Failure::NoTerminal.into())
+        if !std::io::stdin().is_terminal() {
+            return Err(Failure::NoTerminal.into());
+        }
+        let pw = rpassword::prompt_password(prompt).context("reading the password")?;
+        Ok(Zeroizing::new(pw))
     }
 }
 
