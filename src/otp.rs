@@ -4,7 +4,8 @@
 //! KeePassDX and Strongbox store it, the older KeeOtp form
 //! `key=...&step=30&size=6&otpHashMode=sha256`, or a bare base32 secret. Failing that, the
 //! KeePass 2.47+ fields `TimeOtp-Secret-Base32` / `-Hex` / `-Base64` / `TimeOtp-Secret`, with
-//! `TimeOtp-Length`, `TimeOtp-Period` and `TimeOtp-Algorithm`.
+//! `TimeOtp-Length`, `TimeOtp-Period` and `TimeOtp-Algorithm`; then the legacy KeePassXC
+//! fields `TOTP Seed` and `TOTP Settings` (`30;6`, or `30;S` for Steam).
 
 use hmac::{Hmac, Mac};
 use zeroize::Zeroizing;
@@ -109,7 +110,7 @@ impl Totp {
     pub fn from_entry(entry: &Entry) -> Option<Totp> {
         match entry.field("otp").map(str::trim) {
             Some(v) if !v.is_empty() => parse_otp_field(v),
-            _ => from_keepass_native(entry),
+            _ => from_keepass_native(entry).or_else(|| from_legacy_keepassxc(entry)),
         }
     }
 }
@@ -155,6 +156,23 @@ fn from_keepass_native(entry: &Entry) -> Option<Totp> {
         number("TimeOtp-Period", 30),
         Encoder::Digits(digits),
         algorithm,
+    )
+}
+
+fn from_legacy_keepassxc(entry: &Entry) -> Option<Totp> {
+    let seed = entry.field("TOTP Seed")?;
+    let settings = entry.field("TOTP Settings").unwrap_or("30;6");
+    let (period, size) = settings.split_once(';').unwrap_or((settings, "6"));
+    let encoder = if size.trim().eq_ignore_ascii_case("s") {
+        Encoder::Steam
+    } else {
+        Encoder::Digits(size.trim().parse().ok()?)
+    };
+    Totp::new(
+        decode_base32(seed)?,
+        period.trim().parse().ok()?,
+        encoder,
+        Algorithm::Sha1,
     )
 }
 
@@ -486,5 +504,32 @@ mod tests {
         assert_eq!(parse_algorithm("sha1"), Some(Algorithm::Sha1));
         assert_eq!(parse_algorithm("SHA-512"), Some(Algorithm::Sha512));
         assert_eq!(parse_algorithm("MD5"), None);
+    }
+
+    #[test]
+    fn legacy_keepassxc_fields() {
+        let t = Totp::from_entry(&with_fields(&[
+            ("TOTP Seed", "JBSWY3DPEHPK3PXP"),
+            ("TOTP Settings", "60;8"),
+        ]))
+        .unwrap();
+        assert_eq!((t.period, t.encoder), (60, Encoder::Digits(8)));
+        let steam = Totp::from_entry(&with_fields(&[
+            ("TOTP Seed", "JBSWY3DPEHPK3PXP"),
+            ("TOTP Settings", "30;S"),
+        ]))
+        .unwrap();
+        assert_eq!(steam.encoder, Encoder::Steam);
+        let default = Totp::from_entry(&with_fields(&[("TOTP Seed", "JBSWY3DPEHPK3PXP")])).unwrap();
+        assert_eq!((default.period, default.encoder), (30, Encoder::Digits(6)));
+    }
+
+    #[test]
+    fn the_otp_field_wins_over_older_fields() {
+        let e = with_fields(&[
+            ("otp", "otpauth://totp/x?secret=JBSWY3DPEHPK3PXP&digits=7"),
+            ("TOTP Seed", "JBSWY3DPEHPK3PXP"),
+        ]);
+        assert_eq!(Totp::from_entry(&e).unwrap().encoder, Encoder::Digits(7));
     }
 }
