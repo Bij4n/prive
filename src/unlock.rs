@@ -1,0 +1,88 @@
+//! Where the master password and key file come from.
+//!
+//! Password sources, first match wins:
+//! 1. `--password-stdin`: the first line of stdin.
+//! 2. `PRIVE_PASSWORD_FILE`: the first line of that file.
+//!
+//! There is deliberately no `PRIVE_PASSWORD` variable: environment variables are readable by
+//! other processes of the same user through `/proc`.
+
+use std::io::BufRead;
+use std::path::{Path, PathBuf};
+
+use anyhow::{Context, Result};
+use zeroize::Zeroizing;
+
+use crate::error::Failure;
+
+#[derive(Debug, Clone, Default)]
+pub struct KeySource {
+    pub password_stdin: bool,
+    pub keyfile: Option<PathBuf>,
+}
+
+pub struct Credentials {
+    pub password: Option<Zeroizing<String>>,
+    pub keyfile: Option<PathBuf>,
+}
+
+impl KeySource {
+    pub fn credentials(&self, db_path: &Path) -> Result<Credentials> {
+        let password = self.password(&format!("Password for {}: ", db_path.display()))?;
+        Ok(Credentials {
+            password: Some(password),
+            keyfile: self.keyfile.clone(),
+        })
+    }
+
+    /// Ask for a new password twice (or read it once from a non-interactive source).
+    pub fn new_password(&self) -> Result<Zeroizing<String>> {
+        if self.password_stdin || std::env::var_os("PRIVE_PASSWORD_FILE").is_some() {
+            return self.password("");
+        }
+        let first = self.password("New database password: ")?;
+        let second = self.password("Repeat password: ")?;
+        anyhow::ensure!(*first == *second, "the passwords do not match");
+        Ok(first)
+    }
+
+    fn password(&self, prompt: &str) -> Result<Zeroizing<String>> {
+        if self.password_stdin {
+            let mut line = Zeroizing::new(String::new());
+            std::io::stdin()
+                .lock()
+                .read_line(&mut line)
+                .context("reading the password from stdin")?;
+            return Ok(trim_newline(line));
+        }
+        if let Some(file) = std::env::var_os("PRIVE_PASSWORD_FILE") {
+            let text = Zeroizing::new(
+                std::fs::read_to_string(&file)
+                    .with_context(|| format!("reading PRIVE_PASSWORD_FILE {}", file.display()))?,
+            );
+            let first = Zeroizing::new(text.lines().next().unwrap_or("").to_string());
+            return Ok(first);
+        }
+        let _ = prompt;
+        Err(Failure::NoTerminal.into())
+    }
+}
+
+fn trim_newline(mut s: Zeroizing<String>) -> Zeroizing<String> {
+    while s.ends_with('\n') || s.ends_with('\r') {
+        s.pop();
+    }
+    s
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn trims_unix_and_windows_newlines_only() {
+        assert_eq!(*trim_newline(Zeroizing::new("pw\n".into())), "pw");
+        assert_eq!(*trim_newline(Zeroizing::new("pw\r\n".into())), "pw");
+        assert_eq!(*trim_newline(Zeroizing::new(" pw ".into())), " pw ");
+    }
+}

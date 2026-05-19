@@ -3,6 +3,7 @@
 pub mod cli;
 pub mod config;
 pub mod error;
+pub mod unlock;
 
 use std::process::ExitCode;
 
