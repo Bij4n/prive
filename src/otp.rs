@@ -107,12 +107,25 @@ impl Totp {
         }
     }
 
+    /// The current code and how many seconds it stays valid.
+    pub fn now(&self) -> (String, u64) {
+        let t = unix_now();
+        (self.code_at(t), self.period - (t % self.period))
+    }
+
     pub fn from_entry(entry: &Entry) -> Option<Totp> {
         match entry.field("otp").map(str::trim) {
             Some(v) if !v.is_empty() => parse_otp_field(v),
             _ => from_keepass_native(entry).or_else(|| from_legacy_keepassxc(entry)),
         }
     }
+}
+
+pub fn unix_now() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0)
 }
 
 fn parse_otp_field(value: &str) -> Option<Totp> {
@@ -531,5 +544,19 @@ mod tests {
             ("TOTP Seed", "JBSWY3DPEHPK3PXP"),
         ]);
         assert_eq!(Totp::from_entry(&e).unwrap().encoder, Encoder::Digits(7));
+    }
+
+    #[test]
+    fn now_reports_time_left_in_the_period() {
+        let t = Totp::new(
+            b"12345678901234567890".to_vec(),
+            30,
+            Encoder::Digits(6),
+            Algorithm::Sha1,
+        )
+        .unwrap();
+        let (code, left) = t.now();
+        assert_eq!(code.len(), 6);
+        assert!((1..=30).contains(&left));
     }
 }
