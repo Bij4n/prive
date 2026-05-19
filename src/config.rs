@@ -1,6 +1,7 @@
 //! Small TOML config: which database to open by default, and clipboard behaviour.
 //!
-//! Location: `<config dir>/prive/config.toml` (`~/.config/prive/config.toml` on Linux).
+//! Location: `$PRIVE_CONFIG` if set, otherwise `<config dir>/prive/config.toml`
+//! (`~/.config/prive/config.toml` on Linux).
 
 use std::path::{Path, PathBuf};
 
@@ -25,6 +26,9 @@ pub struct Config {
 
 impl Config {
     pub fn path() -> Option<PathBuf> {
+        if let Some(p) = std::env::var_os("PRIVE_CONFIG") {
+            return Some(PathBuf::from(p));
+        }
         dirs::config_dir().map(|d| d.join("prive").join("config.toml"))
     }
 
