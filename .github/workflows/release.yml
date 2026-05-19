@@ -51,7 +51,7 @@ jobs:
             cp target/${{ matrix.target }}/release/prive ${{ matrix.artifact }}
           fi
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.artifact }}
           path: ${{ matrix.artifact }}
@@ -68,7 +68,7 @@ jobs:
       - name: Create man page tarball
         run: tar czf prive-man-pages.tar.gz man/
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: prive-man-pages
           path: prive-man-pages.tar.gz
@@ -79,7 +79,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: artifacts
       - name: Create release
