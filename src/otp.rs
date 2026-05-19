@@ -1,7 +1,8 @@
 //! Time-based one-time passwords (RFC 6238).
 //!
-//! The secret comes from the entry's `otp` field, holding an `otpauth://totp/...` URI as
-//! KeePassXC, KeePassDX and Strongbox store it.
+//! The secret comes from the entry's `otp` field: an `otpauth://totp/...` URI as KeePassXC,
+//! KeePassDX and Strongbox store it, the older KeeOtp form
+//! `key=...&step=30&size=6&otpHashMode=sha256`, or a bare base32 secret.
 
 use hmac::{Hmac, Mac};
 use zeroize::Zeroizing;
@@ -108,7 +109,18 @@ impl Totp {
         if value.is_empty() {
             return None;
         }
-        parse_otpauth(value)
+        if value.to_ascii_lowercase().starts_with("otpauth://") {
+            return parse_otpauth(value);
+        }
+        if value.contains("key=") {
+            return parse_keeotp(value);
+        }
+        Totp::new(
+            decode_base32(value)?,
+            30,
+            Encoder::Digits(6),
+            Algorithm::Sha1,
+        )
     }
 }
 
@@ -147,6 +159,31 @@ pub fn parse_otpauth(uri: &str) -> Option<Totp> {
         Encoder::Digits(digits)
     };
     Totp::new(decode_base32(&secret?)?, period, encoder, algorithm)
+}
+
+/// KeeOtp plugin format: `key=BASE32&step=30&size=6&otpHashMode=sha256`.
+fn parse_keeotp(value: &str) -> Option<Totp> {
+    let mut secret = None;
+    let mut period = 30;
+    let mut digits = 6;
+    let mut algorithm = Algorithm::Sha1;
+    for pair in value.split('&') {
+        let (k, v) = pair.split_once('=').unwrap_or((pair, ""));
+        let v = percent_decode(v);
+        match k.to_ascii_lowercase().as_str() {
+            "key" => secret = Some(v),
+            "step" => period = v.parse().ok()?,
+            "size" => digits = v.parse().ok()?,
+            "otphashmode" => algorithm = parse_algorithm(&v)?,
+            _ => {}
+        }
+    }
+    Totp::new(
+        decode_base32(&secret?)?,
+        period,
+        Encoder::Digits(digits),
+        algorithm,
+    )
 }
 
 fn parse_algorithm(v: &str) -> Option<Algorithm> {
@@ -309,5 +346,31 @@ mod tests {
             assert_eq!(code.len(), 5);
             assert!(code.bytes().all(|b| STEAM_ALPHABET.contains(&b)));
         }
+    }
+
+    fn with_otp(value: &str) -> Entry {
+        Entry {
+            custom: vec![crate::entry::CustomField {
+                name: "otp".into(),
+                value: Zeroizing::new(value.into()),
+                protected: true,
+            }],
+            ..Entry::default()
+        }
+    }
+
+    #[test]
+    fn keeotp_and_bare_secrets() {
+        let t = Totp::from_entry(&with_otp(
+            "key=JBSWY3DPEHPK3PXP&step=45&size=7&otpHashMode=sha512",
+        ))
+        .unwrap();
+        assert_eq!(
+            (t.period, t.encoder, t.algorithm),
+            (45, Encoder::Digits(7), Algorithm::Sha512)
+        );
+        let bare = Totp::from_entry(&with_otp("JBSW Y3DP EHPK 3PXP")).unwrap();
+        assert_eq!((bare.period, bare.encoder), (30, Encoder::Digits(6)));
+        assert!(Totp::from_entry(&with_otp("not base32 !!")).is_none());
     }
 }
