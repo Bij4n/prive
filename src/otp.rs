@@ -15,11 +15,20 @@ pub enum Algorithm {
     Sha512,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Encoder {
+    Digits(u32),
+    /// Steam Guard: 5 characters from a 26-letter alphabet.
+    Steam,
+}
+
+const STEAM_ALPHABET: &[u8] = b"23456789BCDFGHJKMNPQRTVWXY";
+
 #[derive(Clone)]
 pub struct Totp {
     secret: Zeroizing<Vec<u8>>,
     pub period: u64,
-    pub digits: u32,
+    pub encoder: Encoder,
     pub algorithm: Algorithm,
 }
 
@@ -27,7 +36,7 @@ impl std::fmt::Debug for Totp {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Totp")
             .field("period", &self.period)
-            .field("digits", &self.digits)
+            .field("encoder", &self.encoder)
             .field("algorithm", &self.algorithm)
             .finish_non_exhaustive()
     }
@@ -44,14 +53,24 @@ macro_rules! hmac_digest {
 
 impl Totp {
     /// `None` for an empty secret, a zero period, or fewer than 4 / more than 10 digits.
-    pub fn new(secret: Vec<u8>, period: u64, digits: u32, algorithm: Algorithm) -> Option<Totp> {
-        if secret.is_empty() || period == 0 || !(4..=10).contains(&digits) {
+    pub fn new(
+        secret: Vec<u8>,
+        period: u64,
+        encoder: Encoder,
+        algorithm: Algorithm,
+    ) -> Option<Totp> {
+        if secret.is_empty() || period == 0 {
+            return None;
+        }
+        if let Encoder::Digits(d) = encoder
+            && !(4..=10).contains(&d)
+        {
             return None;
         }
         Some(Totp {
             secret: Zeroizing::new(secret),
             period,
-            digits,
+            encoder,
             algorithm,
         })
     }
@@ -64,12 +83,24 @@ impl Totp {
             Algorithm::Sha512 => hmac_digest!(sha2::Sha512, &self.secret, &counter),
         };
         let offset = (digest[digest.len() - 1] & 0x0f) as usize;
-        let value = (u32::from(digest[offset]) & 0x7f) << 24
+        let mut value = (u32::from(digest[offset]) & 0x7f) << 24
             | u32::from(digest[offset + 1]) << 16
             | u32::from(digest[offset + 2]) << 8
             | u32::from(digest[offset + 3]);
-        let code = u64::from(value) % 10u64.pow(self.digits);
-        format!("{code:0width$}", width = self.digits as usize)
+        match self.encoder {
+            Encoder::Digits(d) => {
+                let code = u64::from(value) % 10u64.pow(d);
+                format!("{code:0width$}", width = d as usize)
+            }
+            Encoder::Steam => {
+                let mut out = String::with_capacity(5);
+                for _ in 0..5 {
+                    out.push(STEAM_ALPHABET[value as usize % STEAM_ALPHABET.len()] as char);
+                    value /= STEAM_ALPHABET.len() as u32;
+                }
+                out
+            }
+        }
     }
 
     pub fn from_entry(entry: &Entry) -> Option<Totp> {
@@ -96,6 +127,7 @@ pub fn parse_otpauth(uri: &str) -> Option<Totp> {
     let mut period = 30;
     let mut digits = 6;
     let mut algorithm = Algorithm::Sha1;
+    let mut steam = false;
     for pair in query.split('&') {
         let (k, v) = pair.split_once('=').unwrap_or((pair, ""));
         let v = percent_decode(v);
@@ -104,10 +136,17 @@ pub fn parse_otpauth(uri: &str) -> Option<Totp> {
             "period" => period = v.parse().ok()?,
             "digits" => digits = v.parse().ok()?,
             "algorithm" => algorithm = parse_algorithm(&v)?,
+            // KeePassXC writes Steam entries with `encoder=steam`.
+            "encoder" => steam = v.eq_ignore_ascii_case("steam"),
             _ => {}
         }
     }
-    Totp::new(decode_base32(&secret?)?, period, digits, algorithm)
+    let encoder = if steam {
+        Encoder::Steam
+    } else {
+        Encoder::Digits(digits)
+    };
+    Totp::new(decode_base32(&secret?)?, period, encoder, algorithm)
 }
 
 fn parse_algorithm(v: &str) -> Option<Algorithm> {
@@ -167,7 +206,7 @@ mod tests {
     use super::*;
 
     fn rfc(secret: &[u8], alg: Algorithm) -> Totp {
-        Totp::new(secret.to_vec(), 30, 8, alg).unwrap()
+        Totp::new(secret.to_vec(), 30, Encoder::Digits(8), alg).unwrap()
     }
 
     // RFC 6238 appendix B test vectors.
@@ -201,10 +240,11 @@ mod tests {
 
     #[test]
     fn rejects_impossible_parameters() {
-        assert!(Totp::new(vec![], 30, 6, Algorithm::Sha1).is_none());
-        assert!(Totp::new(vec![1], 0, 6, Algorithm::Sha1).is_none());
-        assert!(Totp::new(vec![1], 30, 3, Algorithm::Sha1).is_none());
-        assert!(Totp::new(vec![1], 30, 11, Algorithm::Sha1).is_none());
+        let d = Encoder::Digits;
+        assert!(Totp::new(vec![], 30, d(6), Algorithm::Sha1).is_none());
+        assert!(Totp::new(vec![1], 0, d(6), Algorithm::Sha1).is_none());
+        assert!(Totp::new(vec![1], 30, d(3), Algorithm::Sha1).is_none());
+        assert!(Totp::new(vec![1], 30, d(11), Algorithm::Sha1).is_none());
     }
 
     #[test]
@@ -214,15 +254,18 @@ mod tests {
         )
         .unwrap();
         assert_eq!(
-            (t.period, t.digits, t.algorithm),
-            (60, 8, Algorithm::Sha256)
+            (t.period, t.encoder, t.algorithm),
+            (60, Encoder::Digits(8), Algorithm::Sha256)
         );
     }
 
     #[test]
     fn otpauth_defaults_case_and_padding() {
         let t = parse_otpauth("OTPAUTH://TOTP/GitHub:demo?secret=JBSWY3DPEHPK3PXP%3D%3D").unwrap();
-        assert_eq!((t.period, t.digits, t.algorithm), (30, 6, Algorithm::Sha1));
+        assert_eq!(
+            (t.period, t.encoder, t.algorithm),
+            (30, Encoder::Digits(6), Algorithm::Sha1)
+        );
         assert!(parse_otpauth("otpauth://totp/x?secret=jbsw%20y3dp%20ehpk3pxp").is_some());
     }
 
@@ -252,7 +295,19 @@ mod tests {
             }],
             ..Entry::default()
         };
-        assert_eq!(Totp::from_entry(&e).unwrap().digits, 6);
+        assert_eq!(Totp::from_entry(&e).unwrap().encoder, Encoder::Digits(6));
         assert!(Totp::from_entry(&Entry::default()).is_none());
+    }
+
+    #[test]
+    fn steam_codes_use_the_steam_alphabet() {
+        let t =
+            parse_otpauth("otpauth://totp/Steam:me?secret=JBSWY3DPEHPK3PXP&encoder=steam").unwrap();
+        assert_eq!(t.encoder, Encoder::Steam);
+        for time in [0, 59, 1_700_000_000, 2_000_000_000] {
+            let code = t.code_at(time);
+            assert_eq!(code.len(), 5);
+            assert!(code.bytes().all(|b| STEAM_ALPHABET.contains(&b)));
+        }
     }
 }
