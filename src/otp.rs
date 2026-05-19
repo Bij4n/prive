@@ -1,7 +1,12 @@
 //! Time-based one-time passwords (RFC 6238).
+//!
+//! The secret comes from the entry's `otp` field, holding an `otpauth://totp/...` URI as
+//! KeePassXC, KeePassDX and Strongbox store it.
 
 use hmac::{Hmac, Mac};
 use zeroize::Zeroizing;
+
+use crate::entry::Entry;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Algorithm {
@@ -66,6 +71,95 @@ impl Totp {
         let code = u64::from(value) % 10u64.pow(self.digits);
         format!("{code:0width$}", width = self.digits as usize)
     }
+
+    pub fn from_entry(entry: &Entry) -> Option<Totp> {
+        let value = entry.field("otp")?.trim();
+        if value.is_empty() {
+            return None;
+        }
+        parse_otpauth(value)
+    }
+}
+
+/// `otpauth://totp/Label?secret=...&period=30&digits=6&algorithm=SHA1`
+pub fn parse_otpauth(uri: &str) -> Option<Totp> {
+    let rest = uri
+        .get(..10)
+        .filter(|p| p.eq_ignore_ascii_case("otpauth://"))
+        .and_then(|_| uri.get(10..))?;
+    let (kind, rest) = rest.split_once('/')?;
+    if !kind.eq_ignore_ascii_case("totp") {
+        return None; // HOTP needs a counter written back after every use.
+    }
+    let query = rest.split_once('?').map(|(_, q)| q).unwrap_or("");
+    let mut secret = None;
+    let mut period = 30;
+    let mut digits = 6;
+    let mut algorithm = Algorithm::Sha1;
+    for pair in query.split('&') {
+        let (k, v) = pair.split_once('=').unwrap_or((pair, ""));
+        let v = percent_decode(v);
+        match k.to_ascii_lowercase().as_str() {
+            "secret" => secret = Some(v),
+            "period" => period = v.parse().ok()?,
+            "digits" => digits = v.parse().ok()?,
+            "algorithm" => algorithm = parse_algorithm(&v)?,
+            _ => {}
+        }
+    }
+    Totp::new(decode_base32(&secret?)?, period, digits, algorithm)
+}
+
+fn parse_algorithm(v: &str) -> Option<Algorithm> {
+    match v.to_ascii_uppercase().as_str() {
+        "SHA1" => Some(Algorithm::Sha1),
+        "SHA256" => Some(Algorithm::Sha256),
+        "SHA512" => Some(Algorithm::Sha512),
+        _ => None,
+    }
+}
+
+/// Base32 as authenticator apps write it: any case, spaces or dashes, padding optional.
+pub fn decode_base32(s: &str) -> Option<Vec<u8>> {
+    let cleaned: String = s
+        .chars()
+        .filter(|c| !c.is_whitespace() && *c != '-' && *c != '=')
+        .collect::<String>()
+        .to_ascii_uppercase();
+    if cleaned.is_empty() {
+        return None;
+    }
+    base32::decode(base32::Alphabet::Rfc4648 { padding: false }, &cleaned).filter(|b| !b.is_empty())
+}
+
+fn percent_decode(s: &str) -> String {
+    fn hex(b: u8) -> Option<u8> {
+        (b as char).to_digit(16).map(|d| d as u8)
+    }
+    let bytes = s.as_bytes();
+    let mut out = Vec::with_capacity(bytes.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        match bytes[i] {
+            b'%' => {
+                let pair = bytes
+                    .get(i + 1)
+                    .copied()
+                    .and_then(hex)
+                    .zip(bytes.get(i + 2).copied().and_then(hex));
+                if let Some((hi, lo)) = pair {
+                    out.push(hi << 4 | lo);
+                    i += 3;
+                    continue;
+                }
+                out.push(b'%');
+            }
+            b'+' => out.push(b' '),
+            b => out.push(b),
+        }
+        i += 1;
+    }
+    String::from_utf8_lossy(&out).into_owned()
 }
 
 #[cfg(test)]
@@ -111,5 +205,54 @@ mod tests {
         assert!(Totp::new(vec![1], 0, 6, Algorithm::Sha1).is_none());
         assert!(Totp::new(vec![1], 30, 3, Algorithm::Sha1).is_none());
         assert!(Totp::new(vec![1], 30, 11, Algorithm::Sha1).is_none());
+    }
+
+    #[test]
+    fn otpauth_parameters_are_honoured() {
+        let t = parse_otpauth(
+            "otpauth://totp/Bank?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ&period=60&digits=8&algorithm=SHA256",
+        )
+        .unwrap();
+        assert_eq!(
+            (t.period, t.digits, t.algorithm),
+            (60, 8, Algorithm::Sha256)
+        );
+    }
+
+    #[test]
+    fn otpauth_defaults_case_and_padding() {
+        let t = parse_otpauth("OTPAUTH://TOTP/GitHub:demo?secret=JBSWY3DPEHPK3PXP%3D%3D").unwrap();
+        assert_eq!((t.period, t.digits, t.algorithm), (30, 6, Algorithm::Sha1));
+        assert!(parse_otpauth("otpauth://totp/x?secret=jbsw%20y3dp%20ehpk3pxp").is_some());
+    }
+
+    #[test]
+    fn otpauth_rejects_bad_input() {
+        assert!(parse_otpauth("otpauth://hotp/x?secret=JBSWY3DPEHPK3PXP&counter=1").is_none());
+        assert!(parse_otpauth("otpauth://totp/x?secret=").is_none());
+        assert!(parse_otpauth("otpauth://totp/x?secret=JBSWY3DPEHPK3PXP&digits=99").is_none());
+        assert!(parse_otpauth("otpauth://totp/x?secret=JBSWY3DPEHPK3PXP&algorithm=MD5").is_none());
+        assert!(parse_otpauth("https://example.com").is_none());
+    }
+
+    #[test]
+    fn percent_decoding() {
+        assert_eq!(percent_decode("caf%C3%A9"), "café");
+        assert_eq!(percent_decode("100%"), "100%");
+        assert_eq!(percent_decode("a+b%2"), "a b%2");
+    }
+
+    #[test]
+    fn reads_the_otp_field() {
+        let e = Entry {
+            custom: vec![crate::entry::CustomField {
+                name: "otp".into(),
+                value: Zeroizing::new("otpauth://totp/x?secret=JBSWY3DPEHPK3PXP".into()),
+                protected: true,
+            }],
+            ..Entry::default()
+        };
+        assert_eq!(Totp::from_entry(&e).unwrap().digits, 6);
+        assert!(Totp::from_entry(&Entry::default()).is_none());
     }
 }
