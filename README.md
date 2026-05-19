@@ -26,32 +26,10 @@ Prive is a cross-platform password manager and PGP encryption toolkit that lives
 
 ## Installation
 
-### Homebrew (macOS / Linux)
+There are no packaged releases yet. Build from source with a recent stable Rust:
 
 ```bash
-brew install Bij4n/prive/prive
-```
-
-### AUR (Arch Linux)
-
-```bash
-yay -S prive
-```
-
-### WinGet (Windows)
-
-```bash
-winget install Bij4n.Prive
-```
-
-### Pre-built binaries
-
-Download from the [Releases](https://github.com/Bij4n/prive-app/releases) page.
-
-### From source
-
-```bash
-cargo install --path .
+cargo install --git https://github.com/Bij4n/prive --locked
 ```
 
 ## Quick Start
