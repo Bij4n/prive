@@ -101,6 +101,9 @@ fn test_generate_pronounceable() {
     assert_eq!(stdout.trim().len(), 10);
 }
 
+// Unix only: on Windows the password prompt reads the console directly (CONIN$), which a CI
+// runner always has, so the command waits for input forever instead of failing.
+#[cfg(unix)]
 #[test]
 fn test_vault_init_no_tty() {
     // vault init requires a TTY for password input, so it should fail gracefully
