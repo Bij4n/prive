@@ -12,6 +12,16 @@ pub struct Entry {
     pub url: String,
     pub notes: String,
     pub password: Zeroizing<String>,
+    /// Fields other than the five standard ones, sorted by name.
+    pub custom: Vec<CustomField>,
+}
+
+#[derive(Debug, Clone)]
+pub struct CustomField {
+    pub name: String,
+    pub value: Zeroizing<String>,
+    /// KeePass "protected" flag: shown hidden by default.
+    pub protected: bool,
 }
 
 impl Entry {
@@ -24,17 +34,26 @@ impl Entry {
         }
     }
 
-    /// One of the standard fields by name, ignoring case. `user`, `login`, `pass` and `note`
-    /// are accepted as aliases.
+    /// Any field by name: a standard one (ignoring case; `user`, `login`, `pass` and `note`
+    /// are accepted as aliases), else a custom field, exact name first, then ignoring case.
     pub fn field(&self, name: &str) -> Option<&str> {
         match name.to_ascii_lowercase().as_str() {
-            "title" => Some(&self.title),
-            "username" | "user" | "login" => Some(&self.username),
-            "password" | "pass" => Some(&self.password),
-            "url" => Some(&self.url),
-            "notes" | "note" => Some(&self.notes),
-            _ => None,
+            "title" => return Some(&self.title),
+            "username" | "user" | "login" => return Some(&self.username),
+            "password" | "pass" => return Some(&self.password),
+            "url" => return Some(&self.url),
+            "notes" | "note" => return Some(&self.notes),
+            _ => {}
         }
+        self.custom
+            .iter()
+            .find(|c| c.name == name)
+            .or_else(|| {
+                self.custom
+                    .iter()
+                    .find(|c| c.name.eq_ignore_ascii_case(name))
+            })
+            .map(|c| c.value.as_str())
     }
 }
 
@@ -70,5 +89,24 @@ mod tests {
         assert_eq!(e.field("pass"), Some("s3cret"));
         assert_eq!(e.field("login"), Some("ops"));
         assert_eq!(e.field("nope"), None);
+    }
+
+    #[test]
+    fn custom_fields_exact_name_wins() {
+        let mut e = sample();
+        e.custom = vec![
+            CustomField {
+                name: "api key".into(),
+                value: Zeroizing::new("lower".into()),
+                protected: true,
+            },
+            CustomField {
+                name: "API Key".into(),
+                value: Zeroizing::new("exact".into()),
+                protected: true,
+            },
+        ];
+        assert_eq!(e.field("API Key"), Some("exact"));
+        assert_eq!(e.field("Api KEY"), Some("lower"));
     }
 }
