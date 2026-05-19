@@ -51,6 +51,20 @@ fn ambiguous(query: &str, matches: &[&Entry]) -> Failure {
     }
 }
 
+/// Case-insensitive substring search over the path (group and title), username, URL and tags.
+pub fn search<'a>(entries: &'a [Entry], query: &str) -> Vec<&'a Entry> {
+    let q = query.to_lowercase();
+    entries
+        .iter()
+        .filter(|e| {
+            e.path().to_lowercase().contains(&q)
+                || e.username.to_lowercase().contains(&q)
+                || e.url.to_lowercase().contains(&q)
+                || e.tags.iter().any(|t| t.to_lowercase().contains(&q))
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -91,6 +105,18 @@ mod tests {
             other => panic!("expected ambiguous, got {other:?}"),
         }
         assert_eq!(select(&e, "Personal/GitHub").unwrap().uuid, "b");
+    }
+
+    #[test]
+    fn search_covers_groups_urls_and_tags() {
+        let mut e = sample();
+        e[2].url = "https://bank.example".into();
+        e[0].tags = vec!["Cloud".into()];
+        assert_eq!(search(&e, "github").len(), 2);
+        assert_eq!(search(&e, "WORK").len(), 1);
+        assert_eq!(search(&e, "example").len(), 1);
+        assert_eq!(search(&e, "cloud").len(), 1);
+        assert!(search(&e, "zzz").is_empty());
     }
 
     #[test]
