@@ -1,6 +1,7 @@
 //! prive: a fast, scriptable terminal client for KeePass (KDBX) password databases.
 
 pub mod cli;
+pub mod config;
 pub mod error;
 
 use std::process::ExitCode;
