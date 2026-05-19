@@ -2,7 +2,9 @@
 //!
 //! The secret comes from the entry's `otp` field: an `otpauth://totp/...` URI as KeePassXC,
 //! KeePassDX and Strongbox store it, the older KeeOtp form
-//! `key=...&step=30&size=6&otpHashMode=sha256`, or a bare base32 secret.
+//! `key=...&step=30&size=6&otpHashMode=sha256`, or a bare base32 secret. Failing that, the
+//! KeePass 2.47+ fields `TimeOtp-Secret-Base32` / `-Hex` / `-Base64` / `TimeOtp-Secret`, with
+//! `TimeOtp-Length`, `TimeOtp-Period` and `TimeOtp-Algorithm`.
 
 use hmac::{Hmac, Mac};
 use zeroize::Zeroizing;
@@ -105,23 +107,80 @@ impl Totp {
     }
 
     pub fn from_entry(entry: &Entry) -> Option<Totp> {
-        let value = entry.field("otp")?.trim();
-        if value.is_empty() {
-            return None;
+        match entry.field("otp").map(str::trim) {
+            Some(v) if !v.is_empty() => parse_otp_field(v),
+            _ => from_keepass_native(entry),
         }
-        if value.to_ascii_lowercase().starts_with("otpauth://") {
-            return parse_otpauth(value);
-        }
-        if value.contains("key=") {
-            return parse_keeotp(value);
-        }
-        Totp::new(
-            decode_base32(value)?,
-            30,
-            Encoder::Digits(6),
-            Algorithm::Sha1,
-        )
     }
+}
+
+fn parse_otp_field(value: &str) -> Option<Totp> {
+    if value.to_ascii_lowercase().starts_with("otpauth://") {
+        return parse_otpauth(value);
+    }
+    if value.contains("key=") {
+        return parse_keeotp(value);
+    }
+    Totp::new(
+        decode_base32(value)?,
+        30,
+        Encoder::Digits(6),
+        Algorithm::Sha1,
+    )
+}
+
+fn from_keepass_native(entry: &Entry) -> Option<Totp> {
+    let secret = if let Some(s) = entry.field("TimeOtp-Secret-Base32") {
+        decode_base32(s)?
+    } else if let Some(s) = entry.field("TimeOtp-Secret-Hex") {
+        hex::decode(s.split_whitespace().collect::<String>()).ok()?
+    } else if let Some(s) = entry.field("TimeOtp-Secret-Base64") {
+        decode_base64(s)?
+    } else {
+        entry.field("TimeOtp-Secret")?.as_bytes().to_vec()
+    };
+    let number = |name: &str, default: u64| {
+        entry
+            .field(name)
+            .and_then(|v| v.trim().parse().ok())
+            .unwrap_or(default)
+    };
+    let digits = u32::try_from(number("TimeOtp-Length", 6)).ok()?;
+    let algorithm = match entry.field("TimeOtp-Algorithm") {
+        Some(a) => parse_algorithm(a)?,
+        None => Algorithm::Sha1,
+    };
+    Totp::new(
+        secret,
+        number("TimeOtp-Period", 30),
+        Encoder::Digits(digits),
+        algorithm,
+    )
+}
+
+/// Standard or URL-safe base64, padding optional. Used for one rarely seen KeePass field, so a
+/// few lines here rather than another dependency.
+fn decode_base64(s: &str) -> Option<Vec<u8>> {
+    let mut out = Vec::new();
+    let mut buf = 0u32;
+    let mut bits = 0;
+    for c in s.bytes().filter(|c| !c.is_ascii_whitespace() && *c != b'=') {
+        let v = match c {
+            b'A'..=b'Z' => c - b'A',
+            b'a'..=b'z' => c - b'a' + 26,
+            b'0'..=b'9' => c - b'0' + 52,
+            b'+' | b'-' => 62,
+            b'/' | b'_' => 63,
+            _ => return None,
+        };
+        buf = (buf << 6) | u32::from(v);
+        bits += 6;
+        if bits >= 8 {
+            bits -= 8;
+            out.push((buf >> bits) as u8);
+        }
+    }
+    (!out.is_empty()).then_some(out)
 }
 
 /// `otpauth://totp/Label?secret=...&period=30&digits=6&algorithm=SHA1`
@@ -186,11 +245,17 @@ fn parse_keeotp(value: &str) -> Option<Totp> {
     )
 }
 
+/// `SHA1`, `sha256`, `HMAC-SHA-512` and similar spellings.
 fn parse_algorithm(v: &str) -> Option<Algorithm> {
-    match v.to_ascii_uppercase().as_str() {
-        "SHA1" => Some(Algorithm::Sha1),
-        "SHA256" => Some(Algorithm::Sha256),
-        "SHA512" => Some(Algorithm::Sha512),
+    let norm: String = v
+        .chars()
+        .filter(char::is_ascii_alphanumeric)
+        .collect::<String>()
+        .to_ascii_lowercase();
+    match norm.trim_start_matches("hmac") {
+        "sha1" => Some(Algorithm::Sha1),
+        "sha256" => Some(Algorithm::Sha256),
+        "sha512" => Some(Algorithm::Sha512),
         _ => None,
     }
 }
@@ -372,5 +437,54 @@ mod tests {
         let bare = Totp::from_entry(&with_otp("JBSW Y3DP EHPK 3PXP")).unwrap();
         assert_eq!((bare.period, bare.encoder), (30, Encoder::Digits(6)));
         assert!(Totp::from_entry(&with_otp("not base32 !!")).is_none());
+    }
+
+    fn with_fields(fields: &[(&str, &str)]) -> Entry {
+        Entry {
+            custom: fields
+                .iter()
+                .map(|(k, v)| crate::entry::CustomField {
+                    name: (*k).into(),
+                    value: Zeroizing::new((*v).into()),
+                    protected: true,
+                })
+                .collect(),
+            ..Entry::default()
+        }
+    }
+
+    #[test]
+    fn keepass_native_fields() {
+        // RFC 6238's SHA-256 secret in each of KeePass's encodings gives the RFC code.
+        let ascii = "12345678901234567890123456789012";
+        let cases = [
+            ("TimeOtp-Secret", ascii.to_string()),
+            ("TimeOtp-Secret-Hex", hex::encode(ascii)),
+            (
+                "TimeOtp-Secret-Base32",
+                "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZA".to_string(),
+            ),
+            (
+                "TimeOtp-Secret-Base64",
+                "MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTI=".to_string(),
+            ),
+        ];
+        for (field, secret) in cases {
+            let e = with_fields(&[
+                (field, &secret),
+                ("TimeOtp-Length", "8"),
+                ("TimeOtp-Algorithm", "HMAC-SHA-256"),
+            ]);
+            let t = Totp::from_entry(&e).unwrap_or_else(|| panic!("{field} not read"));
+            assert_eq!(t.code_at(59), "46119246", "{field}");
+        }
+    }
+
+    #[test]
+    fn algorithm_spellings() {
+        assert_eq!(parse_algorithm("HMAC-SHA-256"), Some(Algorithm::Sha256));
+        assert_eq!(parse_algorithm("sha1"), Some(Algorithm::Sha1));
+        assert_eq!(parse_algorithm("SHA-512"), Some(Algorithm::Sha512));
+        assert_eq!(parse_algorithm("MD5"), None);
     }
 }
