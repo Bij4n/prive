@@ -12,6 +12,7 @@ pub struct Entry {
     pub url: String,
     pub notes: String,
     pub password: Zeroizing<String>,
+    pub tags: Vec<String>,
     /// Fields other than the five standard ones, sorted by name.
     pub custom: Vec<CustomField>,
 }
