@@ -62,8 +62,7 @@ impl KeySource {
                 std::fs::read_to_string(&file)
                     .with_context(|| format!("reading PRIVE_PASSWORD_FILE {}", file.display()))?,
             );
-            let first = Zeroizing::new(text.lines().next().unwrap_or("").to_string());
-            return Ok(first);
+            return Ok(first_line(&text));
         }
         if !std::io::stdin().is_terminal() {
             return Err(Failure::NoTerminal.into());
@@ -71,6 +70,12 @@ impl KeySource {
         let pw = rpassword::prompt_password(prompt).context("reading the password")?;
         Ok(Zeroizing::new(pw))
     }
+}
+
+/// The first line of a password file, without its line ending. Later lines are ignored, so
+/// a file can carry a comment underneath.
+fn first_line(text: &str) -> Zeroizing<String> {
+    Zeroizing::new(text.lines().next().unwrap_or("").to_string())
 }
 
 fn trim_newline(mut s: Zeroizing<String>) -> Zeroizing<String> {
@@ -89,5 +94,12 @@ mod tests {
         assert_eq!(*trim_newline(Zeroizing::new("pw\n".into())), "pw");
         assert_eq!(*trim_newline(Zeroizing::new("pw\r\n".into())), "pw");
         assert_eq!(*trim_newline(Zeroizing::new(" pw ".into())), " pw ");
+    }
+
+    #[test]
+    fn password_files_use_their_first_line() {
+        assert_eq!(*first_line("hunter2\nnotes below\n"), "hunter2");
+        assert_eq!(*first_line("hunter2\r\n"), "hunter2");
+        assert_eq!(*first_line(""), "");
     }
 }
