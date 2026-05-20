@@ -11,6 +11,9 @@ const UPPER: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const DIGITS: &str = "0123456789";
 const SYMBOLS: &str = "!#$%&()*+,-./:;<=>?@[]^_{|}~";
 
+/// Characters that are easy to misread: 0/O, 1/l/I, and the bar.
+const AMBIGUOUS: &str = "0O1lI|";
+
 const EFF_LIST: &str = include_str!("../assets/eff_large_wordlist.txt");
 
 fn words() -> Vec<&'static str> {
@@ -26,6 +29,7 @@ pub struct CharsetSpec {
     pub upper: bool,
     pub digits: bool,
     pub symbols: bool,
+    pub avoid_ambiguous: bool,
 }
 
 pub struct Generated {
@@ -37,15 +41,20 @@ pub struct Generated {
 pub fn password(spec: &CharsetSpec) -> anyhow::Result<Generated> {
     anyhow::ensure!(spec.length >= 4, "length must be at least 4");
     anyhow::ensure!(spec.length <= 1024, "length must be at most 1024");
-    let mut classes: Vec<Vec<char>> = vec![LOWER.chars().collect()];
+    let keep = |set: &str| -> Vec<char> {
+        set.chars()
+            .filter(|c| !spec.avoid_ambiguous || !AMBIGUOUS.contains(*c))
+            .collect()
+    };
+    let mut classes = vec![keep(LOWER)];
     if spec.upper {
-        classes.push(UPPER.chars().collect());
+        classes.push(keep(UPPER));
     }
     if spec.digits {
-        classes.push(DIGITS.chars().collect());
+        classes.push(keep(DIGITS));
     }
     if spec.symbols {
-        classes.push(SYMBOLS.chars().collect());
+        classes.push(keep(SYMBOLS));
     }
     let all: Vec<char> = classes.iter().flatten().copied().collect();
 
@@ -116,6 +125,7 @@ mod tests {
             upper: true,
             digits: true,
             symbols: true,
+            avoid_ambiguous: false,
         }
     }
 
@@ -138,6 +148,7 @@ mod tests {
             upper: false,
             digits: false,
             symbols: false,
+            avoid_ambiguous: false,
         })
         .unwrap();
         assert!((lower.entropy_bits - 10.0 * 26f64.log2()).abs() < 1e-9);
@@ -179,5 +190,13 @@ mod tests {
         assert_eq!(p.value.len(), 6);
         assert!(p.value.chars().all(|c| c.is_ascii_digit()));
         assert!(pin(3).is_err());
+    }
+
+    #[test]
+    fn look_alikes_can_be_left_out() {
+        let mut s = spec(300);
+        s.avoid_ambiguous = true;
+        let g = password(&s).unwrap();
+        assert!(!g.value.chars().any(|c| AMBIGUOUS.contains(c)));
     }
 }
