@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+The 1.0 rewrite has started: prive becomes a terminal client for KeePass (`.kdbx`) databases.
+The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `legacy-0.5.0`.
+
+### Added
+- `prive gen`: random passwords (every character class guaranteed, optional look-alike
+  filtering), passphrases from the EFF large word list, and numeric PINs
+- TOTP code generation for every way KeePass apps store secrets (otpauth URIs, KeeOtp,
+  KeePass 2 TimeOtp fields, legacy KeePassXC fields), including Steam Guard codes
+- Stable exit codes: 0 ok, 1 error, 2 usage, 3 not found, 4 ambiguous, 5 credentials
+
 ### Fixed
 - CI: the Windows test job no longer hangs until the 6-hour limit (two tests reached a console password prompt); every job has a timeout
 - Release builds use rustls instead of the system OpenSSL, so the musl target links and Linux binaries no longer need `libssl`
