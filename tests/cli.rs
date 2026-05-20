@@ -62,3 +62,13 @@ fn gen_rejects_conflicting_modes_and_bad_lengths() {
         .code(1)
         .stderr(predicate::str::contains("at least 4"));
 }
+
+#[test]
+fn errors_go_to_stderr_with_a_prefix_and_nothing_to_stdout() {
+    prive()
+        .args(["gen", "--pin", "2"])
+        .assert()
+        .code(1)
+        .stdout(predicate::str::is_empty())
+        .stderr(predicate::str::starts_with("prive: "));
+}
