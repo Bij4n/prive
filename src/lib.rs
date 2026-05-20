@@ -9,6 +9,7 @@ pub mod otp;
 pub mod select;
 pub mod unlock;
 
+use std::io::IsTerminal;
 use std::process::ExitCode;
 
 use anyhow::Result;
@@ -41,6 +42,9 @@ fn dispatch(cli: Cli) -> Result<()> {
                 })?
             };
             println!("{}", g.value);
+            if std::io::stderr().is_terminal() {
+                eprintln!("({:.0} bits of entropy)", g.entropy_bits);
+            }
             Ok(())
         }
     }
