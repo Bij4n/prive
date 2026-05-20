@@ -72,3 +72,12 @@ fn errors_go_to_stderr_with_a_prefix_and_nothing_to_stdout() {
         .stdout(predicate::str::is_empty())
         .stderr(predicate::str::starts_with("prive: "));
 }
+
+#[test]
+fn no_command_shows_help() {
+    prive()
+        .assert()
+        .code(2)
+        .stderr(predicate::str::contains("Usage: prive"))
+        .stderr(predicate::str::contains("gen"));
+}

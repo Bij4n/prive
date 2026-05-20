@@ -8,6 +8,7 @@ use clap::{Args, Parser, Subcommand};
 #[command(
     name = "prive",
     version,
+    arg_required_else_help = true,
     about = "Fast, scriptable terminal client for KeePass (KDBX) password databases",
     long_about = "Fast, scriptable terminal client for KeePass (KDBX) password databases.\n\n\
         prive opens the same .kdbx file as KeePassXC, KeePassDX and Strongbox. \
