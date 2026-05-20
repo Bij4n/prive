@@ -17,6 +17,7 @@ clap = { version = "4", features = ["derive", "env", "wrap_help"] }
 dirs = "6"
 hex = "0.4"
 hmac = "0.12"
+rand = "0.9"
 rpassword = "7"
 serde = { version = "1", features = ["derive"] }
 sha1 = "0.10"

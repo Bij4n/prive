@@ -4,6 +4,7 @@ pub mod cli;
 pub mod config;
 pub mod entry;
 pub mod error;
+pub mod generate;
 pub mod otp;
 pub mod select;
 pub mod unlock;
