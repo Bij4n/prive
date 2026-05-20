@@ -65,4 +65,20 @@ pub struct GenArgs {
     /// Leave out look-alike characters (0 O 1 l I |)
     #[arg(long)]
     pub avoid_ambiguous: bool,
+
+    /// Generate a passphrase of this many words instead (EFF large word list)
+    #[arg(short, long, value_name = "N", conflicts_with = "pin")]
+    pub words: Option<usize>,
+
+    /// Separator between passphrase words
+    #[arg(long, default_value = "-", requires = "words")]
+    pub separator: String,
+
+    /// Capitalise each passphrase word
+    #[arg(long, requires = "words")]
+    pub capitalize: bool,
+
+    /// Generate a numeric PIN of this many digits instead
+    #[arg(long, value_name = "N")]
+    pub pin: Option<usize>,
 }

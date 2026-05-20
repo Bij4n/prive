@@ -27,13 +27,19 @@ pub fn run() -> ExitCode {
 fn dispatch(cli: Cli) -> Result<()> {
     match cli.command {
         Command::Gen(args) => {
-            let g = generate::password(&generate::CharsetSpec {
-                length: args.length,
-                upper: !args.no_upper,
-                digits: !args.no_digits,
-                symbols: !args.no_symbols,
-                avoid_ambiguous: args.avoid_ambiguous,
-            })?;
+            let g = if let Some(n) = args.words {
+                generate::passphrase(n, &args.separator, args.capitalize)?
+            } else if let Some(n) = args.pin {
+                generate::pin(n)?
+            } else {
+                generate::password(&generate::CharsetSpec {
+                    length: args.length,
+                    upper: !args.no_upper,
+                    digits: !args.no_digits,
+                    symbols: !args.no_symbols,
+                    avoid_ambiguous: args.avoid_ambiguous,
+                })?
+            };
             println!("{}", g.value);
             Ok(())
         }
