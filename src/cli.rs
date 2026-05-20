@@ -2,7 +2,7 @@
 
 use std::path::PathBuf;
 
-use clap::{Args, Parser};
+use clap::{Args, Parser, Subcommand};
 
 #[derive(Debug, Parser)]
 #[command(
@@ -18,6 +18,9 @@ use clap::{Args, Parser};
 pub struct Cli {
     #[command(flatten)]
     pub global: Global,
+
+    #[command(subcommand)]
+    pub command: Command,
 }
 
 #[derive(Debug, Args)]
@@ -33,4 +36,33 @@ pub struct Global {
     /// Read the master password from the first line of stdin
     #[arg(long, global = true)]
     pub password_stdin: bool,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum Command {
+    /// Generate a password, passphrase or PIN (no database needed)
+    Gen(GenArgs),
+}
+
+#[derive(Debug, Args)]
+pub struct GenArgs {
+    /// Number of characters
+    #[arg(short, long, default_value_t = 24)]
+    pub length: usize,
+
+    /// Leave out symbols
+    #[arg(long)]
+    pub no_symbols: bool,
+
+    /// Leave out digits
+    #[arg(long)]
+    pub no_digits: bool,
+
+    /// Leave out upper-case letters
+    #[arg(long)]
+    pub no_upper: bool,
+
+    /// Leave out look-alike characters (0 O 1 l I |)
+    #[arg(long)]
+    pub avoid_ambiguous: bool,
 }

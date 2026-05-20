@@ -11,9 +11,31 @@ pub mod unlock;
 
 use std::process::ExitCode;
 
+use anyhow::Result;
 use clap::Parser;
 
+use crate::cli::{Cli, Command};
+
 pub fn run() -> ExitCode {
-    let _cli = cli::Cli::parse();
-    ExitCode::SUCCESS
+    let cli = Cli::parse();
+    match dispatch(cli) {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(e) => error::report(&e),
+    }
+}
+
+fn dispatch(cli: Cli) -> Result<()> {
+    match cli.command {
+        Command::Gen(args) => {
+            let g = generate::password(&generate::CharsetSpec {
+                length: args.length,
+                upper: !args.no_upper,
+                digits: !args.no_digits,
+                symbols: !args.no_symbols,
+                avoid_ambiguous: args.avoid_ambiguous,
+            })?;
+            println!("{}", g.value);
+            Ok(())
+        }
+    }
 }
