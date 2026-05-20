@@ -91,6 +91,21 @@ pub fn passphrase(count: usize, separator: &str, capitalize: bool) -> anyhow::Re
     })
 }
 
+pub fn pin(length: usize) -> anyhow::Result<Generated> {
+    anyhow::ensure!(
+        (4..=64).contains(&length),
+        "PIN length must be between 4 and 64"
+    );
+    let mut rng = rand::rng();
+    let value = (0..length)
+        .map(|_| char::from(b'0' + rng.random_range(0..10u8)))
+        .collect();
+    Ok(Generated {
+        value,
+        entropy_bits: length as f64 * 10f64.log2(),
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -156,5 +171,13 @@ mod tests {
                 .all(|w| w.chars().next().unwrap().is_uppercase())
         );
         assert!(passphrase(2, "-", false).is_err());
+    }
+
+    #[test]
+    fn pins_are_digits() {
+        let p = pin(6).unwrap();
+        assert_eq!(p.value.len(), 6);
+        assert!(p.value.chars().all(|c| c.is_ascii_digit()));
+        assert!(pin(3).is_err());
     }
 }
