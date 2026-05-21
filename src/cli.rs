@@ -89,4 +89,8 @@ pub struct GenArgs {
     /// Generate a numeric PIN of this many digits instead
     #[arg(long, value_name = "N")]
     pub pin: Option<usize>,
+
+    /// Copy to the clipboard instead of printing; cleared after a timeout
+    #[arg(short, long)]
+    pub clip: bool,
 }

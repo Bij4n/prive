@@ -44,7 +44,11 @@ fn dispatch(cli: Cli) -> Result<()> {
                     avoid_ambiguous: args.avoid_ambiguous,
                 })?
             };
-            println!("{}", g.value);
+            if args.clip {
+                copy_and_tell(&g.value)?;
+            } else {
+                println!("{}", g.value);
+            }
             if std::io::stderr().is_terminal() {
                 eprintln!("({:.0} bits of entropy)", g.entropy_bits);
             }
@@ -52,4 +56,12 @@ fn dispatch(cli: Cli) -> Result<()> {
         }
         Command::ClipHelper { seconds } => clip::helper(seconds),
     }
+}
+
+/// Copy a secret, then say on stderr when it will be cleared.
+fn copy_and_tell(secret: &str) -> Result<()> {
+    let seconds = config::Config::load()?.clipboard_seconds();
+    clip::copy(secret, seconds)?;
+    eprintln!("Copied. The clipboard clears in {seconds} s.");
+    Ok(())
 }
