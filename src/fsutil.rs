@@ -101,4 +101,18 @@ mod tests {
         let mode = fs::metadata(&p).unwrap().permissions().mode() & 0o777;
         assert_eq!(mode, 0o600);
     }
+
+    #[test]
+    fn a_bare_file_name_goes_in_the_current_directory() {
+        assert_eq!(parent_dir(Path::new("x.kdbx")), PathBuf::from("."));
+        assert_eq!(parent_dir(Path::new("/a/b/x.kdbx")), PathBuf::from("/a/b"));
+        let t = temp_path(Path::new("/a/b/x.kdbx"));
+        assert!(t.starts_with("/a/b"));
+        assert!(
+            t.file_name()
+                .unwrap()
+                .to_string_lossy()
+                .starts_with(".x.kdbx.prive-tmp-")
+        );
+    }
 }
