@@ -37,3 +37,19 @@ proptest! {
         prop_assert_eq!(t.code_at(start), t.code_at(start + period - 1));
     }
 }
+
+proptest! {
+    #[test]
+    fn otpauth_parsing_never_panics(s in ".{0,200}") {
+        let _ = prive::otp::parse_otpauth(&s);
+        let _ = prive::otp::parse_otpauth(&format!("otpauth://totp/x?{s}"));
+        let _ = prive::otp::decode_base32(&s);
+    }
+
+    #[test]
+    fn base32_round_trips(bytes in prop::collection::vec(any::<u8>(), 1..64)) {
+        let encoded = base32::encode(base32::Alphabet::Rfc4648 { padding: true }, &bytes);
+        prop_assert_eq!(prive::otp::decode_base32(&encoded), Some(bytes.clone()));
+        prop_assert_eq!(prive::otp::decode_base32(&encoded.to_lowercase()), Some(bytes));
+    }
+}
