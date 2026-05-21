@@ -12,6 +12,8 @@ use crate::entry::Entry;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Issue {
+    /// Found this many times in known breaches.
+    Breached { count: u64 },
     /// zxcvbn strength 0-2 out of 4.
     Weak { score: u8 },
     /// The same password is used by this many other entries.
@@ -25,6 +27,7 @@ pub enum Issue {
 impl Issue {
     pub fn describe(&self) -> String {
         match self {
+            Issue::Breached { count } => format!("found in {count} breaches (Have I Been Pwned)"),
             Issue::Weak { score } => format!("weak (strength {score}/4)"),
             Issue::Reused { with: 1 } => "reused by 1 other entry".to_string(),
             Issue::Reused { with } => format!("reused by {with} other entries"),
@@ -50,15 +53,21 @@ pub struct Report {
 pub struct Options {
     /// Flag passwords not changed for more than this many days.
     pub max_age_days: i64,
+    /// Look each password up in Have I Been Pwned (see `hibp`). Off by default: it is the
+    /// only part of prive that talks to the network.
+    pub breach_check: bool,
 }
 
 impl Default for Options {
     fn default() -> Self {
-        Options { max_age_days: 365 }
+        Options {
+            max_age_days: 365,
+            breach_check: false,
+        }
     }
 }
 
-pub fn audit(entries: &[Entry], opts: &Options) -> Report {
+pub fn audit(entries: &[Entry], opts: &Options) -> anyhow::Result<Report> {
     let now = Utc::now().naive_utc();
     let checked: Vec<&Entry> = entries
         .iter()
@@ -70,9 +79,16 @@ pub fn audit(entries: &[Entry], opts: &Options) -> Report {
         *by_password.entry(fingerprint(&e.password)).or_default() += 1;
     }
 
+    let mut breach_cache = HashMap::new();
     let mut findings = Vec::new();
     for e in &checked {
         let mut issues = Vec::new();
+        if opts.breach_check {
+            let count = crate::hibp::breach_count(&e.password, &mut breach_cache)?;
+            if count > 0 {
+                issues.push(Issue::Breached { count });
+            }
+        }
         // A password built from the site name or username is weaker than it looks.
         let hints = [e.title.as_str(), e.username.as_str(), e.url.as_str()];
         let score = zxcvbn::zxcvbn(&e.password, &hints).score() as u8;
@@ -100,11 +116,11 @@ pub fn audit(entries: &[Entry], opts: &Options) -> Report {
             });
         }
     }
-    Report {
+    Ok(Report {
         checked: checked.len(),
         skipped: entries.len() - checked.len(),
         findings,
-    }
+    })
 }
 
 fn age_days(modified: Option<NaiveDateTime>, now: NaiveDateTime) -> Option<i64> {
@@ -135,7 +151,8 @@ mod tests {
         let r = audit(
             &[entry("a", "password1"), entry("b", "kH3@pN8%sJ5*eB1(cG7)")],
             &Options::default(),
-        );
+        )
+        .unwrap();
         assert_eq!(r.checked, 2);
         assert_eq!(r.findings.len(), 1);
         assert_eq!(r.findings[0].path, "a");
@@ -148,7 +165,8 @@ mod tests {
         let r = audit(
             &[entry("a", strong), entry("b", strong), entry("c", strong)],
             &Options::default(),
-        );
+        )
+        .unwrap();
         assert_eq!(r.findings.len(), 3);
         for f in &r.findings {
             assert_eq!(f.issues, vec![Issue::Reused { with: 2 }]);
@@ -161,10 +179,17 @@ mod tests {
         old.modified = Some(Utc::now().naive_utc() - chrono::Duration::days(400));
         let mut fresh = entry("fresh", "kH3@pN8%sJ5*eB1(cG7)");
         fresh.modified = Some(Utc::now().naive_utc() - chrono::Duration::days(3));
-        let r = audit(&[old, fresh], &Options::default());
+        let r = audit(&[old, fresh], &Options::default()).unwrap();
         assert_eq!(r.findings.len(), 1);
         assert_eq!(r.findings[0].issues, vec![Issue::Old { days: 400 }]);
-        let strict = audit(&r_entries(), &Options { max_age_days: 1 });
+        let strict = audit(
+            &r_entries(),
+            &Options {
+                max_age_days: 1,
+                ..Options::default()
+            },
+        )
+        .unwrap();
         assert_eq!(strict.findings.len(), 1);
     }
 
@@ -180,7 +205,7 @@ mod tests {
         gone.expires = Some(Utc::now().naive_utc() - chrono::Duration::days(1));
         let mut later = entry("later", "vX7#qL9!mZ2$wR4^tY6&");
         later.expires = Some(Utc::now().naive_utc() + chrono::Duration::days(30));
-        let r = audit(&[gone, later], &Options::default());
+        let r = audit(&[gone, later], &Options::default()).unwrap();
         assert_eq!(r.findings.len(), 1);
         assert_eq!(r.findings[0].issues, vec![Issue::Expired]);
     }
@@ -189,7 +214,7 @@ mod tests {
     fn excluded_and_empty_entries_are_skipped() {
         let mut excluded = entry("x", "123");
         excluded.quality_check = false;
-        let r = audit(&[excluded, entry("y", "")], &Options::default());
+        let r = audit(&[excluded, entry("y", "")], &Options::default()).unwrap();
         assert_eq!((r.checked, r.skipped), (0, 2));
         assert!(r.findings.is_empty());
     }
@@ -198,7 +223,7 @@ mod tests {
     fn passwords_made_from_the_entry_itself_are_weak() {
         let mut e = entry("Spotify", "SpotifyMe2026");
         e.username = "me2026".into();
-        let r = audit(&[e], &Options::default());
+        let r = audit(&[e], &Options::default()).unwrap();
         assert!(matches!(r.findings[0].issues[0], Issue::Weak { .. }));
     }
 
