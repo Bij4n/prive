@@ -13,6 +13,7 @@ categories = ["command-line-utilities"]
 [dependencies]
 anyhow = "1"
 base32 = "0.5"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 clap = { version = "4", features = ["derive", "env", "wrap_help"] }
 dirs = "6"
 hex = "0.4"

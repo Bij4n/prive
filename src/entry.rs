@@ -1,5 +1,6 @@
 //! One password entry, independent of how it was read from disk.
 
+use chrono::NaiveDateTime;
 use zeroize::Zeroizing;
 
 /// `Debug` never prints the password or protected values, so a stray `{:?}` in an error or
@@ -17,6 +18,10 @@ pub struct Entry {
     pub tags: Vec<String>,
     /// Fields other than the five standard ones, sorted by name.
     pub custom: Vec<CustomField>,
+    /// When the entry was last changed, if the file records it.
+    pub modified: Option<NaiveDateTime>,
+    /// Set only when the entry has expiry switched on.
+    pub expires: Option<NaiveDateTime>,
 }
 
 #[derive(Clone)]
