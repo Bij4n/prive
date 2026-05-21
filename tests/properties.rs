@@ -53,3 +53,27 @@ proptest! {
         prop_assert_eq!(prive::otp::decode_base32(&encoded.to_lowercase()), Some(bytes));
     }
 }
+
+proptest! {
+    #[test]
+    fn generated_passwords_keep_every_promise(
+        length in 4usize..200,
+        upper in any::<bool>(),
+        digits in any::<bool>(),
+        symbols in any::<bool>(),
+        avoid in any::<bool>(),
+    ) {
+        let g = prive::generate::password(&prive::generate::CharsetSpec {
+            length, upper, digits, symbols, avoid_ambiguous: avoid,
+        }).unwrap();
+        prop_assert_eq!(g.value.chars().count(), length);
+        prop_assert!(g.value.chars().any(|c| c.is_ascii_lowercase()));
+        prop_assert_eq!(g.value.chars().any(|c| c.is_ascii_uppercase()), upper);
+        prop_assert_eq!(g.value.chars().any(|c| c.is_ascii_digit()), digits);
+        prop_assert_eq!(g.value.chars().any(|c| !c.is_ascii_alphanumeric()), symbols);
+        if avoid {
+            prop_assert!(!g.value.chars().any(|c| "0O1lI|".contains(c)));
+        }
+        prop_assert!(g.entropy_bits > 0.0);
+    }
+}
