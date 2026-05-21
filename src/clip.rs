@@ -10,8 +10,11 @@
 //! Copies are marked as "don't keep in history" where the platform supports it. Some Linux
 //! clipboard managers ignore that hint and keep a copy anyway.
 //!
+//! For tests, `PRIVE_CLIPBOARD_FILE=<path>` replaces the system clipboard with a file.
+//!
 
 use std::io::{BufRead, BufReader, Read, Write};
+use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::time::Duration;
 
@@ -78,18 +81,27 @@ pub fn helper(seconds: u64) -> Result<()> {
 }
 
 enum Backend {
+    File(PathBuf),
     System(arboard::Clipboard),
 }
 
 impl Backend {
     fn open() -> Result<Backend> {
+        if let Some(p) = std::env::var_os("PRIVE_CLIPBOARD_FILE") {
+            return Ok(Backend::File(PathBuf::from(p)));
+        }
         arboard::Clipboard::new()
             .map(Backend::System)
             .context("no clipboard available")
     }
 
     fn set(&mut self, text: &str) -> Result<()> {
-        let Backend::System(cb) = self;
+        let cb = match self {
+            Backend::File(p) => {
+                return std::fs::write(p, text).context("writing the clipboard file");
+            }
+            Backend::System(cb) => cb,
+        };
         let set = cb.set();
         #[cfg(any(
             target_os = "linux",
@@ -118,13 +130,21 @@ impl Backend {
     }
 
     fn get(&mut self) -> Option<Zeroizing<String>> {
-        let Backend::System(cb) = self;
-        cb.get_text().ok().map(Zeroizing::new)
+        match self {
+            Backend::File(p) => std::fs::read_to_string(p).ok().map(Zeroizing::new),
+            Backend::System(cb) => cb.get_text().ok().map(Zeroizing::new),
+        }
     }
 
     fn clear(&mut self) {
-        let Backend::System(cb) = self;
-        let _ = cb.clear();
+        match self {
+            Backend::File(p) => {
+                let _ = std::fs::write(p, "");
+            }
+            Backend::System(cb) => {
+                let _ = cb.clear();
+            }
+        }
     }
 }
 
