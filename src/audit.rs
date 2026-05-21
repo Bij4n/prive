@@ -1,4 +1,7 @@
 //! Password health report.
+//!
+//! Entries the user excluded from reports in KeePassXC ("Exclude from database reports") are
+//! skipped, as are entries with no password.
 
 use std::collections::HashMap;
 
@@ -28,6 +31,7 @@ pub struct Finding {
 #[derive(Debug)]
 pub struct Report {
     pub checked: usize,
+    pub skipped: usize,
     pub findings: Vec<Finding>,
 }
 
@@ -44,14 +48,18 @@ impl Default for Options {
 
 pub fn audit(entries: &[Entry], opts: &Options) -> Report {
     let now = Utc::now().naive_utc();
+    let checked: Vec<&Entry> = entries
+        .iter()
+        .filter(|e| e.quality_check && !e.password.is_empty())
+        .collect();
     // Compare hashes, not the passwords themselves, so no extra plaintext copies pile up.
     let mut by_password: HashMap<[u8; 32], usize> = HashMap::new();
-    for e in entries {
+    for e in &checked {
         *by_password.entry(fingerprint(&e.password)).or_default() += 1;
     }
 
     let mut findings = Vec::new();
-    for e in entries {
+    for e in &checked {
         let mut issues = Vec::new();
         let score = zxcvbn::zxcvbn(&e.password, &[]).score() as u8;
         if score < 3 {
@@ -79,7 +87,8 @@ pub fn audit(entries: &[Entry], opts: &Options) -> Report {
         }
     }
     Report {
-        checked: entries.len(),
+        checked: checked.len(),
+        skipped: entries.len() - checked.len(),
         findings,
     }
 }
@@ -160,5 +169,14 @@ mod tests {
         let r = audit(&[gone, later], &Options::default());
         assert_eq!(r.findings.len(), 1);
         assert_eq!(r.findings[0].issues, vec![Issue::Expired]);
+    }
+
+    #[test]
+    fn excluded_and_empty_entries_are_skipped() {
+        let mut excluded = entry("x", "123");
+        excluded.quality_check = false;
+        let r = audit(&[excluded, entry("y", "")], &Options::default());
+        assert_eq!((r.checked, r.skipped), (0, 2));
+        assert!(r.findings.is_empty());
     }
 }
