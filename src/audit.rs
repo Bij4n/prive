@@ -110,12 +110,19 @@ pub fn audit(entries: &[Entry], opts: &Options) -> anyhow::Result<Report> {
             issues.push(Issue::Old { days });
         }
         if !issues.is_empty() {
+            issues.sort();
             findings.push(Finding {
                 path: e.path(),
                 issues,
             });
         }
     }
+    // Worst first: breached, then weak, reused, expired, old; ties by path.
+    findings.sort_by(|a, b| {
+        a.issues[0]
+            .cmp(&b.issues[0])
+            .then_with(|| a.path.cmp(&b.path))
+    });
     Ok(Report {
         checked: checked.len(),
         skipped: entries.len() - checked.len(),
@@ -242,5 +249,24 @@ mod tests {
             Issue::Old { days: 400 }.describe(),
             "not changed for 400 days"
         );
+    }
+
+    #[test]
+    fn worst_findings_come_first() {
+        let strong = "vX7#qL9!mZ2$wR4^tY6&";
+        let mut old = entry("aaa-old", "kH3@pN8%sJ5*eB1(cG7)");
+        old.modified = Some(Utc::now().naive_utc() - chrono::Duration::days(800));
+        let r = audit(
+            &[
+                old,
+                entry("zzz-weak", "password1"),
+                entry("m1", strong),
+                entry("m2", strong),
+            ],
+            &Options::default(),
+        )
+        .unwrap();
+        let order: Vec<&str> = r.findings.iter().map(|f| f.path.as_str()).collect();
+        assert_eq!(order, ["zzz-weak", "m1", "m2", "aaa-old"]);
     }
 }
