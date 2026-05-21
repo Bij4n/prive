@@ -1,5 +1,6 @@
 //! prive: a fast, scriptable terminal client for KeePass (KDBX) password databases.
 
+pub mod audit;
 pub mod cli;
 pub mod config;
 pub mod entry;
