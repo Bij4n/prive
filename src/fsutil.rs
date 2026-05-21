@@ -8,8 +8,9 @@ use anyhow::{Context, Result};
 
 /// Create a new file at `path` from `bytes`, refusing to replace an existing one.
 ///
-/// The data goes to a temporary file in the same directory, is flushed to disk, and is then
-/// renamed into place, so a crash never leaves a truncated database behind.
+/// The data goes to a temporary file in the same directory (mode 0600 on Unix, so nobody else
+/// can read it even for a moment), is flushed to disk, and is then renamed into place, so a
+/// crash never leaves a truncated database behind.
 pub fn write_new_file(path: &Path, bytes: &[u8]) -> Result<()> {
     anyhow::ensure!(!path.exists(), "{} already exists", path.display());
     let dir = parent_dir(path);
@@ -52,6 +53,11 @@ fn temp_path(path: &Path) -> PathBuf {
 fn open_private(path: &Path) -> Result<File> {
     let mut opts = OpenOptions::new();
     opts.write(true).create_new(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        opts.mode(0o600);
+    }
     opts.open(path)
         .with_context(|| format!("creating {}", path.display()))
 }
@@ -83,5 +89,16 @@ mod tests {
             .filter(|e| e.file_name().to_string_lossy().contains("prive-tmp"))
             .collect();
         assert!(leftovers.is_empty());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn new_files_are_owner_only() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = tempfile::tempdir().unwrap();
+        let p = dir.path().join("x.kdbx");
+        write_new_file(&p, b"secret").unwrap();
+        let mode = fs::metadata(&p).unwrap().permissions().mode() & 0o777;
+        assert_eq!(mode, 0o600);
     }
 }
