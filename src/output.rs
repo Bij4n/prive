@@ -53,6 +53,29 @@ pub fn render_show(e: &Entry, reveal: bool) -> String {
             out.push_str(&format!("  {:<width$} {value}\n", format!("{}:", c.name)));
         }
     }
+    if !e.attachments.is_empty() {
+        out.push_str(&format!("{:<10} {}\n", "Files:", e.attachments.join(", ")));
+    }
+    if let Some(m) = e.modified {
+        out.push_str(&format!(
+            "{:<10} {}\n",
+            "Modified:",
+            m.format("%Y-%m-%d %H:%M")
+        ));
+    }
+    if let Some(x) = e.expires {
+        out.push_str(&format!(
+            "{:<10} {}\n",
+            "Expires:",
+            x.format("%Y-%m-%d %H:%M")
+        ));
+    }
+    if !e.notes.is_empty() {
+        out.push_str("Notes:\n");
+        for l in e.notes.lines() {
+            out.push_str(&format!("  {l}\n"));
+        }
+    }
     out
 }
 
@@ -125,5 +148,19 @@ mod tests {
         assert!(text.contains("  plan:    basic"));
         assert!(!text.contains("k-123"));
         assert!(render_show(&e, true).contains("API key: k-123"));
+    }
+
+    #[test]
+    fn notes_are_indented_and_times_shown() {
+        let mut e = github();
+        e.notes = "line one\nline two".into();
+        e.attachments = vec!["deploy.pem".into()];
+        e.modified = chrono::NaiveDate::from_ymd_opt(2026, 5, 1)
+            .unwrap()
+            .and_hms_opt(14, 3, 0);
+        let text = render_show(&e, false);
+        assert!(text.contains("Files:     deploy.pem\n"));
+        assert!(text.contains("Modified:  2026-05-01 14:03\n"));
+        assert!(text.ends_with("Notes:\n  line one\n  line two\n"));
     }
 }
