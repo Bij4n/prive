@@ -7,6 +7,9 @@
 //! alive, then clears it after the timeout, but only if it still holds our secret: if you have
 //! copied something else since, it is left alone.
 //!
+//! Copies are marked as "don't keep in history" where the platform supports it. Some Linux
+//! clipboard managers ignore that hint and keep a copy anyway.
+//!
 
 use std::io::{BufRead, BufReader, Read, Write};
 use std::process::{Command, Stdio};
@@ -87,7 +90,30 @@ impl Backend {
 
     fn set(&mut self, text: &str) -> Result<()> {
         let Backend::System(cb) = self;
-        cb.set_text(text.to_string())
+        let set = cb.set();
+        #[cfg(any(
+            target_os = "linux",
+            target_os = "freebsd",
+            target_os = "openbsd",
+            target_os = "netbsd"
+        ))]
+        let set = {
+            use arboard::SetExtLinux;
+            set.exclude_from_history()
+        };
+        #[cfg(target_os = "macos")]
+        let set = {
+            use arboard::SetExtApple;
+            set.exclude_from_history()
+        };
+        #[cfg(windows)]
+        let set = {
+            use arboard::SetExtWindows;
+            set.exclude_from_history()
+                .exclude_from_cloud()
+                .exclude_from_monitoring()
+        };
+        set.text(text.to_string())
             .context("copying to the clipboard")
     }
 
