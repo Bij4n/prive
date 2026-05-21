@@ -43,6 +43,13 @@ pub struct Global {
 pub enum Command {
     /// Generate a password, passphrase or PIN (no database needed)
     Gen(GenArgs),
+
+    /// Internal: holds a copied secret and later clears it
+    #[command(name = "__clip", hide = true)]
+    ClipHelper {
+        #[arg(long)]
+        seconds: u64,
+    },
 }
 
 #[derive(Debug, Args)]

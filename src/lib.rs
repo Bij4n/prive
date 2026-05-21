@@ -2,6 +2,7 @@
 
 pub mod audit;
 pub mod cli;
+pub mod clip;
 pub mod config;
 pub mod entry;
 pub mod error;
@@ -49,5 +50,6 @@ fn dispatch(cli: Cli) -> Result<()> {
             }
             Ok(())
         }
+        Command::ClipHelper { seconds } => clip::helper(seconds),
     }
 }
