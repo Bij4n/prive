@@ -17,6 +17,24 @@ pub fn print_json<T: Serialize + ?Sized>(value: &T) -> Result<()> {
     Ok(())
 }
 
+/// One line per entry: the path, and the username after two spaces when there is one.
+pub fn render_list(entries: &[&Entry]) -> String {
+    let width = entries
+        .iter()
+        .map(|e| e.path().chars().count())
+        .max()
+        .unwrap_or(0);
+    let mut out = String::new();
+    for e in entries {
+        if e.username.is_empty() {
+            out.push_str(&format!("{}\n", e.path()));
+        } else {
+            out.push_str(&format!("{:<width$}  {}\n", e.path(), e.username));
+        }
+    }
+    out
+}
+
 /// `show --json`: every field, with the password and protected values left out (`null`)
 /// unless `reveal`.
 #[derive(Debug, Serialize)]
@@ -224,5 +242,16 @@ mod tests {
         let shown = serde_json::to_value(show_json(&e, true)).unwrap();
         assert_eq!(shown["password"], "gh-Secret-1");
         assert_eq!(shown["fields"][0]["value"], "4321");
+    }
+
+    #[test]
+    fn list_aligns_usernames() {
+        let a = github();
+        let b = Entry {
+            title: "Bank".into(),
+            ..Default::default()
+        };
+        assert_eq!(render_list(&[&a, &b]), "Work/GitHub  demo\nBank\n");
+        assert_eq!(render_list(&[]), "");
     }
 }
