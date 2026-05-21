@@ -107,6 +107,20 @@ impl Totp {
         }
     }
 
+    /// "6 digits every 30 s, SHA-1", for people.
+    pub fn describe(&self) -> String {
+        let shape = match self.encoder {
+            Encoder::Digits(d) => format!("{d} digits"),
+            Encoder::Steam => "Steam Guard".to_string(),
+        };
+        let alg = match self.algorithm {
+            Algorithm::Sha1 => "SHA-1",
+            Algorithm::Sha256 => "SHA-256",
+            Algorithm::Sha512 => "SHA-512",
+        };
+        format!("{shape} every {} s, {alg}", self.period)
+    }
+
     /// The current code and how many seconds it stays valid.
     pub fn now(&self) -> (String, u64) {
         let t = unix_now();
@@ -558,5 +572,13 @@ mod tests {
         let (code, left) = t.now();
         assert_eq!(code.len(), 6);
         assert!((1..=30).contains(&left));
+    }
+
+    #[test]
+    fn describes_itself() {
+        let t = Totp::new(vec![1], 60, Encoder::Digits(8), Algorithm::Sha256).unwrap();
+        assert_eq!(t.describe(), "8 digits every 60 s, SHA-256");
+        let s = Totp::new(vec![1], 30, Encoder::Steam, Algorithm::Sha1).unwrap();
+        assert_eq!(s.describe(), "Steam Guard every 30 s, SHA-1");
     }
 }

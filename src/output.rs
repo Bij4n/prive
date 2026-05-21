@@ -73,8 +73,11 @@ pub fn render_show(e: &Entry, reveal: bool) -> String {
         line("Password:", if reveal { &e.password } else { HIDDEN });
     }
     line("URL:", &e.url);
-    if crate::otp::Totp::from_entry(e).is_some() {
-        line("TOTP:", "yes (prive otp shows the code)");
+    if let Some(t) = crate::otp::Totp::from_entry(e) {
+        line(
+            "TOTP:",
+            &format!("{} (prive otp shows the code)", t.describe()),
+        );
     }
     line("Tags:", &e.tags.join(", "));
     if !e.custom.is_empty() {
