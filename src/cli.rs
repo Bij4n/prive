@@ -91,6 +91,10 @@ pub struct GenArgs {
     pub pin: Option<usize>,
 
     /// Copy to the clipboard instead of printing; cleared after a timeout
-    #[arg(short, long)]
+    #[arg(short, long, conflicts_with = "json")]
     pub clip: bool,
+
+    /// Print {"value": ..., "entropy_bits": ...}
+    #[arg(long)]
+    pub json: bool,
 }

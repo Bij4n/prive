@@ -32,6 +32,7 @@ pub struct CharsetSpec {
     pub avoid_ambiguous: bool,
 }
 
+#[derive(serde::Serialize)]
 pub struct Generated {
     pub value: String,
     pub entropy_bits: f64,

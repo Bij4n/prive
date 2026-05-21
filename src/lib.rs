@@ -48,6 +48,9 @@ fn dispatch(cli: Cli) -> Result<()> {
             };
             if args.clip {
                 copy_and_tell(&g.value)?;
+            } else if args.json {
+                output::print_json(&g)?;
+                return Ok(());
             } else {
                 println!("{}", g.value);
             }

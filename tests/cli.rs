@@ -81,3 +81,14 @@ fn no_command_shows_help() {
         .stderr(predicate::str::contains("Usage: prive"))
         .stderr(predicate::str::contains("gen"));
 }
+
+#[test]
+fn gen_json() {
+    let out = prive()
+        .args(["gen", "--json", "--pin", "8"])
+        .output()
+        .unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert_eq!(v["value"].as_str().unwrap().len(), 8);
+    assert!(v["entropy_bits"].as_f64().unwrap() > 26.0);
+}
