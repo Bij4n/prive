@@ -22,6 +22,18 @@ pub enum Issue {
     Old { days: i64 },
 }
 
+impl Issue {
+    pub fn describe(&self) -> String {
+        match self {
+            Issue::Weak { score } => format!("weak (strength {score}/4)"),
+            Issue::Reused { with: 1 } => "reused by 1 other entry".to_string(),
+            Issue::Reused { with } => format!("reused by {with} other entries"),
+            Issue::Expired => "expired".to_string(),
+            Issue::Old { days } => format!("not changed for {days} days"),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Finding {
     pub path: String,
@@ -188,5 +200,22 @@ mod tests {
         e.username = "me2026".into();
         let r = audit(&[e], &Options::default());
         assert!(matches!(r.findings[0].issues[0], Issue::Weak { .. }));
+    }
+
+    #[test]
+    fn issues_read_as_plain_english() {
+        assert_eq!(Issue::Weak { score: 1 }.describe(), "weak (strength 1/4)");
+        assert_eq!(
+            Issue::Reused { with: 1 }.describe(),
+            "reused by 1 other entry"
+        );
+        assert_eq!(
+            Issue::Reused { with: 3 }.describe(),
+            "reused by 3 other entries"
+        );
+        assert_eq!(
+            Issue::Old { days: 400 }.describe(),
+            "not changed for 400 days"
+        );
     }
 }
