@@ -6,11 +6,13 @@
 use std::collections::HashMap;
 
 use chrono::{NaiveDateTime, Utc};
+use serde::Serialize;
 use sha2::{Digest, Sha256};
 
 use crate::entry::Entry;
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize)]
+#[serde(rename_all = "snake_case", tag = "kind")]
 pub enum Issue {
     /// Found this many times in known breaches.
     Breached { count: u64 },
@@ -37,13 +39,13 @@ impl Issue {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct Finding {
     pub path: String,
     pub issues: Vec<Issue>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct Report {
     pub checked: usize,
     pub skipped: usize,
