@@ -17,6 +17,48 @@ pub fn print_json<T: Serialize + ?Sized>(value: &T) -> Result<()> {
     Ok(())
 }
 
+/// `show --json`: every field, with the password and protected values left out (`null`)
+/// unless `reveal`.
+#[derive(Debug, Serialize)]
+pub struct ShowJson {
+    #[serde(flatten)]
+    pub summary: crate::entry::Summary,
+    pub password: Option<String>,
+    pub notes: String,
+    pub fields: Vec<FieldJson>,
+    pub attachments: Vec<String>,
+    pub modified: Option<String>,
+    pub expires: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct FieldJson {
+    pub name: String,
+    pub value: Option<String>,
+    pub protected: bool,
+}
+
+pub fn show_json(e: &Entry, reveal: bool) -> ShowJson {
+    let iso = |t: chrono::NaiveDateTime| t.format("%Y-%m-%dT%H:%M:%S").to_string();
+    ShowJson {
+        summary: e.summary(),
+        password: reveal.then(|| e.password.to_string()),
+        notes: e.notes.clone(),
+        fields: e
+            .custom
+            .iter()
+            .map(|c| FieldJson {
+                name: c.name.clone(),
+                value: (!c.protected || reveal).then(|| c.value.to_string()),
+                protected: c.protected,
+            })
+            .collect(),
+        attachments: e.attachments.clone(),
+        modified: e.modified.map(iso),
+        expires: e.expires.map(iso),
+    }
+}
+
 /// The `show` view of one entry. Passwords and protected fields stay hidden unless `reveal`.
 pub fn render_show(e: &Entry, reveal: bool) -> String {
     let mut out = String::new();
@@ -162,5 +204,22 @@ mod tests {
         assert!(text.contains("Files:     deploy.pem\n"));
         assert!(text.contains("Modified:  2026-05-01 14:03\n"));
         assert!(text.ends_with("Notes:\n  line one\n  line two\n"));
+    }
+
+    #[test]
+    fn show_json_leaves_secrets_null_unless_revealed() {
+        let mut e = github();
+        e.custom = vec![crate::entry::CustomField {
+            name: "pin".into(),
+            value: zeroize::Zeroizing::new("4321".into()),
+            protected: true,
+        }];
+        let hidden = serde_json::to_value(show_json(&e, false)).unwrap();
+        assert!(hidden["password"].is_null());
+        assert!(hidden["fields"][0]["value"].is_null());
+        assert_eq!(hidden["path"], "Work/GitHub");
+        let shown = serde_json::to_value(show_json(&e, true)).unwrap();
+        assert_eq!(shown["password"], "gh-Secret-1");
+        assert_eq!(shown["fields"][0]["value"], "4321");
     }
 }
