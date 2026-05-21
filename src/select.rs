@@ -51,6 +51,21 @@ fn ambiguous(query: &str, matches: &[&Entry]) -> Failure {
     }
 }
 
+/// Entries in `group` or any group below it, ignoring case. A leading or trailing `/` is ignored.
+pub fn in_group<'a>(entries: &'a [Entry], group: &str) -> Vec<&'a Entry> {
+    let g = group.trim_matches('/').to_lowercase();
+    if g.is_empty() {
+        return entries.iter().collect();
+    }
+    entries
+        .iter()
+        .filter(|e| {
+            let eg = e.group.to_lowercase();
+            eg == g || eg.starts_with(&format!("{g}/"))
+        })
+        .collect()
+}
+
 /// Case-insensitive substring search over the path (group and title), username, URL and tags.
 /// Titles that match exactly come first, then titles that start with the query, then the rest;
 /// within each, the original order is kept.
@@ -151,5 +166,19 @@ mod tests {
             .map(|e| e.uuid.as_str())
             .collect();
         assert_eq!(order, ["3", "2", "1"]);
+    }
+
+    #[test]
+    fn groups_include_their_subgroups_only() {
+        let e = vec![
+            entry("Work", "a", "1"),
+            entry("Work/Cloud", "b", "2"),
+            entry("Workshop", "c", "3"),
+            entry("", "d", "4"),
+        ];
+        let ids = |v: Vec<&Entry>| v.iter().map(|e| e.uuid.clone()).collect::<Vec<_>>();
+        assert_eq!(ids(in_group(&e, "work")), ["1", "2"]);
+        assert_eq!(ids(in_group(&e, "/Work/Cloud/")), ["2"]);
+        assert_eq!(in_group(&e, "").len(), 4);
     }
 }
