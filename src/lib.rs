@@ -6,6 +6,7 @@ pub mod clip;
 pub mod config;
 pub mod entry;
 pub mod error;
+pub mod fsutil;
 pub mod generate;
 pub mod hibp;
 pub mod otp;
