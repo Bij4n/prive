@@ -2,6 +2,7 @@
 
 use std::collections::HashMap;
 
+use chrono::{NaiveDateTime, Utc};
 use sha2::{Digest, Sha256};
 
 use crate::entry::Entry;
@@ -12,6 +13,8 @@ pub enum Issue {
     Weak { score: u8 },
     /// The same password is used by this many other entries.
     Reused { with: usize },
+    /// Not changed for this many days.
+    Old { days: i64 },
 }
 
 #[derive(Debug)]
@@ -26,7 +29,19 @@ pub struct Report {
     pub findings: Vec<Finding>,
 }
 
-pub fn audit(entries: &[Entry]) -> Report {
+pub struct Options {
+    /// Flag passwords not changed for more than this many days.
+    pub max_age_days: i64,
+}
+
+impl Default for Options {
+    fn default() -> Self {
+        Options { max_age_days: 365 }
+    }
+}
+
+pub fn audit(entries: &[Entry], opts: &Options) -> Report {
+    let now = Utc::now().naive_utc();
     // Compare hashes, not the passwords themselves, so no extra plaintext copies pile up.
     let mut by_password: HashMap<[u8; 32], usize> = HashMap::new();
     for e in entries {
@@ -44,6 +59,11 @@ pub fn audit(entries: &[Entry]) -> Report {
         if same > 1 {
             issues.push(Issue::Reused { with: same - 1 });
         }
+        if let Some(days) = age_days(e.modified, now)
+            && days > opts.max_age_days
+        {
+            issues.push(Issue::Old { days });
+        }
         if !issues.is_empty() {
             findings.push(Finding {
                 path: e.path(),
@@ -55,6 +75,10 @@ pub fn audit(entries: &[Entry]) -> Report {
         checked: entries.len(),
         findings,
     }
+}
+
+fn age_days(modified: Option<NaiveDateTime>, now: NaiveDateTime) -> Option<i64> {
+    modified.map(|m| (now - m).num_days())
 }
 
 fn fingerprint(password: &str) -> [u8; 32] {
@@ -78,7 +102,10 @@ mod tests {
 
     #[test]
     fn flags_weak_passwords_only() {
-        let r = audit(&[entry("a", "password1"), entry("b", "kH3@pN8%sJ5*eB1(cG7)")]);
+        let r = audit(
+            &[entry("a", "password1"), entry("b", "kH3@pN8%sJ5*eB1(cG7)")],
+            &Options::default(),
+        );
         assert_eq!(r.checked, 2);
         assert_eq!(r.findings.len(), 1);
         assert_eq!(r.findings[0].path, "a");
@@ -88,10 +115,32 @@ mod tests {
     #[test]
     fn flags_reuse_on_every_entry_involved() {
         let strong = "vX7#qL9!mZ2$wR4^tY6&";
-        let r = audit(&[entry("a", strong), entry("b", strong), entry("c", strong)]);
+        let r = audit(
+            &[entry("a", strong), entry("b", strong), entry("c", strong)],
+            &Options::default(),
+        );
         assert_eq!(r.findings.len(), 3);
         for f in &r.findings {
             assert_eq!(f.issues, vec![Issue::Reused { with: 2 }]);
         }
+    }
+
+    #[test]
+    fn flags_old_passwords() {
+        let mut old = entry("old", "vX7#qL9!mZ2$wR4^tY6&");
+        old.modified = Some(Utc::now().naive_utc() - chrono::Duration::days(400));
+        let mut fresh = entry("fresh", "kH3@pN8%sJ5*eB1(cG7)");
+        fresh.modified = Some(Utc::now().naive_utc() - chrono::Duration::days(3));
+        let r = audit(&[old, fresh], &Options::default());
+        assert_eq!(r.findings.len(), 1);
+        assert_eq!(r.findings[0].issues, vec![Issue::Old { days: 400 }]);
+        let strict = audit(&r_entries(), &Options { max_age_days: 1 });
+        assert_eq!(strict.findings.len(), 1);
+    }
+
+    fn r_entries() -> Vec<Entry> {
+        let mut e = entry("x", "kH3@pN8%sJ5*eB1(cG7)");
+        e.modified = Some(Utc::now().naive_utc() - chrono::Duration::days(3));
+        vec![e]
     }
 }
