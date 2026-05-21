@@ -1,6 +1,7 @@
 //! One password entry, independent of how it was read from disk.
 
 use chrono::NaiveDateTime;
+use serde::Serialize;
 use zeroize::Zeroizing;
 
 /// `Debug` never prints the password or protected values, so a stray `{:?}` in an error or
@@ -34,6 +35,19 @@ pub struct CustomField {
     pub value: Zeroizing<String>,
     /// KeePass "protected" flag: shown hidden by default.
     pub protected: bool,
+}
+
+/// What listings print: enough to find and name an entry, never a secret.
+#[derive(Debug, Serialize, PartialEq)]
+pub struct Summary {
+    pub path: String,
+    pub title: String,
+    pub group: String,
+    pub username: String,
+    pub url: String,
+    pub tags: Vec<String>,
+    pub uuid: String,
+    pub has_otp: bool,
 }
 
 impl Default for Entry {
@@ -87,6 +101,19 @@ impl std::fmt::Debug for CustomField {
 }
 
 impl Entry {
+    pub fn summary(&self) -> Summary {
+        Summary {
+            path: self.path(),
+            title: self.title.clone(),
+            group: self.group.clone(),
+            username: self.username.clone(),
+            url: self.url.clone(),
+            tags: self.tags.clone(),
+            uuid: self.uuid.clone(),
+            has_otp: crate::otp::Totp::from_entry(self).is_some(),
+        }
+    }
+
     /// `Group/Sub/Title`, or just `Title` at the root.
     pub fn path(&self) -> String {
         if self.group.is_empty() {
@@ -197,5 +224,20 @@ mod tests {
     #[test]
     fn entries_take_part_in_reports_by_default() {
         assert!(Entry::default().quality_check);
+    }
+
+    #[test]
+    fn summaries_carry_no_secrets() {
+        let mut e = sample();
+        e.custom = vec![CustomField {
+            name: "otp".into(),
+            value: Zeroizing::new("otpauth://totp/x?secret=JBSWY3DPEHPK3PXP".into()),
+            protected: true,
+        }];
+        let s = e.summary();
+        assert_eq!(s.path, "Work/Cloud/AWS");
+        assert!(s.has_otp);
+        let text = format!("{s:?}");
+        assert!(!text.contains("s3cret") && !text.contains("JBSWY3DP"));
     }
 }
