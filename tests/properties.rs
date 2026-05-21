@@ -77,3 +77,45 @@ proptest! {
         prop_assert!(g.entropy_bits > 0.0);
     }
 }
+
+fn entries(titles: &[String]) -> Vec<prive::entry::Entry> {
+    titles
+        .iter()
+        .enumerate()
+        .map(|(i, t)| prive::entry::Entry {
+            uuid: format!("{i:08}"),
+            group: if i % 2 == 0 {
+                "Work".into()
+            } else {
+                String::new()
+            },
+            title: t.clone(),
+            ..prive::entry::Entry::default()
+        })
+        .collect()
+}
+
+proptest! {
+    #[test]
+    fn selection_finds_every_unique_path(titles in prop::collection::hash_set("[a-zA-Z0-9 ]{1,12}", 1..20)) {
+        let titles: Vec<String> = titles.into_iter().collect();
+        let all = entries(&titles);
+        for e in &all {
+            // Paths are unique here; titles may collide case-insensitively, paths may not.
+            match prive::select::select(&all, &e.path()) {
+                Ok(found) => prop_assert_eq!(&found.uuid, &e.uuid),
+                Err(prive::error::Failure::Ambiguous { .. }) => {}
+                Err(other) => prop_assert!(false, "{other}"),
+            }
+            let by_uuid = prive::select::select(&all, &format!("uuid:{}", e.uuid)).unwrap();
+            prop_assert_eq!(&by_uuid.uuid, &e.uuid);
+        }
+    }
+
+    #[test]
+    fn selection_and_search_never_panic(titles in prop::collection::vec(".{0,16}", 0..10), q in ".{0,16}") {
+        let all = entries(&titles);
+        let _ = prive::select::select(&all, &q);
+        let _ = prive::select::search(&all, &q);
+    }
+}
