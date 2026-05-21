@@ -24,6 +24,8 @@ pub struct Entry {
     pub expires: Option<NaiveDateTime>,
     /// False when the user excluded the entry from password reports in KeePassXC.
     pub quality_check: bool,
+    /// Names of attached files. Their contents are not read.
+    pub attachments: Vec<String>,
 }
 
 #[derive(Clone)]
@@ -50,6 +52,7 @@ impl Default for Entry {
             expires: None,
             // KeePass's default: an entry takes part in reports unless excluded.
             quality_check: true,
+            attachments: Vec::new(),
         }
     }
 }
@@ -64,6 +67,7 @@ impl std::fmt::Debug for Entry {
             .field("password", &"<hidden>")
             .field("tags", &self.tags)
             .field("custom", &self.custom)
+            .field("attachments", &self.attachments)
             .finish_non_exhaustive()
     }
 }
