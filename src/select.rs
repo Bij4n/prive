@@ -52,9 +52,11 @@ fn ambiguous(query: &str, matches: &[&Entry]) -> Failure {
 }
 
 /// Case-insensitive substring search over the path (group and title), username, URL and tags.
+/// Titles that match exactly come first, then titles that start with the query, then the rest;
+/// within each, the original order is kept.
 pub fn search<'a>(entries: &'a [Entry], query: &str) -> Vec<&'a Entry> {
     let q = query.to_lowercase();
-    entries
+    let mut hits: Vec<&Entry> = entries
         .iter()
         .filter(|e| {
             e.path().to_lowercase().contains(&q)
@@ -62,7 +64,18 @@ pub fn search<'a>(entries: &'a [Entry], query: &str) -> Vec<&'a Entry> {
                 || e.url.to_lowercase().contains(&q)
                 || e.tags.iter().any(|t| t.to_lowercase().contains(&q))
         })
-        .collect()
+        .collect();
+    hits.sort_by_key(|e| {
+        let t = e.title.to_lowercase();
+        if t == q {
+            0
+        } else if t.starts_with(&q) {
+            1
+        } else {
+            2
+        }
+    });
+    hits
 }
 
 #[cfg(test)]
@@ -124,5 +137,19 @@ mod tests {
         let e = sample();
         assert!(matches!(select(&e, "nope"), Err(Failure::NotFound(_))));
         assert!(matches!(select(&e, "uuid:zz"), Err(Failure::NotFound(_))));
+    }
+
+    #[test]
+    fn exact_and_prefix_title_matches_come_first() {
+        let e = vec![
+            entry("Old", "my-github-backup", "1"),
+            entry("Work", "github-enterprise", "2"),
+            entry("", "GitHub", "3"),
+        ];
+        let order: Vec<&str> = search(&e, "github")
+            .iter()
+            .map(|e| e.uuid.as_str())
+            .collect();
+        assert_eq!(order, ["3", "2", "1"]);
     }
 }
