@@ -13,6 +13,8 @@ pub enum Issue {
     Weak { score: u8 },
     /// The same password is used by this many other entries.
     Reused { with: usize },
+    /// Past its expiry date.
+    Expired,
     /// Not changed for this many days.
     Old { days: i64 },
 }
@@ -58,6 +60,11 @@ pub fn audit(entries: &[Entry], opts: &Options) -> Report {
         let same = by_password[&fingerprint(&e.password)];
         if same > 1 {
             issues.push(Issue::Reused { with: same - 1 });
+        }
+        if let Some(exp) = e.expires
+            && exp < now
+        {
+            issues.push(Issue::Expired);
         }
         if let Some(days) = age_days(e.modified, now)
             && days > opts.max_age_days
@@ -142,5 +149,16 @@ mod tests {
         let mut e = entry("x", "kH3@pN8%sJ5*eB1(cG7)");
         e.modified = Some(Utc::now().naive_utc() - chrono::Duration::days(3));
         vec![e]
+    }
+
+    #[test]
+    fn flags_expired_entries() {
+        let mut gone = entry("gone", "kH3@pN8%sJ5*eB1(cG7)");
+        gone.expires = Some(Utc::now().naive_utc() - chrono::Duration::days(1));
+        let mut later = entry("later", "vX7#qL9!mZ2$wR4^tY6&");
+        later.expires = Some(Utc::now().naive_utc() + chrono::Duration::days(30));
+        let r = audit(&[gone, later], &Options::default());
+        assert_eq!(r.findings.len(), 1);
+        assert_eq!(r.findings[0].issues, vec![Issue::Expired]);
     }
 }
