@@ -10,6 +10,7 @@ pub mod fsutil;
 pub mod generate;
 pub mod hibp;
 pub mod otp;
+pub mod output;
 pub mod select;
 pub mod unlock;
 
