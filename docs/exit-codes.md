@@ -1,0 +1,27 @@
+# Exit codes
+
+prive's exit codes are part of its interface: scripts can rely on them.
+
+| Code | Meaning |
+|---|---|
+| 0 | Success |
+| 1 | Any other error (unreadable file, bad option value, network failure, ...) |
+| 2 | Usage error: unknown command or option, missing argument |
+| 3 | No entry matches the name given |
+| 4 | The name matches more than one entry; the candidates are listed on stderr |
+| 5 | Wrong password or key file, or a password was needed but stdin is not a terminal |
+
+Errors are printed to stderr, prefixed with `prive:`. Nothing is printed to stdout when a
+command fails, so `$(prive get ...)` is empty on failure rather than holding an error message.
+
+## Examples
+
+```bash
+if ! pw=$(prive get "Work/GitHub"); then
+  case $? in
+    3) echo "no such entry" ;;
+    4) echo "be more specific" ;;
+    5) echo "wrong password" ;;
+  esac
+fi
+```
