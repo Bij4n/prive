@@ -9,6 +9,8 @@ use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
 pub const DEFAULT_CLIPBOARD_SECONDS: u64 = 20;
+/// Shortest and longest clipboard timeouts accepted from the config file.
+pub const CLIPBOARD_SECONDS_RANGE: std::ops::RangeInclusive<u64> = 1..=600;
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 #[serde(default)]
@@ -42,7 +44,18 @@ impl Config {
     pub fn load_from(path: &Path) -> Result<Config> {
         let text = std::fs::read_to_string(path)
             .with_context(|| format!("reading config {}", path.display()))?;
-        toml::from_str(&text).with_context(|| format!("parsing config {}", path.display()))
+        let cfg: Config =
+            toml::from_str(&text).with_context(|| format!("parsing config {}", path.display()))?;
+        if let Some(n) = cfg.clipboard_seconds {
+            anyhow::ensure!(
+                CLIPBOARD_SECONDS_RANGE.contains(&n),
+                "clipboard_seconds in {} must be between {} and {}",
+                path.display(),
+                CLIPBOARD_SECONDS_RANGE.start(),
+                CLIPBOARD_SECONDS_RANGE.end()
+            );
+        }
+        Ok(cfg)
     }
 
     pub fn save(&self) -> Result<PathBuf> {
@@ -80,5 +93,17 @@ mod tests {
         let cfg = Config::default();
         assert_eq!(cfg.clipboard_seconds(), DEFAULT_CLIPBOARD_SECONDS);
         assert!(cfg.db.is_none());
+    }
+
+    #[test]
+    fn clipboard_timeout_must_be_sensible() {
+        let dir = std::env::temp_dir().join(format!("prive-cfg-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let p = dir.join("config.toml");
+        std::fs::write(&p, "clipboard_seconds = 0\n").unwrap();
+        assert!(Config::load_from(&p).is_err());
+        std::fs::write(&p, "clipboard_seconds = 30\n").unwrap();
+        assert_eq!(Config::load_from(&p).unwrap().clipboard_seconds(), 30);
+        std::fs::remove_dir_all(&dir).ok();
     }
 }
