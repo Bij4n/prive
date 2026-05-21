@@ -5,7 +5,7 @@ use zeroize::Zeroizing;
 
 /// `Debug` never prints the password or protected values, so a stray `{:?}` in an error or
 /// log can't leak them.
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct Entry {
     pub uuid: String,
     /// Group path without the root group, e.g. `Work/Cloud`. Empty for the root.
@@ -22,6 +22,8 @@ pub struct Entry {
     pub modified: Option<NaiveDateTime>,
     /// Set only when the entry has expiry switched on.
     pub expires: Option<NaiveDateTime>,
+    /// False when the user excluded the entry from password reports in KeePassXC.
+    pub quality_check: bool,
 }
 
 #[derive(Clone)]
@@ -30,6 +32,26 @@ pub struct CustomField {
     pub value: Zeroizing<String>,
     /// KeePass "protected" flag: shown hidden by default.
     pub protected: bool,
+}
+
+impl Default for Entry {
+    fn default() -> Self {
+        Entry {
+            uuid: String::new(),
+            group: String::new(),
+            title: String::new(),
+            username: String::new(),
+            url: String::new(),
+            notes: String::new(),
+            password: Zeroizing::new(String::new()),
+            tags: Vec::new(),
+            custom: Vec::new(),
+            modified: None,
+            expires: None,
+            // KeePass's default: an entry takes part in reports unless excluded.
+            quality_check: true,
+        }
+    }
 }
 
 impl std::fmt::Debug for Entry {
@@ -166,5 +188,10 @@ mod tests {
         assert!(!shown.contains("4321"));
         assert!(shown.contains("basic"));
         assert!(shown.contains("Work/Cloud/AWS"));
+    }
+
+    #[test]
+    fn entries_take_part_in_reports_by_default() {
+        assert!(Entry::default().quality_check);
     }
 }
