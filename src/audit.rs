@@ -61,7 +61,9 @@ pub fn audit(entries: &[Entry], opts: &Options) -> Report {
     let mut findings = Vec::new();
     for e in &checked {
         let mut issues = Vec::new();
-        let score = zxcvbn::zxcvbn(&e.password, &[]).score() as u8;
+        // A password built from the site name or username is weaker than it looks.
+        let hints = [e.title.as_str(), e.username.as_str(), e.url.as_str()];
+        let score = zxcvbn::zxcvbn(&e.password, &hints).score() as u8;
         if score < 3 {
             issues.push(Issue::Weak { score });
         }
@@ -178,5 +180,13 @@ mod tests {
         let r = audit(&[excluded, entry("y", "")], &Options::default());
         assert_eq!((r.checked, r.skipped), (0, 2));
         assert!(r.findings.is_empty());
+    }
+
+    #[test]
+    fn passwords_made_from_the_entry_itself_are_weak() {
+        let mut e = entry("Spotify", "SpotifyMe2026");
+        e.username = "me2026".into();
+        let r = audit(&[e], &Options::default());
+        assert!(matches!(r.findings[0].issues[0], Issue::Weak { .. }));
     }
 }
