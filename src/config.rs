@@ -73,6 +73,37 @@ impl Config {
     }
 }
 
+/// The database a command opens, and its key file.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Target {
+    pub db: PathBuf,
+    pub keyfile: Option<PathBuf>,
+}
+
+impl Config {
+    /// `--db` (or `PRIVE_DB`) wins over the config file. A key file from the config file only
+    /// goes with the config file's database, never with one named on the command line.
+    pub fn target(&self, db: Option<&Path>, keyfile: Option<&Path>) -> Result<Target> {
+        match db {
+            Some(d) => Ok(Target {
+                db: d.to_path_buf(),
+                keyfile: keyfile.map(Path::to_path_buf),
+            }),
+            None => {
+                let db = self.db.clone().context(
+                    "no database given: use --db, set PRIVE_DB, or run `prive init <file>`",
+                )?;
+                Ok(Target {
+                    db,
+                    keyfile: keyfile
+                        .map(Path::to_path_buf)
+                        .or_else(|| self.keyfile.clone()),
+                })
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -105,5 +136,34 @@ mod tests {
         std::fs::write(&p, "clipboard_seconds = 30\n").unwrap();
         assert_eq!(Config::load_from(&p).unwrap().clipboard_seconds(), 30);
         std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn command_line_database_wins_and_keeps_its_own_key_file() {
+        let cfg = Config {
+            db: Some("/home/me/main.kdbx".into()),
+            keyfile: Some("/home/me/main.key".into()),
+            ..Config::default()
+        };
+        let from_cfg = cfg.target(None, None).unwrap();
+        assert_eq!(from_cfg.db, Path::new("/home/me/main.kdbx"));
+        assert_eq!(
+            from_cfg.keyfile.as_deref(),
+            Some(Path::new("/home/me/main.key"))
+        );
+
+        let other = cfg
+            .target(Some(Path::new("/tmp/other.kdbx")), None)
+            .unwrap();
+        assert_eq!(
+            other.keyfile, None,
+            "the config key file belongs to the config database"
+        );
+
+        let err = Config::default()
+            .target(None, None)
+            .unwrap_err()
+            .to_string();
+        assert!(err.contains("prive init"));
     }
 }
