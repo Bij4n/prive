@@ -35,6 +35,24 @@ pub fn render_show(e: &Entry, reveal: bool) -> String {
         line("TOTP:", "yes (prive otp shows the code)");
     }
     line("Tags:", &e.tags.join(", "));
+    if !e.custom.is_empty() {
+        out.push_str("Fields:\n");
+        let width = e
+            .custom
+            .iter()
+            .map(|c| c.name.chars().count())
+            .max()
+            .unwrap_or(0)
+            + 1;
+        for c in &e.custom {
+            let value = if c.protected && !reveal {
+                HIDDEN
+            } else {
+                c.value.as_str()
+            };
+            out.push_str(&format!("  {:<width$} {value}\n", format!("{}:", c.name)));
+        }
+    }
     out
 }
 
@@ -85,5 +103,27 @@ mod tests {
             ..Default::default()
         };
         assert_eq!(render_show(&e, false), "Path:      Bare\n");
+    }
+
+    #[test]
+    fn custom_fields_hide_only_protected_values() {
+        let mut e = github();
+        e.custom = vec![
+            crate::entry::CustomField {
+                name: "API key".into(),
+                value: zeroize::Zeroizing::new("k-123".into()),
+                protected: true,
+            },
+            crate::entry::CustomField {
+                name: "plan".into(),
+                value: zeroize::Zeroizing::new("basic".into()),
+                protected: false,
+            },
+        ];
+        let text = render_show(&e, false);
+        assert!(text.contains("Fields:\n  API key: ********"));
+        assert!(text.contains("  plan:    basic"));
+        assert!(!text.contains("k-123"));
+        assert!(render_show(&e, true).contains("API key: k-123"));
     }
 }
