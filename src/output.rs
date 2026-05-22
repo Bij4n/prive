@@ -9,12 +9,21 @@ use crate::entry::Entry;
 
 const HIDDEN: &str = "******** (--reveal shows it)";
 
+/// Write text to stdout. A closed pipe (`prive ls | head -1`) is not an error: the reader
+/// has what it wanted, so prive stops quietly instead of panicking like `println!` does.
+pub fn print(text: &str) -> Result<()> {
+    let mut out = std::io::stdout().lock();
+    match out.write_all(text.as_bytes()).and_then(|()| out.flush()) {
+        Err(e) if e.kind() == std::io::ErrorKind::BrokenPipe => std::process::exit(0),
+        other => Ok(other?),
+    }
+}
+
 /// Pretty JSON on stdout, one trailing newline.
 pub fn print_json<T: Serialize + ?Sized>(value: &T) -> Result<()> {
-    let mut out = std::io::stdout().lock();
-    serde_json::to_writer_pretty(&mut out, value)?;
-    writeln!(out)?;
-    Ok(())
+    let mut text = serde_json::to_string_pretty(value)?;
+    text.push('\n');
+    print(&text)
 }
 
 /// One line per entry: the path, and the username after two spaces when there is one.
