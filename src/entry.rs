@@ -50,6 +50,11 @@ pub struct Summary {
     pub has_otp: bool,
 }
 
+/// Sort by path, ignoring case, the order listings use.
+pub fn sort_by_path(entries: &mut [Entry]) {
+    entries.sort_by_cached_key(|e| e.path().to_lowercase());
+}
+
 impl Default for Entry {
     fn default() -> Self {
         Entry {
@@ -239,5 +244,23 @@ mod tests {
         assert!(s.has_otp);
         let text = format!("{s:?}");
         assert!(!text.contains("s3cret") && !text.contains("JBSWY3DP"));
+    }
+
+    #[test]
+    fn sorting_ignores_case() {
+        let mk = |g: &str, t: &str| Entry {
+            group: g.into(),
+            title: t.into(),
+            ..Entry::default()
+        };
+        let mut v = vec![
+            mk("work", "b"),
+            mk("", "Zed"),
+            mk("Work", "A"),
+            mk("", "apple"),
+        ];
+        sort_by_path(&mut v);
+        let paths: Vec<String> = v.iter().map(Entry::path).collect();
+        assert_eq!(paths, ["apple", "Work/A", "work/b", "Zed"]);
     }
 }
