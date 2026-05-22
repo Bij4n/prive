@@ -4,8 +4,10 @@
 > Version 1.0 will be a terminal client for KeePass (`.kdbx`) databases, the same files
 > KeePassXC, KeePassDX and Strongbox open.
 >
-> The rewrite so far provides `prive gen` (passwords, EFF passphrases, PINs). Everything
-> below this notice describes 0.5, which is kept at the tag `legacy-0.5.0`.
+> The rewrite so far provides `prive gen` (passwords, EFF passphrases, PINs; `--clip` copies
+> and clears after a timeout). Notes on the new design are in [`docs/`](docs/): exit codes,
+> scripting, TOTP formats, clipboard, configuration and security. Everything below this
+> notice describes 0.5, which is kept at the tag `legacy-0.5.0`.
 >
 > **Do not use 0.5 for real secrets.** Known problems in 0.5:
 > - `prive pgp generate` stores the secret key unencrypted, even though it asks for a
