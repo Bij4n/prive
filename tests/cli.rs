@@ -92,3 +92,18 @@ fn gen_json() {
     assert_eq!(v["value"].as_str().unwrap().len(), 8);
     assert!(v["entropy_bits"].as_f64().unwrap() > 26.0);
 }
+
+#[test]
+fn help_documents_the_exit_codes() {
+    prive()
+        .arg("--help")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("3 not found"))
+        .stdout(predicate::str::contains("4 ambiguous entry"));
+}
+
+#[test]
+fn gen_cannot_both_copy_and_print_json() {
+    prive().args(["gen", "--clip", "--json"]).assert().code(2);
+}
