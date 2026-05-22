@@ -13,6 +13,14 @@ The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `l
 - TOTP code generation for every way KeePass apps store secrets (otpauth URIs, KeeOtp,
   KeePass 2 TimeOtp fields, legacy KeePassXC fields), including Steam Guard codes
 - Stable exit codes: 0 ok, 1 error, 2 usage, 3 not found, 4 ambiguous, 5 credentials
+- `gen --clip` copies instead of printing; a detached helper clears the clipboard after the
+  configured timeout, and only if it still holds the copied secret. Copies are marked
+  "don't keep in history" where supported
+- `gen --json`
+- Password report engine (weak, reused, old, expired, optional Have I Been Pwned check) and
+  the show and list views, ready for the database commands
+- `docs/`: exit codes, scripting, TOTP formats, clipboard, configuration, security notes
+- CI: minimum supported Rust (1.88) job and a weekly RustSec advisory check
 
 ### Fixed
 - CI: the Windows test job no longer hangs until the 6-hour limit (two tests reached a console password prompt); every job has a timeout
