@@ -1,0 +1,31 @@
+# Security notes
+
+What prive protects against, and what it doesn't. This will grow as the rewrite does.
+
+## What prive relies on
+
+- **The KeePass file format** (KDBX 4) for encryption at rest. prive reads and, later, writes
+  the same files as KeePassXC, so the strength of a database is the strength of its master
+  password, key file and key-derivation settings.
+- **Your operating system account.** Anything that can run code as you can read prive's
+  memory, your clipboard and your terminal. prive does not try to defend against that.
+
+## What prive does
+
+- Never prints a password unless asked: `show` hides passwords and protected fields unless
+  `--reveal`; `ls` and `search` never include them, not even in `--json`.
+- Never puts the master password on the command line or in an environment variable. It comes
+  from a hidden prompt, from stdin (`--password-stdin`) or from a file you name.
+- Never waits on a prompt nobody can answer: without a terminal it fails with exit code 5.
+- Clears copied secrets from the clipboard after a timeout, unless you have copied something
+  else since, and asks the clipboard not to keep them in its history.
+- Writes new files atomically (temporary file, flush, rename), readable only by you on Unix.
+- Keeps secrets in memory that is wiped when it is freed (`zeroize`), and keeps them out of
+  debug output.
+- The only network access is the optional Have I Been Pwned check (`audit --hibp`), which
+  sends 5 hex characters of each password's SHA-1 hash and nothing else.
+
+## Reporting a problem
+
+Please open a GitHub issue marked "security", or, for anything sensitive, ask for a private
+contact in the issue without the details.
