@@ -52,7 +52,7 @@ fn dispatch(cli: Cli) -> Result<()> {
                 output::print_json(&g)?;
                 return Ok(());
             } else {
-                println!("{}", g.value);
+                output::print(&format!("{}\n", g.value))?;
             }
             if std::io::stderr().is_terminal() {
                 eprintln!("({:.0} bits of entropy)", g.entropy_bits);
