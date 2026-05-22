@@ -119,3 +119,20 @@ proptest! {
         let _ = prive::select::search(&all, &q);
     }
 }
+
+proptest! {
+    #[test]
+    fn seconds_left_is_within_the_period(period in 1u64..=600) {
+        let t = Totp::new(vec![7; 20], period, Encoder::Digits(6), Algorithm::Sha1).unwrap();
+        let (_, left) = t.now();
+        prop_assert!(left >= 1 && left <= period);
+    }
+
+    #[test]
+    fn steam_codes_are_five_steam_letters(time in any::<u32>()) {
+        let t = Totp::new(vec![3; 20], 30, Encoder::Steam, Algorithm::Sha1).unwrap();
+        let code = t.code_at(u64::from(time));
+        prop_assert_eq!(code.len(), 5);
+        prop_assert!(code.bytes().all(|b| b"23456789BCDFGHJKMNPQRTVWXY".contains(&b)));
+    }
+}
