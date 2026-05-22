@@ -37,6 +37,16 @@ impl KeySource {
         })
     }
 
+    /// Credentials for a resolved target: the target's key file, and the password from the
+    /// first available source.
+    pub fn for_target(password_stdin: bool, target: &crate::config::Target) -> Result<Credentials> {
+        KeySource {
+            password_stdin,
+            keyfile: target.keyfile.clone(),
+        }
+        .credentials(&target.db)
+    }
+
     /// Ask for a new password twice (or read it once from a non-interactive source).
     pub fn new_password(&self) -> Result<Zeroizing<String>> {
         if self.password_stdin || std::env::var_os("PRIVE_PASSWORD_FILE").is_some() {
