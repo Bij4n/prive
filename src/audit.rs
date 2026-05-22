@@ -26,6 +26,13 @@ pub enum Issue {
     Old { days: i64 },
 }
 
+impl Report {
+    /// No entry needs attention.
+    pub fn is_clean(&self) -> bool {
+        self.findings.is_empty()
+    }
+}
+
 impl Issue {
     pub fn describe(&self) -> String {
         match self {
@@ -270,5 +277,18 @@ mod tests {
         .unwrap();
         let order: Vec<&str> = r.findings.iter().map(|f| f.path.as_str()).collect();
         assert_eq!(order, ["zzz-weak", "m1", "m2", "aaa-old"]);
+    }
+
+    #[test]
+    fn a_strong_unique_set_is_clean() {
+        let r = audit(
+            &[
+                entry("a", "vX7#qL9!mZ2$wR4^tY6&"),
+                entry("b", "kH3@pN8%sJ5*eB1(cG7)"),
+            ],
+            &Options::default(),
+        )
+        .unwrap();
+        assert!(r.is_clean());
     }
 }
