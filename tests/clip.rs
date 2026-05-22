@@ -48,3 +48,23 @@ fn leaves_a_newer_copy_alone() {
     std::thread::sleep(Duration::from_millis(2500));
     assert_eq!(std::fs::read_to_string(&clip).unwrap(), "something else");
 }
+
+#[test]
+fn a_clipboard_that_cannot_be_written_is_an_error() {
+    let dir = tempfile::tempdir().unwrap();
+    std::fs::write(dir.path().join("config.toml"), "clipboard_seconds = 1\n").unwrap();
+    let out = Command::cargo_bin("prive")
+        .unwrap()
+        .env("PRIVE_CONFIG", dir.path().join("config.toml"))
+        .env(
+            "PRIVE_CLIPBOARD_FILE",
+            dir.path().join("missing/dir/clipboard"),
+        )
+        .args(["gen", "--clip"])
+        .output()
+        .unwrap();
+    assert_eq!(out.status.code(), Some(1));
+    assert!(out.stdout.is_empty());
+    let err = String::from_utf8(out.stderr).unwrap();
+    assert!(err.contains("clipboard"), "{err}");
+}
