@@ -44,6 +44,29 @@ pub fn render_list(entries: &[&Entry]) -> String {
     out
 }
 
+/// The `audit` report for people: one block per entry with problems, worst first, and a
+/// closing summary line.
+pub fn render_audit(r: &crate::audit::Report) -> String {
+    let mut out = String::new();
+    for f in &r.findings {
+        out.push_str(&format!("{}\n", f.path));
+        for i in &f.issues {
+            out.push_str(&format!("  - {}\n", i.describe()));
+        }
+    }
+    let skipped = if r.skipped > 0 {
+        format!(", {} skipped (excluded or no password)", r.skipped)
+    } else {
+        String::new()
+    };
+    out.push_str(&format!(
+        "{} of {} checked entries need attention{skipped}\n",
+        r.findings.len(),
+        r.checked
+    ));
+    out
+}
+
 /// `show --json`: every field, with the password and protected values left out (`null`)
 /// unless `reveal`.
 #[derive(Debug, Serialize)]
@@ -262,5 +285,25 @@ mod tests {
         };
         assert_eq!(render_list(&[&a, &b]), "Work/GitHub  demo\nBank\n");
         assert_eq!(render_list(&[]), "");
+    }
+
+    #[test]
+    fn audit_report_text() {
+        let r = crate::audit::Report {
+            checked: 3,
+            skipped: 1,
+            findings: vec![crate::audit::Finding {
+                path: "Work/GitHub".into(),
+                issues: vec![
+                    crate::audit::Issue::Weak { score: 1 },
+                    crate::audit::Issue::Reused { with: 1 },
+                ],
+            }],
+        };
+        assert_eq!(
+            render_audit(&r),
+            "Work/GitHub\n  - weak (strength 1/4)\n  - reused by 1 other entry\n\
+             1 of 3 checked entries need attention, 1 skipped (excluded or no password)\n"
+        );
     }
 }
