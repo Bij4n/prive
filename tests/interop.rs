@@ -73,3 +73,14 @@ fn totp_codes_match_keepassxc() {
         "otpauth://totp/Bank?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ&period=60&digits=8&algorithm=SHA256",
     );
 }
+
+#[test]
+fn steam_codes_match_keepassxc() {
+    if !available() {
+        return;
+    }
+    same_code_as_keepassxc(
+        "Work/Cloud/Steam",
+        "otpauth://totp/Steam:gamer?secret=JBSWY3DPEHPK3PXP&encoder=steam",
+    );
+}
