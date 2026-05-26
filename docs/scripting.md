@@ -20,6 +20,9 @@ non-interactively, use one of:
 - `PRIVE_PASSWORD_FILE=<path>`: the first line of that file is the password. Keep the file
   readable by you only.
 
+A database protected by a key file alone takes `--no-password` (with `--keyfile`), and
+prive won't ask for a password at all.
+
 There is deliberately no environment variable that holds the password itself: other processes
 running as the same user can read a process's environment.
 

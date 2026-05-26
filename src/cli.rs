@@ -35,8 +35,12 @@ pub struct Global {
     pub keyfile: Option<PathBuf>,
 
     /// Read the master password from the first line of stdin
-    #[arg(long, global = true)]
+    #[arg(long, global = true, conflicts_with = "no_password")]
     pub password_stdin: bool,
+
+    /// The database has no password, only a key file
+    #[arg(long, global = true, requires = "keyfile")]
+    pub no_password: bool,
 }
 
 #[derive(Debug, Subcommand)]

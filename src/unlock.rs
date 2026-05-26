@@ -20,6 +20,8 @@ use crate::error::Failure;
 #[derive(Debug, Clone, Default)]
 pub struct KeySource {
     pub password_stdin: bool,
+    /// Key-file-only database: don't ask for a password at all.
+    pub no_password: bool,
     pub keyfile: Option<PathBuf>,
 }
 
@@ -30,18 +32,26 @@ pub struct Credentials {
 
 impl KeySource {
     pub fn credentials(&self, db_path: &Path) -> Result<Credentials> {
-        let password = self.password(&format!("Password for {}: ", db_path.display()))?;
+        let password = if self.no_password {
+            None
+        } else {
+            Some(self.password(&format!("Password for {}: ", db_path.display()))?)
+        };
         Ok(Credentials {
-            password: Some(password),
+            password,
             keyfile: self.keyfile.clone(),
         })
     }
 
     /// Credentials for a resolved target: the target's key file, and the password from the
     /// first available source.
-    pub fn for_target(password_stdin: bool, target: &crate::config::Target) -> Result<Credentials> {
+    pub fn for_target(
+        global: &crate::cli::Global,
+        target: &crate::config::Target,
+    ) -> Result<Credentials> {
         KeySource {
-            password_stdin,
+            password_stdin: global.password_stdin,
+            no_password: global.no_password,
             keyfile: target.keyfile.clone(),
         }
         .credentials(&target.db)
