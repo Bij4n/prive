@@ -9,6 +9,16 @@ repository = "https://github.com/Bij4n/prive"
 readme = "README.md"
 keywords = ["password-manager", "keepass", "kdbx", "totp", "cli"]
 categories = ["command-line-utilities"]
+# What goes into the crates.io package: the code, the word list and its licence note, docs.
+include = [
+  "/src",
+  "/assets",
+  "/examples",
+  "/docs",
+  "/README.md",
+  "/CHANGELOG.md",
+  "/LICENSE",
+]
 
 [dependencies]
 anyhow = "1"
