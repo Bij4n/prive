@@ -124,3 +124,22 @@ fn completions_for_each_shell() {
         );
     }
 }
+
+#[test]
+fn gen_without_look_alikes_or_symbols() {
+    let out = prive()
+        .args([
+            "gen",
+            "--length",
+            "200",
+            "--avoid-ambiguous",
+            "--no-symbols",
+        ])
+        .output()
+        .unwrap();
+    let pw = String::from_utf8(out.stdout).unwrap();
+    let pw = pw.trim_end();
+    assert_eq!(pw.chars().count(), 200);
+    assert!(pw.chars().all(|c| c.is_ascii_alphanumeric()));
+    assert!(!pw.chars().any(|c| "0O1lI".contains(c)));
+}
