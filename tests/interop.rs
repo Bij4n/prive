@@ -84,3 +84,25 @@ fn steam_codes_match_keepassxc() {
         "otpauth://totp/Steam:gamer?secret=JBSWY3DPEHPK3PXP&encoder=steam",
     );
 }
+
+/// The fixtures are the formats their names promise (checked from the header, so this runs
+/// without keepassxc-cli too).
+#[test]
+fn fixtures_are_the_formats_they_claim() {
+    for (name, major, minor) in [
+        ("kdbx31.kdbx", 3u16, 1u16),
+        ("kdbx40.kdbx", 4, 0),
+        ("kdbx41.kdbx", 4, 1),
+        ("keyfile.kdbx", 3, 1),
+    ] {
+        let head = std::fs::read(fixture(name)).unwrap();
+        assert_eq!(
+            &head[..4],
+            &[0x03, 0xd9, 0xa2, 0x9a],
+            "{name}: not a KeePass file"
+        );
+        let minor_found = u16::from_le_bytes([head[8], head[9]]);
+        let major_found = u16::from_le_bytes([head[10], head[11]]);
+        assert_eq!((major_found, minor_found), (major, minor), "{name}");
+    }
+}
