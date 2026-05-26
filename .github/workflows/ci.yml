@@ -65,6 +65,16 @@ jobs:
       - name: Check formatting
         run: cargo fmt -- --check
 
+  deny:
+    name: Licences and sources
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          command: check licenses bans sources
+
   completions:
     name: Shell completions and man pages
     runs-on: ubuntu-latest
