@@ -106,3 +106,32 @@ fn fixtures_are_the_formats_they_claim() {
         assert_eq!((major_found, minor_found), (major, minor), "{name}");
     }
 }
+
+#[test]
+fn keepassxc_reads_the_fixtures_we_test_against() {
+    if !available() {
+        return;
+    }
+    let listing = keepassxc(&["ls", "-q", "-R", "-f", &fixture("kdbx41.kdbx")]).unwrap();
+    for path in [
+        "Bank",
+        "Work/GitHub",
+        "Work/Cloud/Steam",
+        "Personal/GitHub",
+        "Personal/Legacy 2FA",
+    ] {
+        assert!(
+            listing.lines().any(|l| l.trim() == path),
+            "{path} missing:\n{listing}"
+        );
+    }
+    let kf = keepassxc(&[
+        "ls",
+        "-q",
+        "-k",
+        &fixture("keyfile.keyx"),
+        &fixture("keyfile.kdbx"),
+    ])
+    .unwrap();
+    assert!(kf.contains("Key file entry"));
+}
