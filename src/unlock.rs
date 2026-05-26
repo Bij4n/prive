@@ -122,4 +122,17 @@ mod tests {
         assert_eq!(*first_line("hunter2\r\n"), "hunter2");
         assert_eq!(*first_line(""), "");
     }
+
+    #[test]
+    fn key_file_only_databases_never_ask_for_a_password() {
+        let src = KeySource {
+            password_stdin: false,
+            no_password: true,
+            keyfile: Some(PathBuf::from("db.keyx")),
+        };
+        // No terminal in tests: if this tried to prompt it would fail with NoTerminal.
+        let creds = src.credentials(Path::new("db.kdbx")).unwrap();
+        assert!(creds.password.is_none());
+        assert_eq!(creds.keyfile.as_deref(), Some(Path::new("db.keyx")));
+    }
 }
