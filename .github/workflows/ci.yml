@@ -65,6 +65,19 @@ jobs:
       - name: Check formatting
         run: cargo fmt -- --check
 
+  interop:
+    name: Against KeePassXC
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Install keepassxc-cli
+        run: sudo apt-get update && sudo apt-get install -y keepassxc
+      - name: Interop tests
+        run: cargo test --locked --test interop -- --nocapture
+
   deny:
     name: Licences and sources
     runs-on: ubuntu-latest
