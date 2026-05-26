@@ -1,0 +1,7 @@
+# Test databases and key files are binary: never convert line endings (a Windows checkout
+# with autocrlf would otherwise corrupt them).
+*.kdbx binary
+*.keyx binary
+# Keep the XML source and scripts byte-identical across systems.
+tests/fixtures/source.xml text eol=lf
+*.sh text eol=lf
