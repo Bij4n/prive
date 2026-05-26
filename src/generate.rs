@@ -80,6 +80,10 @@ pub fn password(spec: &CharsetSpec) -> anyhow::Result<Generated> {
 /// Words from the EFF list joined by `separator`.
 pub fn passphrase(count: usize, separator: &str, capitalize: bool) -> anyhow::Result<Generated> {
     anyhow::ensure!((3..=64).contains(&count), "use between 3 and 64 words");
+    anyhow::ensure!(
+        !separator.contains(['\n', '\r']),
+        "the separator can't contain a line break"
+    );
     let list = words();
     let mut rng = rand::rng();
     let chosen: Vec<String> = (0..count)
@@ -199,5 +203,12 @@ mod tests {
         s.avoid_ambiguous = true;
         let g = password(&s).unwrap();
         assert!(!g.value.chars().any(|c| AMBIGUOUS.contains(c)));
+    }
+
+    #[test]
+    fn separators_stay_on_one_line() {
+        assert!(passphrase(4, "\n", false).is_err());
+        assert!(passphrase(4, "", false).is_ok());
+        assert!(passphrase(4, " / ", false).is_ok());
     }
 }
