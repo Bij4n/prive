@@ -65,6 +65,22 @@ jobs:
       - name: Check formatting
         run: cargo fmt -- --check
 
+  completions:
+    name: Shell completions and man pages
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Generate completions for every shell
+        run: |
+          for shell in bash zsh fish elvish powershell; do
+            cargo run --locked -q -- completions "$shell" > /dev/null
+          done
+      - name: Generate man pages
+        run: cargo run --locked -q --example man -- man/
+
   build-release:
     name: Build Release (${{ matrix.target }})
     runs-on: ${{ matrix.os }}

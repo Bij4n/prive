@@ -67,7 +67,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: Generate man pages
-        run: cargo run --bin gen-man -- man/
+        run: cargo run --locked --example man -- man/
       - name: Create man page tarball
         run: tar czf prive-man-pages.tar.gz man/
       - name: Upload artifact
