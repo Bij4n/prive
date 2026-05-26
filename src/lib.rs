@@ -11,6 +11,7 @@ pub mod generate;
 pub mod hibp;
 pub mod otp;
 pub mod output;
+pub mod pick;
 pub mod select;
 pub mod unlock;
 
