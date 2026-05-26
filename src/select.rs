@@ -13,9 +13,10 @@ use crate::error::Failure;
 
 pub fn select<'a>(entries: &'a [Entry], query: &str) -> Result<&'a Entry, Failure> {
     if let Some(uuid) = query.strip_prefix("uuid:") {
+        let wanted = normalize_uuid(uuid);
         return entries
             .iter()
-            .find(|e| e.uuid.eq_ignore_ascii_case(uuid.trim()))
+            .find(|e| normalize_uuid(&e.uuid) == wanted)
             .ok_or_else(|| Failure::NotFound(query.to_string()));
     }
     let wanted = query.trim_start_matches('/').to_lowercase();
@@ -39,6 +40,15 @@ pub fn select<'a>(entries: &'a [Entry], query: &str) -> Result<&'a Entry, Failur
         0 => Err(Failure::NotFound(query.to_string())),
         _ => Err(ambiguous(query, &by_title)),
     }
+}
+
+/// UUIDs compare as bare lower-case hex: KeePassXC shows `{ab3be06b-edf0-...}`, other tools
+/// print them without braces or dashes.
+fn normalize_uuid(s: &str) -> String {
+    s.chars()
+        .filter(char::is_ascii_hexdigit)
+        .collect::<String>()
+        .to_ascii_lowercase()
 }
 
 fn ambiguous(query: &str, matches: &[&Entry]) -> Failure {
@@ -180,5 +190,17 @@ mod tests {
         assert_eq!(ids(in_group(&e, "work")), ["1", "2"]);
         assert_eq!(ids(in_group(&e, "/Work/Cloud/")), ["2"]);
         assert_eq!(in_group(&e, "").len(), 4);
+    }
+
+    #[test]
+    fn uuids_in_any_common_spelling() {
+        let e = vec![entry("", "Bank", "ab3be06b-edf0-4d6d-9274-4ec75b5c5f4c")];
+        for q in [
+            "uuid:ab3be06b-edf0-4d6d-9274-4ec75b5c5f4c",
+            "uuid:{AB3BE06B-EDF0-4D6D-9274-4EC75B5C5F4C}",
+            "uuid:ab3be06bedf04d6d92744ec75b5c5f4c",
+        ] {
+            assert_eq!(select(&e, q).unwrap().title, "Bank", "{q}");
+        }
     }
 }
