@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!-- Source for the test databases. Invented data only. Rebuild with ./make.sh -->
+<KeePassFile>
+  <Meta>
+    <Generator>prive fixtures</Generator>
+    <DatabaseName>Fixture</DatabaseName>
+    <RecycleBinEnabled>True</RecycleBinEnabled>
+    <RecycleBinUUID>AAAAAAAAAAAAAAAAAAAAOQ==</RecycleBinUUID>
+    <HistoryMaxItems>10</HistoryMaxItems>
+    <Binaries>
+      <Binary ID="0">ZGVwbG95LWtleS1ieXRlcwo=</Binary>
+    </Binaries>
+  </Meta>
+  <Root>
+    <Group>
+      <UUID>AAAAAAAAAAAAAAAAAAAAAA==</UUID>
+      <Name>Root</Name>
+      <Entry>
+        <UUID>AAAAAAAAAAAAAAAAAAAAEA==</UUID>
+        <String><Key>Title</Key><Value>Bank</Value></String>
+        <String><Key>UserName</Key><Value>me@example.invalid</Value></String>
+        <String><Key>Password</Key><Value ProtectInMemory="True">b4nk-P@ss-2026!</Value></String>
+        <String><Key>URL</Key><Value>https://bank.example.invalid</Value></String>
+        <String><Key>otp</Key><Value ProtectInMemory="True">otpauth://totp/Bank?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ&amp;period=60&amp;digits=8&amp;algorithm=SHA256</Value></String>
+      </Entry>
+      <Entry>
+        <UUID>AAAAAAAAAAAAAAAAAAAAEQ==</UUID>
+        <QualityCheck>False</QualityCheck>
+        <String><Key>Title</Key><Value>Wi-Fi</Value></String>
+        <String><Key>Password</Key><Value ProtectInMemory="True">guest1234</Value></String>
+      </Entry>
+      <Entry>
+        <UUID>AAAAAAAAAAAAAAAAAAAAEg==</UUID>
+        <Times><Expires>True</Expires><ExpiryTime>2025-01-01T00:00:00Z</ExpiryTime></Times>
+        <String><Key>Title</Key><Value>Old VPN</Value></String>
+        <String><Key>UserName</Key><Value>vpnuser</Value></String>
+        <String><Key>Password</Key><Value ProtectInMemory="True">kH3@pN8%sJ5*eB1(cG7)</Value></String>
+      </Entry>
+      <Group>
+        <UUID>AAAAAAAAAAAAAAAAAAAAAQ==</UUID>
+        <Name>Work</Name>
+        <Entry>
+          <UUID>AAAAAAAAAAAAAAAAAAAAIA==</UUID>
+          <Tags>dev;cloud</Tags>
+          <String><Key>Title</Key><Value>GitHub</Value></String>
+          <String><Key>UserName</Key><Value>demo</Value></String>
+          <String><Key>Password</Key><Value ProtectInMemory="True">gh-Secret-1</Value></String>
+          <String><Key>URL</Key><Value>https://github.com</Value></String>
+          <String><Key>Notes</Key><Value>Line one
+Line two – ünïcödé</Value></String>
+          <String><Key>otp</Key><Value ProtectInMemory="True">otpauth://totp/GitHub:demo?secret=JBSWY3DPEHPK3PXP&amp;period=30&amp;digits=6&amp;algorithm=SHA1</Value></String>
+          <String><Key>API key</Key><Value ProtectInMemory="True">custom-protected</Value></String>
+          <String><Key>plan</Key><Value>team</Value></String>
+          <Binary><Key>deploy.txt</Key><Value Ref="0"/></Binary>
+          <History>
+            <Entry>
+              <UUID>AAAAAAAAAAAAAAAAAAAAIA==</UUID>
+              <String><Key>Title</Key><Value>GitHub</Value></String>
+              <String><Key>Password</Key><Value ProtectInMemory="True">old-password</Value></String>
+            </Entry>
+          </History>
+        </Entry>
+        <Group>
+          <UUID>AAAAAAAAAAAAAAAAAAAAAg==</UUID>
+          <Name>Cloud</Name>
+          <Entry>
+            <UUID>AAAAAAAAAAAAAAAAAAAAIQ==</UUID>
+            <String><Key>Title</Key><Value>Steam</Value></String>
+            <String><Key>UserName</Key><Value>gamer</Value></String>
+            <String><Key>Password</Key><Value ProtectInMemory="True">vX7#qL9!mZ2$wR4^tY6&amp;</Value></String>
+            <String><Key>otp</Key><Value ProtectInMemory="True">otpauth://totp/Steam:gamer?secret=JBSWY3DPEHPK3PXP&amp;encoder=steam</Value></String>
+          </Entry>
+        </Group>
+      </Group>
+      <Group>
+        <UUID>AAAAAAAAAAAAAAAAAAAAAw==</UUID>
+        <Name>Personal</Name>
+        <Entry>
+          <UUID>AAAAAAAAAAAAAAAAAAAAMA==</UUID>
+          <String><Key>Title</Key><Value>GitHub</Value></String>
+          <String><Key>UserName</Key><Value>me-personal</Value></String>
+          <String><Key>Password</Key><Value ProtectInMemory="True">password1</Value></String>
+        </Entry>
+        <Entry>
+          <UUID>AAAAAAAAAAAAAAAAAAAAMQ==</UUID>
+          <String><Key>Title</Key><Value>Legacy 2FA</Value></String>
+          <String><Key>Password</Key><Value ProtectInMemory="True">password1</Value></String>
+          <String><Key>TOTP Seed</Key><Value ProtectInMemory="True">JBSWY3DPEHPK3PXP</Value></String>
+          <String><Key>TOTP Settings</Key><Value>30;6</Value></String>
+        </Entry>
+      </Group>
+      <Group>
+        <UUID>AAAAAAAAAAAAAAAAAAAAOQ==</UUID>
+        <Name>Recycle Bin</Name>
+        <Entry>
+          <UUID>AAAAAAAAAAAAAAAAAAAAQA==</UUID>
+          <String><Key>Title</Key><Value>Deleted thing</Value></String>
+          <String><Key>Password</Key><Value ProtectInMemory="True">gone</Value></String>
+        </Entry>
+      </Group>
+    </Group>
+  </Root>
+</KeePassFile>
