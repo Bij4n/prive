@@ -21,6 +21,15 @@ The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `l
   the show and list views, ready for the database commands
 - `docs/`: exit codes, scripting, TOTP formats, clipboard, configuration, security notes
 - CI: minimum supported Rust (1.88) job and a weekly RustSec advisory check
+- `prive completions <shell>` (bash, zsh, fish, elvish, PowerShell) and man pages
+  (`cargo run --example man`)
+- Fuzzy picker module (drawn on stderr) for the upcoming `pick` command
+- `--no-password` for databases unlocked by a key file alone; `uuid:` accepts KeePassXC's
+  `{...}` form and dashless hex
+- Test databases written by KeePassXC (KDBX 3.1, 4.0, 4.1 and key file) and interop tests
+  that compare one-time codes with `keepassxc-cli`; CI installs KeePassXC to run them
+- `CONTRIBUTING.md`, `SECURITY.md`, issue and pull request templates, `deny.toml` licence and
+  source policy checked in CI
 
 ### Fixed
 - CI: the Windows test job no longer hangs until the 6-hour limit (two tests reached a console password prompt); every job has a timeout
