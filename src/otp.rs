@@ -581,4 +581,20 @@ mod tests {
         let s = Totp::new(vec![1], 30, Encoder::Steam, Algorithm::Sha1).unwrap();
         assert_eq!(s.describe(), "Steam Guard every 30 s, SHA-1");
     }
+
+    #[test]
+    fn labels_and_issuers_do_not_get_in_the_way() {
+        let t = parse_otpauth(
+            "otpauth://totp/ACME%20Co:jane%40example.com?issuer=ACME%20Co&secret=JBSWY3DPEHPK3PXP&digits=6",
+        )
+        .unwrap();
+        assert_eq!(t.encoder, Encoder::Digits(6));
+        // Parameters in any order, unknown ones ignored.
+        assert!(
+            parse_otpauth("otpauth://totp/x?image=https%3A%2F%2Fx&secret=JBSWY3DPEHPK3PXP")
+                .is_some()
+        );
+        // No label at all.
+        assert!(parse_otpauth("otpauth://totp/?secret=JBSWY3DPEHPK3PXP").is_some());
+    }
 }
