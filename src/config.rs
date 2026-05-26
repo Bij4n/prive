@@ -166,4 +166,21 @@ mod tests {
             .to_string();
         assert!(err.contains("prive init"));
     }
+
+    #[test]
+    fn a_key_file_on_the_command_line_wins() {
+        let cfg = Config {
+            db: Some("/home/me/main.kdbx".into()),
+            keyfile: Some("/home/me/main.key".into()),
+            ..Config::default()
+        };
+        let t = cfg
+            .target(None, Some(Path::new("/media/usb/other.key")))
+            .unwrap();
+        assert_eq!(t.db, Path::new("/home/me/main.kdbx"));
+        assert_eq!(
+            t.keyfile.as_deref(),
+            Some(Path::new("/media/usb/other.key"))
+        );
+    }
 }
