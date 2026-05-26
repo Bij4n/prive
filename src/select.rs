@@ -12,8 +12,14 @@ use crate::entry::Entry;
 use crate::error::Failure;
 
 pub fn select<'a>(entries: &'a [Entry], query: &str) -> Result<&'a Entry, Failure> {
+    if query.trim().is_empty() {
+        return Err(Failure::NotFound(query.to_string()));
+    }
     if let Some(uuid) = query.strip_prefix("uuid:") {
         let wanted = normalize_uuid(uuid);
+        if wanted.is_empty() {
+            return Err(Failure::NotFound(query.to_string()));
+        }
         return entries
             .iter()
             .find(|e| normalize_uuid(&e.uuid) == wanted)
@@ -202,5 +208,14 @@ mod tests {
         ] {
             assert_eq!(select(&e, q).unwrap().title, "Bank", "{q}");
         }
+    }
+
+    #[test]
+    fn empty_names_match_nothing() {
+        let mut e = sample();
+        e.push(entry("", "", "d")); // an untitled entry at the root
+        assert!(matches!(select(&e, ""), Err(Failure::NotFound(_))));
+        assert!(matches!(select(&e, "  "), Err(Failure::NotFound(_))));
+        assert!(matches!(select(&e, "uuid:"), Err(Failure::NotFound(_))));
     }
 }

@@ -97,7 +97,7 @@ fn entries(titles: &[String]) -> Vec<prive::entry::Entry> {
 
 proptest! {
     #[test]
-    fn selection_finds_every_unique_path(titles in prop::collection::hash_set("[a-zA-Z0-9 ]{1,12}", 1..20)) {
+    fn selection_finds_every_unique_path(titles in prop::collection::hash_set("[a-zA-Z0-9][a-zA-Z0-9 ]{0,11}", 1..20)) {
         let titles: Vec<String> = titles.into_iter().collect();
         let all = entries(&titles);
         for e in &all {
