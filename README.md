@@ -7,7 +7,9 @@
 > The rewrite so far provides `prive gen` (passwords, EFF passphrases, PINs; `--clip` copies
 > and clears after a timeout). Notes on the new design are in [`docs/`](docs/): exit codes,
 > scripting, TOTP formats, clipboard, configuration and security. Everything below this
-> notice describes 0.5, which is kept at the tag `legacy-0.5.0`.
+> notice describes 0.5, which is kept at the tag `legacy-0.5.0`. The plan is in
+> [`docs/roadmap.md`](docs/roadmap.md); contributions are welcome
+> ([`CONTRIBUTING.md`](CONTRIBUTING.md), [`SECURITY.md`](SECURITY.md)).
 >
 > **Do not use 0.5 for real secrets.** Known problems in 0.5:
 > - `prive pgp generate` stores the secret key unencrypted, even though it asks for a
