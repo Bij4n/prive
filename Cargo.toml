@@ -43,6 +43,15 @@ ureq = "3"
 zeroize = "1"
 zxcvbn = "3"
 
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+# No placeholders: a command either works or doesn't exist.
+todo = "deny"
+unimplemented = "deny"
+dbg_macro = "deny"
+
 [dev-dependencies]
 assert_cmd = "2"
 clap_mangen = "0.3"
