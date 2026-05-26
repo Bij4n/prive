@@ -2,7 +2,7 @@
 //!
 //! A command-line process exits as soon as it has printed its result, which would take the
 //! clipboard contents (on X11 and Wayland) or the pending clear (everywhere) with it. So `copy`
-//! starts a small detached copy of this binary (`prive __clip`), hands it the secret over a
+//! starts a small detached copy of this binary (`prive __clip <seconds>`), hands it the secret over a
 //! pipe, waits for it to confirm the copy worked, and returns. The helper keeps the clipboard
 //! alive, then clears it after the timeout, but only if it still holds our secret: if you have
 //! copied something else since, it is left alone.
@@ -21,10 +21,13 @@ use std::time::Duration;
 use anyhow::{Context, Result, bail};
 use zeroize::Zeroizing;
 
+/// First argument that turns the binary into the clipboard helper.
+pub const HELPER_ARG: &str = "__clip";
+
 pub fn copy(secret: &str, seconds: u64) -> Result<()> {
     let exe = std::env::current_exe().context("finding the prive executable")?;
     let mut cmd = Command::new(exe);
-    cmd.args(["__clip", "--seconds", &seconds.to_string()])
+    cmd.args([HELPER_ARG, &seconds.to_string()])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::null());

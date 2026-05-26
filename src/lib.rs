@@ -24,6 +24,16 @@ use clap::Parser;
 use crate::cli::{Cli, Command};
 
 pub fn run() -> ExitCode {
+    // The clipboard helper is internal: handled before clap so it never shows up in help,
+    // completions or man pages.
+    let args: Vec<String> = std::env::args().collect();
+    if args.get(1).map(String::as_str) == Some(clip::HELPER_ARG) {
+        let seconds = args.get(2).and_then(|s| s.parse().ok()).unwrap_or(20);
+        return match clip::helper(seconds) {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(e) => error::report(&e),
+        };
+    }
     let cli = Cli::parse();
     match dispatch(cli) {
         Ok(()) => ExitCode::SUCCESS,
@@ -60,7 +70,12 @@ fn dispatch(cli: Cli) -> Result<()> {
             }
             Ok(())
         }
-        Command::ClipHelper { seconds } => clip::helper(seconds),
+        Command::Completions { shell } => {
+            let mut cmd = <Cli as clap::CommandFactory>::command();
+            let mut out = Vec::new();
+            clap_complete::generate(shell, &mut cmd, "prive", &mut out);
+            output::print(&String::from_utf8_lossy(&out))
+        }
     }
 }
 

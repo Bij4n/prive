@@ -107,3 +107,20 @@ fn help_documents_the_exit_codes() {
 fn gen_cannot_both_copy_and_print_json() {
     prive().args(["gen", "--clip", "--json"]).assert().code(2);
 }
+
+#[test]
+fn completions_for_each_shell() {
+    for shell in ["bash", "zsh", "fish", "elvish", "powershell"] {
+        let out = prive().args(["completions", shell]).output().unwrap();
+        assert!(out.status.success(), "{shell}");
+        let text = String::from_utf8(out.stdout).unwrap();
+        assert!(
+            text.contains("gen"),
+            "{shell} completions should know the gen command"
+        );
+        assert!(
+            !text.contains("__clip"),
+            "{shell} completions must not offer the helper"
+        );
+    }
+}

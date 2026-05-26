@@ -44,11 +44,10 @@ pub enum Command {
     /// Generate a password, passphrase or PIN (no database needed)
     Gen(GenArgs),
 
-    /// Internal: holds a copied secret and later clears it
-    #[command(name = "__clip", hide = true)]
-    ClipHelper {
-        #[arg(long)]
-        seconds: u64,
+    /// Print shell completions (bash, zsh, fish, elvish, powershell)
+    Completions {
+        #[arg(value_enum)]
+        shell: clap_complete::Shell,
     },
 }
 
