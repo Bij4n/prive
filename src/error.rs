@@ -69,4 +69,21 @@ mod tests {
         assert_eq!(Failure::BadCredentials.exit_code(), 5);
         assert_eq!(Failure::NoTerminal.exit_code(), 5);
     }
+
+    #[test]
+    fn messages_say_what_to_do() {
+        assert_eq!(
+            Failure::NotFound("Work/Gitlab".into()).to_string(),
+            "no entry matches 'Work/Gitlab'"
+        );
+        let amb = Failure::Ambiguous {
+            query: "GitHub".into(),
+            candidates: vec!["Work/GitHub".into(), "Personal/GitHub".into()],
+        };
+        assert_eq!(
+            amb.to_string(),
+            "'GitHub' matches 2 entries; use the full path"
+        );
+        assert!(Failure::NoTerminal.to_string().contains("--password-stdin"));
+    }
 }
