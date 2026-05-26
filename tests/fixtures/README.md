@@ -7,9 +7,13 @@ Password for every database: `fixture-pass`. `keyfile.kdbx` also needs `keyfile.
 
 | File | Format | Contents |
 |---|---|---|
-| `kdbx3.kdbx` | KDBX 3.1, AES-KDF | everything in `source.xml` |
-| `kdbx4.kdbx` | KDBX 4.0, AES-KDF | the same, plus entry custom data (which is what makes KeePassXC write format 4) |
+| `kdbx31.kdbx` | KDBX 3.1, AES-KDF | `source.xml` without the report-exclusion flag (a 4.1 field) |
+| `kdbx40.kdbx` | KDBX 4.0, AES-KDF | the same plus entry custom data, which needs format 4 |
+| `kdbx41.kdbx` | KDBX 4.1, AES-KDF | all of `source.xml` |
 | `keyfile.kdbx` | KDBX 3.1, password + key file | one entry |
+
+KeePassXC writes the oldest format that holds the data, which is how one source gives three
+formats.
 
 What `source.xml` covers: nested groups (`Work/Cloud`), a title used twice (`GitHub` in
 `Work` and in `Personal`), TOTP in each stored form (otpauth SHA-1 and SHA-256/8-digit/60 s,
