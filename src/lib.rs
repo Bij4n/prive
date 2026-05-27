@@ -1,4 +1,9 @@
 //! prive: a fast, scriptable terminal client for KeePass (KDBX) password databases.
+//!
+//! The binary is a thin layer over this library: [`cli`] defines the interface, [`run`]
+//! dispatches each command and maps errors to [exit codes](error::Failure). Everything a
+//! command prints goes through [`output`]. See `docs/design.md` for the module map and the
+//! rules the code keeps.
 
 pub mod audit;
 pub mod cli;
