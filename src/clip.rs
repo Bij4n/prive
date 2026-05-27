@@ -42,12 +42,22 @@ pub fn copy(secret: &str, seconds: u64) -> Result<()> {
         stdin.write_all(secret.as_bytes())?;
     } // closing stdin tells the helper the secret is complete
 
+    // The helper answers within a moment; if the clipboard itself hangs (a Wayland session
+    // with no compositor answering, say), give up rather than hang the command.
     let stdout = child
         .stdout
         .take()
         .context("clipboard helper has no stdout")?;
-    let mut status = String::new();
-    BufReader::new(stdout).read_line(&mut status)?;
+    let (tx, rx) = std::sync::mpsc::channel();
+    std::thread::spawn(move || {
+        let mut status = String::new();
+        let _ = BufReader::new(stdout).read_line(&mut status);
+        let _ = tx.send(status);
+    });
+    let Ok(status) = rx.recv_timeout(Duration::from_secs(10)) else {
+        let _ = child.kill();
+        bail!("the clipboard did not respond within 10 seconds");
+    };
     match status.trim() {
         "ok" => Ok(()),
         "" => bail!("the clipboard helper exited without copying"),
