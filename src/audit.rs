@@ -60,7 +60,7 @@ pub struct Report {
 }
 
 pub struct Options {
-    /// Flag passwords not changed for more than this many days.
+    /// Flag passwords not changed for more than this many days; 0 turns the check off.
     pub max_age_days: i64,
     /// Look each password up in Have I Been Pwned (see `hibp`). Off by default: it is the
     /// only part of prive that talks to the network.
@@ -113,7 +113,8 @@ pub fn audit(entries: &[Entry], opts: &Options) -> anyhow::Result<Report> {
         {
             issues.push(Issue::Expired);
         }
-        if let Some(days) = age_days(e.modified, now)
+        if opts.max_age_days > 0
+            && let Some(days) = age_days(e.modified, now)
             && days > opts.max_age_days
         {
             issues.push(Issue::Old { days });
@@ -290,5 +291,16 @@ mod tests {
         )
         .unwrap();
         assert!(r.is_clean());
+    }
+
+    #[test]
+    fn age_check_can_be_turned_off() {
+        let mut old = entry("old", "vX7#qL9!mZ2$wR4^tY6&");
+        old.modified = Some(Utc::now().naive_utc() - chrono::Duration::days(5000));
+        let off = Options {
+            max_age_days: 0,
+            ..Options::default()
+        };
+        assert!(audit(&[old], &off).unwrap().is_clean());
     }
 }
