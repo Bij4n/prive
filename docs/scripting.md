@@ -32,3 +32,17 @@ running as the same user can read a process's environment.
 (`~/.config/prive/config.toml` on Linux, or `$PRIVE_CONFIG`). A key file is given with
 `--keyfile` or `PRIVE_KEYFILE`; a `keyfile` in the config file only goes with the config's
 own database.
+
+## Recipes
+
+```bash
+# A new password straight into another tool, never on screen
+prive gen --length 32 | some-tool --password-stdin
+
+# A passphrase for a disk or a master password
+prive gen --words 7 --capitalize
+
+# Machine-readable, with its strength
+prive gen --json | jq -r .value
+```
+
