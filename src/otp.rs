@@ -597,4 +597,10 @@ mod tests {
         // No label at all.
         assert!(parse_otpauth("otpauth://totp/?secret=JBSWY3DPEHPK3PXP").is_some());
     }
+
+    #[test]
+    fn a_blank_otp_field_falls_back_to_older_fields() {
+        let e = with_fields(&[("otp", "   "), ("TOTP Seed", "JBSWY3DPEHPK3PXP")]);
+        assert_eq!(Totp::from_entry(&e).unwrap().encoder, Encoder::Digits(6));
+    }
 }
