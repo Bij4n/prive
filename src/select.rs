@@ -218,4 +218,10 @@ mod tests {
         assert!(matches!(select(&e, "  "), Err(Failure::NotFound(_))));
         assert!(matches!(select(&e, "uuid:"), Err(Failure::NotFound(_))));
     }
+
+    #[test]
+    fn an_empty_search_lists_everything() {
+        let e = sample();
+        assert_eq!(search(&e, "").len(), e.len());
+    }
 }
