@@ -58,6 +58,19 @@ jobs:
       - name: Run clippy
         run: cargo clippy --all-targets --locked -- -D warnings
 
+  docs:
+    name: API docs
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build docs with warnings as errors
+        run: cargo doc --no-deps --locked
+        env:
+          RUSTDOCFLAGS: -D warnings
+
   fmt:
     name: Format
     runs-on: ubuntu-latest
