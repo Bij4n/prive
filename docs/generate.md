@@ -11,7 +11,8 @@ instead, and with `--json` prints `{"value": ..., "entropy_bits": ...}`.
 
 Guarantees:
 
-- Randomness comes from the operating system's generator, through `rand`'s thread RNG.
+- Randomness comes from `rand`'s thread generator: ChaCha12, a cryptographic generator
+  seeded from the operating system and reseeded regularly.
 - With lower-case, upper-case, digits and symbols on, every class appears at least once
   (drawn uniformly, retried until true, so no position is predictable).
 - `--avoid-ambiguous` leaves out `0 O 1 l I |`.
