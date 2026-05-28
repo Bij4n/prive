@@ -5,10 +5,12 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 use keepass::db::{GroupRef, fields};
+use keepass::error::{CryptographyError, DatabaseKeyError, DatabaseOpenError};
 use keepass::{Database, DatabaseKey};
 use zeroize::Zeroizing;
 
 use crate::entry::{CustomField, Entry};
+use crate::error::Failure;
 use crate::unlock::Credentials;
 
 pub struct Db {
@@ -31,8 +33,20 @@ impl Db {
                 .with_keyfile(&mut f)
                 .with_context(|| format!("reading key file {}", kf.display()))?;
         }
-        let db = Database::open(&mut file, key)
-            .with_context(|| format!("reading database {}", path.display()))?;
+        let db = match Database::open(&mut file, key) {
+            Ok(db) => db,
+            // KDBX 4 notices a wrong key in its header check. KDBX 3.1 has no such check, so a
+            // wrong key shows up as a padding failure when the payload is decrypted.
+            Err(DatabaseOpenError::Key(DatabaseKeyError::IncorrectKey))
+            | Err(DatabaseOpenError::Cryptography(CryptographyError::InvalidPadding(_))) => {
+                return Err(Failure::BadCredentials.into());
+            }
+            Err(e) => {
+                return Err(
+                    anyhow::Error::new(e).context(format!("reading database {}", path.display()))
+                );
+            }
+        };
         let recycle = db.recycle_bin().map(|g| g.id());
         let mut entries = Vec::new();
         walk(&db.root(), "", recycle, &mut entries);
@@ -208,5 +222,17 @@ mod tests {
         sorted.sort_by_key(|p| p.to_lowercase());
         assert_eq!(paths, sorted);
         assert_eq!(paths.first().map(String::as_str), Some("Bank"));
+    }
+
+    fn is_bad_credentials(e: &anyhow::Error) -> bool {
+        matches!(e.downcast_ref::<Failure>(), Some(Failure::BadCredentials))
+    }
+
+    #[test]
+    fn a_wrong_password_is_bad_credentials() {
+        for f in ["kdbx31.kdbx", "kdbx40.kdbx", "kdbx41.kdbx"] {
+            let err = Db::open(&fixture(f), &creds("wrong")).err().unwrap();
+            assert!(is_bad_credentials(&err), "{f}: {err:#}");
+        }
     }
 }
