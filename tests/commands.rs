@@ -345,3 +345,17 @@ fn no_database_anywhere_says_how_to_choose_one() {
         .stderr(predicate::str::contains("--db"))
         .stderr(predicate::str::contains("PRIVE_DB"));
 }
+
+#[test]
+fn otp_clip_copies_the_code() {
+    let dir = tempfile::tempdir().unwrap();
+    let clip = dir.path().join("clipboard");
+    prive(&["otp", "Bank", "--clip"])
+        .env("PRIVE_CLIPBOARD_FILE", &clip)
+        .assert()
+        .success()
+        .stdout(predicate::str::is_empty());
+    let code = std::fs::read_to_string(&clip).unwrap();
+    assert_eq!(code.len(), 8);
+    assert!(code.chars().all(|c| c.is_ascii_digit()));
+}
