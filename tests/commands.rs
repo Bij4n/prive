@@ -148,3 +148,34 @@ fn get_clip_copies_and_prints_nothing() {
         .stderr(predicate::str::contains("Copied"));
     assert_eq!(std::fs::read_to_string(&clip).unwrap(), "b4nk-P@ss-2026!");
 }
+
+#[test]
+fn otp_prints_a_code_of_the_right_shape() {
+    for (entry, len, digits) in [
+        ("Work/GitHub", 6, true),
+        ("Bank", 8, true),
+        ("Work/Cloud/Steam", 5, false),
+        ("Personal/Legacy 2FA", 6, true),
+    ] {
+        let out = prive(&["otp", entry]).output().unwrap();
+        assert!(out.status.success(), "{entry}");
+        let code = String::from_utf8(out.stdout).unwrap();
+        let code = code.trim_end();
+        assert_eq!(code.len(), len, "{entry}");
+        assert_eq!(code.chars().all(|c| c.is_ascii_digit()), digits, "{entry}");
+    }
+    prive(&["otp", "Wi-Fi"])
+        .assert()
+        .code(3)
+        .stderr(predicate::str::contains("no one-time code"));
+}
+
+#[test]
+fn otp_json() {
+    let out = prive(&["otp", "Bank", "--json"]).output().unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert_eq!(v["code"].as_str().unwrap().len(), 8);
+    assert_eq!(v["period"], 60);
+    let left = v["seconds_left"].as_u64().unwrap();
+    assert!((1..=60).contains(&left));
+}
