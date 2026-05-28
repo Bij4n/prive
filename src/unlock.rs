@@ -35,7 +35,11 @@ impl KeySource {
         let password = if self.no_password {
             None
         } else {
-            Some(self.password(&format!("Password for {}: ", db_path.display()))?)
+            let name = db_path
+                .file_name()
+                .map(|n| n.to_string_lossy().into_owned())
+                .unwrap_or_else(|| db_path.display().to_string());
+            Some(self.password(&format!("Password for {name}: "))?)
         };
         Ok(Credentials {
             password,
