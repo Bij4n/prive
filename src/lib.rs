@@ -49,6 +49,19 @@ pub fn run() -> ExitCode {
 
 fn dispatch(cli: Cli) -> Result<()> {
     match cli.command {
+        Command::Show {
+            entry,
+            reveal,
+            json,
+        } => {
+            let db = open(&cli.global)?;
+            let e = select::select(&db.entries, &entry)?;
+            if json {
+                output::print_json(&output::show_json(e, reveal))
+            } else {
+                output::print(&output::render_show(e, reveal))
+            }
+        }
         Command::Search { query, json } => {
             let db = open(&cli.global)?;
             let hits = select::search(&db.entries, &query);
