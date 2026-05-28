@@ -98,3 +98,21 @@ fn show_hides_secrets_until_revealed() {
         .stdout(predicate::str::contains("Password:  gh-Secret-1"))
         .stdout(predicate::str::contains("API key: custom-protected"));
 }
+
+#[test]
+fn show_json_and_unknown_or_ambiguous_names() {
+    let out = prive(&["show", "Bank", "--json"]).output().unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert_eq!(v["username"], "me@example.invalid");
+    assert!(v["password"].is_null());
+
+    prive(&["show", "Nope"])
+        .assert()
+        .code(3)
+        .stdout(predicate::str::is_empty());
+    prive(&["show", "GitHub"])
+        .assert()
+        .code(4)
+        .stderr(predicate::str::contains("Work/GitHub"))
+        .stderr(predicate::str::contains("Personal/GitHub"));
+}
