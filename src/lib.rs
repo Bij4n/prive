@@ -9,6 +9,7 @@ pub mod audit;
 pub mod cli;
 pub mod clip;
 pub mod config;
+pub mod db;
 pub mod entry;
 pub mod error;
 pub mod fsutil;

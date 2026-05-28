@@ -30,6 +30,7 @@ clap_complete = "4"
 dirs = "6"
 hex = "0.4"
 hmac = "0.12"
+keepass = "0.13"
 nucleo-picker = "0.11"
 rand = "0.9"
 rpassword = "7"
@@ -58,6 +59,14 @@ clap_mangen = "0.3"
 predicates = "3"
 proptest = "1"
 tempfile = "3"
+
+# Key derivation is very slow in unoptimised builds; keep debug builds and tests quick.
+[profile.dev.package.rust-argon2]
+opt-level = 3
+[profile.dev.package.aes]
+opt-level = 3
+[profile.dev.package.sha2]
+opt-level = 3
 
 [profile.release]
 opt-level = 3
