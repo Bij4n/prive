@@ -217,3 +217,39 @@ fn pick_needs_a_terminal() {
         .stdout(predicate::str::is_empty())
         .stderr(predicate::str::contains("interactive terminal"));
 }
+
+#[test]
+fn a_wrong_password_exits_5() {
+    for db in ["kdbx31.kdbx", "kdbx40.kdbx", "kdbx41.kdbx"] {
+        Command::cargo_bin("prive")
+            .unwrap()
+            .env("PRIVE_CONFIG", fixture("no-such-config.toml"))
+            .arg("--db")
+            .arg(fixture(db))
+            .args(["--password-stdin", "ls"])
+            .write_stdin("not-the-password\n")
+            .assert()
+            .code(5)
+            .stdout(predicate::str::is_empty())
+            .stderr(predicate::str::contains("wrong password or key file"));
+    }
+}
+
+#[test]
+fn without_a_terminal_or_password_source_it_fails_at_once() {
+    // stdin is not a terminal here and no password source is given: prive must not wait.
+    let started = std::time::Instant::now();
+    Command::cargo_bin("prive")
+        .unwrap()
+        .env("PRIVE_CONFIG", fixture("no-such-config.toml"))
+        .env_remove("PRIVE_PASSWORD_FILE")
+        .arg("--db")
+        .arg(fixture("kdbx41.kdbx"))
+        .arg("ls")
+        .write_stdin("")
+        .timeout(std::time::Duration::from_secs(20))
+        .assert()
+        .code(5)
+        .stderr(predicate::str::contains("--password-stdin"));
+    assert!(started.elapsed() < std::time::Duration::from_secs(20));
+}
