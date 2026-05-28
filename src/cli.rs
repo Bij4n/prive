@@ -45,6 +45,13 @@ pub struct Global {
 
 #[derive(Debug, Subcommand)]
 pub enum Command {
+    /// Find entries by title, username, URL, group or tag
+    Search {
+        query: String,
+        #[arg(long)]
+        json: bool,
+    },
+
     /// List entries: paths and usernames, never passwords
     Ls {
         /// Only entries in this group and its subgroups

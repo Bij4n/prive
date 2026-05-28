@@ -65,3 +65,18 @@ fn ls_json_has_no_passwords() {
     assert!(gh.get("password").is_none());
     assert!(!String::from_utf8_lossy(&out.stdout).contains("gh-Secret-1"));
 }
+
+#[test]
+fn search_finds_by_title_tag_and_url() {
+    prive(&["search", "github"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Work/GitHub"))
+        .stdout(predicate::str::contains("Personal/GitHub"));
+    prive(&["search", "cloud"])
+        .assert()
+        .stdout(predicate::str::contains("Work/GitHub")); // tagged "cloud"
+    prive(&["search", "bank.example"])
+        .assert()
+        .stdout(predicate::str::starts_with("Bank"));
+}
