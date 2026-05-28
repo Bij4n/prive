@@ -8,6 +8,12 @@ The 1.0 rewrite has started: prive becomes a terminal client for KeePass (`.kdbx
 The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `legacy-0.5.0`.
 
 ### Added
+- Reading KeePass databases (KDBX 3.1, 4.0, 4.1; password and/or key file), and the commands
+  `ls`, `search`, `show` (`--reveal`), `get` (`--field`, `--clip`), `otp`, `pick` and `audit`
+  (`--hibp`, `--max-age`), with `--json` where it fits. The recycle bin is left out; entries
+  excluded from reports in KeePassXC are skipped by `audit`
+- A missing or non-KeePass file is reported before the password is asked for; a wrong
+  password or key file exits with 5, nothing found with 3
 - `prive gen`: random passwords (every character class guaranteed, optional look-alike
   filtering), passphrases from the EFF large word list, and numeric PINs
 - TOTP code generation for every way KeePass apps store secrets (otpauth URIs, KeeOtp,
