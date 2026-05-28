@@ -213,8 +213,10 @@ fn dispatch(cli: Cli) -> Result<()> {
 fn open(global: &cli::Global) -> Result<db::Db> {
     let cfg = config::Config::load()?;
     let target = cfg.target(global.db.as_deref(), global.keyfile.as_deref())?;
+    // A missing or non-KeePass file is reported before the password is asked for.
+    let bytes = db::read_file(&target.db)?;
     let creds = unlock::KeySource::for_target(global, &target)?;
-    db::Db::open(&target.db, &creds)
+    db::Db::from_bytes(&target.db, &bytes, &creds)
 }
 
 /// Copy a secret, then say on stderr when it will be cleared.

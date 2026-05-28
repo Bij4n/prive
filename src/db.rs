@@ -18,15 +18,24 @@ pub struct Db {
     pub entries: Vec<Entry>,
 }
 
+/// Read a database file and check it is KeePass, before anyone is asked for a password.
+pub fn read_file(path: &Path) -> Result<Vec<u8>> {
+    let bytes =
+        std::fs::read(path).with_context(|| format!("opening database {}", path.display()))?;
+    // KeePass files start with 0x9AA2D903; anything else gets a plain answer instead of a
+    // parser error.
+    if bytes.len() < 12 || bytes[..4] != [0x03, 0xd9, 0xa2, 0x9a] {
+        anyhow::bail!("{} is not a KeePass database", path.display());
+    }
+    Ok(bytes)
+}
+
 impl Db {
     pub fn open(path: &Path, creds: &Credentials) -> Result<Db> {
-        let bytes =
-            std::fs::read(path).with_context(|| format!("opening database {}", path.display()))?;
-        // KeePass files start with 0x9AA2D903; anything else gets a plain answer instead of
-        // a parser error.
-        if bytes.len() < 12 || bytes[..4] != [0x03, 0xd9, 0xa2, 0x9a] {
-            anyhow::bail!("{} is not a KeePass database", path.display());
-        }
+        Db::from_bytes(path, &read_file(path)?, creds)
+    }
+
+    pub fn from_bytes(path: &Path, bytes: &[u8], creds: &Credentials) -> Result<Db> {
         let mut key = DatabaseKey::new();
         if let Some(pw) = &creds.password {
             key = key.with_password(pw);
@@ -38,7 +47,7 @@ impl Db {
                 .with_keyfile(&mut f)
                 .with_context(|| format!("reading key file {}", kf.display()))?;
         }
-        let db = match Database::open(&mut bytes.as_slice(), key) {
+        let db = match Database::open(&mut &bytes[..], key) {
             Ok(db) => db,
             // KDBX 4 notices a wrong key in its header check. KDBX 3.1 has no such check, so a
             // wrong key shows up as a padding failure when the payload is decrypted.
