@@ -208,3 +208,12 @@ fn audit_json() {
     let first = &v["findings"][0];
     assert!(first["issues"][0]["kind"].is_string());
 }
+
+#[test]
+fn pick_needs_a_terminal() {
+    prive(&["pick"])
+        .assert()
+        .code(1)
+        .stdout(predicate::str::is_empty())
+        .stderr(predicate::str::contains("interactive terminal"));
+}

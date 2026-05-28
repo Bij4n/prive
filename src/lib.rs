@@ -123,7 +123,7 @@ fn dispatch(cli: Cli) -> Result<()> {
             let Some(e) = pick::pick(&db.entries, args.query.as_deref())? else {
                 return Ok(()); // cancelled
             };
-            let value = if args.otp {
+            let value = zeroize::Zeroizing::new(if args.otp {
                 otp::Totp::from_entry(e)
                     .ok_or_else(|| {
                         error::Failure::NotFound(format!("{}: no one-time code", e.path()))
@@ -137,9 +137,9 @@ fn dispatch(cli: Cli) -> Result<()> {
                         error::Failure::NotFound(format!("{}: field '{name}'", e.path()))
                     })?
                     .to_string()
-            };
+            });
             if args.print {
-                output::print(&format!("{value}\n"))
+                output::print(&format!("{}\n", value.as_str()))
             } else {
                 eprintln!("{}", e.path());
                 copy_and_tell(&value)
