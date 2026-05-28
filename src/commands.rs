@@ -34,8 +34,16 @@ fn field_of<'a>(e: &'a Entry, name: &str) -> Result<&'a str> {
 }
 
 fn totp_of(e: &Entry) -> Result<otp::Totp> {
-    Ok(otp::Totp::from_entry(e)
-        .ok_or_else(|| Failure::NotFound(format!("{}: no one-time code", e.path())))?)
+    if let Some(t) = otp::Totp::from_entry(e) {
+        return Ok(t);
+    }
+    if otp::has_otp_settings(e) {
+        anyhow::bail!(
+            "{}: has one-time code settings prive can't read (see docs/totp.md)",
+            e.path()
+        );
+    }
+    Err(Failure::NotFound(format!("{}: no one-time code", e.path())).into())
 }
 
 fn list(entries: &[&Entry], json: bool) -> Result<()> {

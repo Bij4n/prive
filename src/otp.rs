@@ -135,6 +135,20 @@ impl Totp {
     }
 }
 
+/// Whether an entry has any of the fields a one-time code is read from, readable or not.
+pub fn has_otp_settings(entry: &Entry) -> bool {
+    [
+        "otp",
+        "TimeOtp-Secret-Base32",
+        "TimeOtp-Secret-Hex",
+        "TimeOtp-Secret-Base64",
+        "TimeOtp-Secret",
+        "TOTP Seed",
+    ]
+    .iter()
+    .any(|f| entry.field(f).is_some_and(|v| !v.trim().is_empty()))
+}
+
 pub fn unix_now() -> u64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -602,5 +616,13 @@ mod tests {
     fn a_blank_otp_field_falls_back_to_older_fields() {
         let e = with_fields(&[("otp", "   "), ("TOTP Seed", "JBSWY3DPEHPK3PXP")]);
         assert_eq!(Totp::from_entry(&e).unwrap().encoder, Encoder::Digits(6));
+    }
+
+    #[test]
+    fn settings_present_even_when_unreadable() {
+        let broken = with_fields(&[("otp", "otpauth://totp/x?secret=&digits=99")]);
+        assert!(has_otp_settings(&broken));
+        assert!(Totp::from_entry(&broken).is_none());
+        assert!(!has_otp_settings(&Entry::default()));
     }
 }
