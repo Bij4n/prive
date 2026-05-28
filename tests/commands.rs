@@ -196,3 +196,15 @@ fn audit_finds_the_planted_problems() {
         "the report must not show passwords"
     );
 }
+
+#[test]
+fn audit_json() {
+    let out = prive(&["audit", "--json", "--max-age", "0"])
+        .output()
+        .unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert_eq!(v["checked"], 6);
+    assert_eq!(v["skipped"], 1);
+    let first = &v["findings"][0];
+    assert!(first["issues"][0]["kind"].is_string());
+}
