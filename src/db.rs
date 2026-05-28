@@ -33,8 +33,9 @@ impl Db {
         }
         let db = Database::open(&mut file, key)
             .with_context(|| format!("reading database {}", path.display()))?;
+        let recycle = db.recycle_bin().map(|g| g.id());
         let mut entries = Vec::new();
-        walk(&db.root(), "", &mut entries);
+        walk(&db.root(), "", recycle, &mut entries);
         Ok(Db {
             path: path.to_path_buf(),
             entries,
@@ -42,7 +43,13 @@ impl Db {
     }
 }
 
-fn walk(group: &GroupRef<'_>, path: &str, out: &mut Vec<Entry>) {
+/// Collect entries depth-first, leaving out the recycle bin and everything in it.
+fn walk(
+    group: &GroupRef<'_>,
+    path: &str,
+    recycle: Option<keepass::db::GroupId>,
+    out: &mut Vec<Entry>,
+) {
     for e in group.entries() {
         let get = |k: &str| e.get(k).unwrap_or("").to_string();
         let mut custom: Vec<CustomField> = e
@@ -80,12 +87,15 @@ fn walk(group: &GroupRef<'_>, path: &str, out: &mut Vec<Entry>) {
         });
     }
     for sub in group.groups() {
+        if Some(sub.id()) == recycle {
+            continue;
+        }
         let p = if path.is_empty() {
             sub.name.clone()
         } else {
             format!("{path}/{}", sub.name)
         };
-        walk(&sub, &p, out);
+        walk(&sub, &p, recycle, out);
     }
 }
 
@@ -176,5 +186,16 @@ mod tests {
             .find(|e| e.path() == "Work/GitHub")
             .unwrap();
         assert_eq!(gh.attachments, ["deploy.txt"]);
+    }
+
+    #[test]
+    fn the_recycle_bin_is_left_out() {
+        let db = Db::open(&fixture("kdbx41.kdbx"), &creds("fixture-pass")).unwrap();
+        assert!(db.entries.iter().all(|e| e.title != "Deleted thing"));
+        assert!(
+            db.entries
+                .iter()
+                .all(|e| !e.group.starts_with("Recycle Bin"))
+        );
     }
 }
