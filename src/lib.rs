@@ -101,6 +101,10 @@ fn dispatch(cli: Cli) -> Result<()> {
         Command::Search { query, json } => {
             let db = open(&cli.global)?;
             let hits = select::search(&db.entries, &query);
+            // Like grep: nothing found is a failure scripts can test for (exit code 3).
+            if hits.is_empty() {
+                return Err(error::Failure::NotFound(query).into());
+            }
             if json {
                 let summaries: Vec<_> = hits.iter().map(|e| e.summary()).collect();
                 output::print_json(&summaries)
@@ -111,6 +115,11 @@ fn dispatch(cli: Cli) -> Result<()> {
         Command::Ls { group, json } => {
             let db = open(&cli.global)?;
             let shown = select::in_group(&db.entries, group.as_deref().unwrap_or(""));
+            if let Some(g) = &group
+                && shown.is_empty()
+            {
+                return Err(error::Failure::NotFound(format!("group '{g}'")).into());
+            }
             if json {
                 let summaries: Vec<_> = shown.iter().map(|e| e.summary()).collect();
                 output::print_json(&summaries)

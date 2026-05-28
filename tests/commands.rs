@@ -292,3 +292,15 @@ fn the_default_database_comes_from_the_config_file() {
         .success()
         .stdout("https://bank.example.invalid\n");
 }
+
+#[test]
+fn nothing_found_is_exit_code_3() {
+    prive(&["search", "zzz-nothing"])
+        .assert()
+        .code(3)
+        .stdout(predicate::str::is_empty());
+    prive(&["ls", "NoSuchGroup"])
+        .assert()
+        .code(3)
+        .stderr(predicate::str::contains("group 'NoSuchGroup'"));
+}
