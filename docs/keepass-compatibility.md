@@ -5,8 +5,8 @@ browser extension), KeePassDX (Android), Strongbox and KeePassium (iOS and macOS
 KeePass 2 itself. Your passwords stay in one file you own; those apps cover the phone and the
 browser, prive covers the terminal.
 
-> Status: opening databases is the next step of the rewrite. Until it lands, this page
-> describes what prive is built to read; the formats below are what the test databases cover.
+> Status: prive reads databases (`ls`, `search`, `show`, `get`, `otp`, `pick`, `audit`).
+> Creating and changing them comes later; see the [roadmap](roadmap.md).
 
 ## Formats
 
