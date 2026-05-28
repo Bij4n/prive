@@ -65,6 +65,13 @@ fn walk(group: &GroupRef<'_>, path: &str, out: &mut Vec<Entry>) {
             notes: get(fields::NOTES),
             password: Zeroizing::new(get(fields::PASSWORD)),
             custom,
+            tags: e.tags.clone(),
+            modified: e.times.last_modification,
+            expires: if e.times.expires == Some(true) {
+                e.times.expiry
+            } else {
+                None
+            },
             ..Entry::default()
         });
     }
@@ -124,5 +131,21 @@ mod tests {
             .collect();
         assert_eq!(names, [("API key", true), ("otp", true), ("plan", false)]);
         assert_eq!(gh.field("plan"), Some("team"));
+    }
+
+    #[test]
+    fn tags_and_expiry() {
+        let db = Db::open(&fixture("kdbx41.kdbx"), &creds("fixture-pass")).unwrap();
+        let gh = db
+            .entries
+            .iter()
+            .find(|e| e.path() == "Work/GitHub")
+            .unwrap();
+        // KeePassXC stores tags sorted.
+        assert_eq!(gh.tags, ["cloud", "dev"]);
+        assert!(gh.modified.is_some());
+        assert!(gh.expires.is_none());
+        let vpn = db.entries.iter().find(|e| e.title == "Old VPN").unwrap();
+        assert_eq!(vpn.expires.unwrap().date().to_string(), "2025-01-01");
     }
 }
