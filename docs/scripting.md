@@ -46,3 +46,15 @@ prive gen --words 7 --capitalize
 prive gen --json | jq -r .value
 ```
 
+```bash
+# Every entry with a one-time code, as paths
+prive ls --json | jq -r '.[] | select(.has_otp) | .path'
+
+# Log in with a password and the current code
+login --user "$(prive get Work/VPN -f username)" \
+      --password "$(prive get Work/VPN)" --otp "$(prive otp Work/VPN)"
+
+# Fail a CI step if any password needs attention
+prive audit --json | jq -e '.findings | length == 0'
+```
+
