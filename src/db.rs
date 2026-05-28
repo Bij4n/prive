@@ -66,6 +66,7 @@ fn walk(group: &GroupRef<'_>, path: &str, out: &mut Vec<Entry>) {
             password: Zeroizing::new(get(fields::PASSWORD)),
             custom,
             tags: e.tags.clone(),
+            quality_check: e.quality_check,
             modified: e.times.last_modification,
             expires: if e.times.expires == Some(true) {
                 e.times.expiry
@@ -147,5 +148,19 @@ mod tests {
         assert!(gh.expires.is_none());
         let vpn = db.entries.iter().find(|e| e.title == "Old VPN").unwrap();
         assert_eq!(vpn.expires.unwrap().date().to_string(), "2025-01-01");
+    }
+
+    #[test]
+    fn report_exclusion_survives_from_keepassxc() {
+        let db = Db::open(&fixture("kdbx41.kdbx"), &creds("fixture-pass")).unwrap();
+        let wifi = db.entries.iter().find(|e| e.title == "Wi-Fi").unwrap();
+        assert!(!wifi.quality_check);
+        assert!(
+            db.entries
+                .iter()
+                .find(|e| e.title == "Bank")
+                .unwrap()
+                .quality_check
+        );
     }
 }
