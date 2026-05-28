@@ -36,6 +36,7 @@ impl Db {
         let recycle = db.recycle_bin().map(|g| g.id());
         let mut entries = Vec::new();
         walk(&db.root(), "", recycle, &mut entries);
+        crate::entry::sort_by_path(&mut entries);
         Ok(Db {
             path: path.to_path_buf(),
             entries,
@@ -197,5 +198,15 @@ mod tests {
                 .iter()
                 .all(|e| !e.group.starts_with("Recycle Bin"))
         );
+    }
+
+    #[test]
+    fn entries_come_sorted_by_path() {
+        let db = Db::open(&fixture("kdbx41.kdbx"), &creds("fixture-pass")).unwrap();
+        let paths: Vec<String> = db.entries.iter().map(Entry::path).collect();
+        let mut sorted = paths.clone();
+        sorted.sort_by_key(|p| p.to_lowercase());
+        assert_eq!(paths, sorted);
+        assert_eq!(paths.first().map(String::as_str), Some("Bank"));
     }
 }
