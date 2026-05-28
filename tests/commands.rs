@@ -304,3 +304,30 @@ fn nothing_found_is_exit_code_3() {
         .code(3)
         .stderr(predicate::str::contains("group 'NoSuchGroup'"));
 }
+
+#[test]
+fn a_file_that_is_not_keepass_says_so() {
+    let dir = tempfile::tempdir().unwrap();
+    let f = dir.path().join("notes.txt");
+    std::fs::write(&f, "just some text\n").unwrap();
+    Command::cargo_bin("prive")
+        .unwrap()
+        .env("PRIVE_CONFIG", fixture("no-such-config.toml"))
+        .arg("--db")
+        .arg(&f)
+        .args(["--password-stdin", "ls"])
+        .write_stdin("x\n")
+        .assert()
+        .code(1)
+        .stderr(predicate::str::contains("is not a KeePass database"));
+    Command::cargo_bin("prive")
+        .unwrap()
+        .env("PRIVE_CONFIG", fixture("no-such-config.toml"))
+        .arg("--db")
+        .arg(dir.path().join("missing.kdbx"))
+        .args(["--password-stdin", "ls"])
+        .write_stdin("x\n")
+        .assert()
+        .code(1)
+        .stderr(predicate::str::contains("opening database"));
+}
