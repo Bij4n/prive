@@ -90,9 +90,13 @@ pub fn audit(entries: &[Entry], opts: &Options) -> anyhow::Result<Report> {
 
     let mut breach_cache = HashMap::new();
     let mut findings = Vec::new();
-    for e in &checked {
+    for (n, e) in checked.iter().enumerate() {
         let mut issues = Vec::new();
         if opts.breach_check {
+            // A big database takes a while against the network; say how far along it is.
+            if std::io::IsTerminal::is_terminal(&std::io::stderr()) {
+                eprint!("\rChecking Have I Been Pwned: {}/{}", n + 1, checked.len());
+            }
             let count = crate::hibp::breach_count(&e.password, &mut breach_cache)?;
             if count > 0 {
                 issues.push(Issue::Breached { count });
@@ -126,6 +130,9 @@ pub fn audit(entries: &[Entry], opts: &Options) -> anyhow::Result<Report> {
                 issues,
             });
         }
+    }
+    if opts.breach_check && std::io::IsTerminal::is_terminal(&std::io::stderr()) {
+        eprintln!();
     }
     // Worst first: breached, then weak, reused, expired, old; ties by path.
     findings.sort_by(|a, b| {
