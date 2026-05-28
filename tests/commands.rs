@@ -253,3 +253,42 @@ fn without_a_terminal_or_password_source_it_fails_at_once() {
         .stderr(predicate::str::contains("--password-stdin"));
     assert!(started.elapsed() < std::time::Duration::from_secs(20));
 }
+
+#[test]
+fn password_file_and_key_file() {
+    let dir = tempfile::tempdir().unwrap();
+    let pwfile = dir.path().join("pw");
+    std::fs::write(&pwfile, "fixture-pass\nthis line is ignored\n").unwrap();
+    Command::cargo_bin("prive")
+        .unwrap()
+        .env("PRIVE_CONFIG", fixture("no-such-config.toml"))
+        .env("PRIVE_PASSWORD_FILE", &pwfile)
+        .arg("--db")
+        .arg(fixture("keyfile.kdbx"))
+        .arg("--keyfile")
+        .arg(fixture("keyfile.keyx"))
+        .args(["get", "Key file entry", "--field", "username"])
+        .assert()
+        .success()
+        .stdout("kfuser\n");
+}
+
+#[test]
+fn the_default_database_comes_from_the_config_file() {
+    let dir = tempfile::tempdir().unwrap();
+    let cfg = dir.path().join("config.toml");
+    std::fs::write(
+        &cfg,
+        format!("db = {:?}\n", fixture("kdbx31.kdbx").to_string_lossy()),
+    )
+    .unwrap();
+    Command::cargo_bin("prive")
+        .unwrap()
+        .env("PRIVE_CONFIG", &cfg)
+        .env_remove("PRIVE_DB")
+        .args(["--password-stdin", "get", "Bank", "-f", "url"])
+        .write_stdin("fixture-pass\n")
+        .assert()
+        .success()
+        .stdout("https://bank.example.invalid\n");
+}
