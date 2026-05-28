@@ -135,3 +135,48 @@ fn keepassxc_reads_the_fixtures_we_test_against() {
     .unwrap();
     assert!(kf.contains("Key file entry"));
 }
+
+/// `prive otp` and `keepassxc-cli show -t` agree on every entry with a code, read from the
+/// same file.
+#[test]
+fn prive_otp_matches_keepassxc_entry_by_entry() {
+    if !available() {
+        return;
+    }
+    for entry in [
+        "Work/GitHub",
+        "Bank",
+        "Work/Cloud/Steam",
+        "Personal/Legacy 2FA",
+    ] {
+        let mut matched = false;
+        for _ in 0..2 {
+            let before = prive::otp::unix_now() / 30;
+            let ours = assert_cmd::Command::cargo_bin("prive")
+                .unwrap()
+                .env("PRIVE_CONFIG", fixture("no-such-config.toml"))
+                .args([
+                    "--db",
+                    &fixture("kdbx41.kdbx"),
+                    "--password-stdin",
+                    "otp",
+                    entry,
+                ])
+                .write_stdin(format!("{PASSWORD}\n"))
+                .output()
+                .unwrap();
+            let theirs = keepassxc(&["show", "-q", "-t", &fixture("kdbx41.kdbx"), entry]);
+            if prive::otp::unix_now() / 30 != before {
+                continue; // crossed a boundary while the two ran; try again
+            }
+            assert_eq!(
+                String::from_utf8_lossy(&ours.stdout).trim(),
+                theirs.unwrap(),
+                "{entry}"
+            );
+            matched = true;
+            break;
+        }
+        assert!(matched, "{entry}: kept crossing a period boundary");
+    }
+}
