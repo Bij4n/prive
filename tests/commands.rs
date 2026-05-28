@@ -135,3 +135,16 @@ fn get_prints_exactly_one_value() {
         .stdout(predicate::str::is_empty())
         .stderr(predicate::str::contains("field 'nope'"));
 }
+
+#[test]
+fn get_clip_copies_and_prints_nothing() {
+    let dir = tempfile::tempdir().unwrap();
+    let clip = dir.path().join("clipboard");
+    prive(&["get", "Bank", "--clip"])
+        .env("PRIVE_CLIPBOARD_FILE", &clip)
+        .assert()
+        .success()
+        .stdout(predicate::str::is_empty())
+        .stderr(predicate::str::contains("Copied"));
+    assert_eq!(std::fs::read_to_string(&clip).unwrap(), "b4nk-P@ss-2026!");
+}
