@@ -93,6 +93,19 @@ pub enum Command {
         json: bool,
     },
 
+    /// Report weak, reused, old and expired passwords
+    Audit {
+        /// Also check each password against Have I Been Pwned (sends 5 hex characters of its
+        /// SHA-1 hash per password; nothing else leaves the machine)
+        #[arg(long)]
+        hibp: bool,
+        /// Flag passwords not changed for more than this many days (0: don't check)
+        #[arg(long, default_value_t = 365, value_name = "DAYS")]
+        max_age: i64,
+        #[arg(long)]
+        json: bool,
+    },
+
     /// Generate a password, passphrase or PIN (no database needed)
     Gen(GenArgs),
 

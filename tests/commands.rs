@@ -179,3 +179,20 @@ fn otp_json() {
     let left = v["seconds_left"].as_u64().unwrap();
     assert!((1..=60).contains(&left));
 }
+
+#[test]
+fn audit_finds_the_planted_problems() {
+    let out = prive(&["audit"]).output().unwrap();
+    assert!(out.status.success());
+    let text = String::from_utf8(out.stdout).unwrap();
+    // "password1" is weak and used twice; Old VPN expired; Wi-Fi is excluded.
+    assert!(text.contains("Personal/GitHub\n  - weak"));
+    assert!(text.contains("reused by 1 other entry"));
+    assert!(text.contains("Old VPN\n  - expired"));
+    assert!(!text.contains("Wi-Fi"));
+    assert!(text.contains("1 skipped"));
+    assert!(
+        !text.contains("password1"),
+        "the report must not show passwords"
+    );
+}

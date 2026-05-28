@@ -118,6 +118,25 @@ fn dispatch(cli: Cli) -> Result<()> {
                 output::print(&output::render_list(&shown))
             }
         }
+        Command::Audit {
+            hibp,
+            max_age,
+            json,
+        } => {
+            let db = open(&cli.global)?;
+            let report = audit::audit(
+                &db.entries,
+                &audit::Options {
+                    max_age_days: max_age,
+                    breach_check: hibp,
+                },
+            )?;
+            if json {
+                output::print_json(&report)
+            } else {
+                output::print(&output::render_audit(&report))
+            }
+        }
         Command::Gen(args) => {
             let g = if let Some(n) = args.words {
                 generate::passphrase(n, &args.separator, args.capitalize)?
