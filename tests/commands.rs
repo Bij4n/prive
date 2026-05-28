@@ -359,3 +359,19 @@ fn otp_clip_copies_the_code() {
     assert_eq!(code.len(), 8);
     assert!(code.chars().all(|c| c.is_ascii_digit()));
 }
+
+#[test]
+fn the_same_answers_from_every_format() {
+    for db in ["kdbx31.kdbx", "kdbx40.kdbx", "kdbx41.kdbx"] {
+        Command::cargo_bin("prive")
+            .unwrap()
+            .env("PRIVE_CONFIG", fixture("no-such-config.toml"))
+            .arg("--db")
+            .arg(fixture(db))
+            .args(["--password-stdin", "get", "Work/GitHub", "-f", "API key"])
+            .write_stdin("fixture-pass\n")
+            .assert()
+            .success()
+            .stdout("custom-protected\n");
+    }
+}
