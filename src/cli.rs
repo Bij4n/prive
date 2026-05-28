@@ -46,6 +46,17 @@ pub struct Global {
 
 #[derive(Debug, Subcommand)]
 pub enum Command {
+    /// Print one field of an entry (the password by default), nothing else
+    Get {
+        entry: String,
+        /// password, username, url, notes, title, or a custom field's name
+        #[arg(short, long, default_value = "password")]
+        field: String,
+        /// Copy to the clipboard instead of printing; cleared after a timeout
+        #[arg(short, long)]
+        clip: bool,
+    },
+
     /// Show an entry; passwords and protected fields stay hidden unless --reveal
     Show {
         /// Title, Group/Title path, or uuid:<uuid>

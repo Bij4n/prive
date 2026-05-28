@@ -116,3 +116,22 @@ fn show_json_and_unknown_or_ambiguous_names() {
         .stderr(predicate::str::contains("Work/GitHub"))
         .stderr(predicate::str::contains("Personal/GitHub"));
 }
+
+#[test]
+fn get_prints_exactly_one_value() {
+    prive(&["get", "Work/GitHub"])
+        .assert()
+        .success()
+        .stdout("gh-Secret-1\n");
+    prive(&["get", "Work/GitHub", "--field", "username"])
+        .assert()
+        .stdout("demo\n");
+    prive(&["get", "Work/GitHub", "-f", "API key"])
+        .assert()
+        .stdout("custom-protected\n");
+    prive(&["get", "Work/GitHub", "-f", "nope"])
+        .assert()
+        .code(3)
+        .stdout(predicate::str::is_empty())
+        .stderr(predicate::str::contains("field 'nope'"));
+}

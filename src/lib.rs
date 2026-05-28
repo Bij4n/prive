@@ -49,6 +49,18 @@ pub fn run() -> ExitCode {
 
 fn dispatch(cli: Cli) -> Result<()> {
     match cli.command {
+        Command::Get { entry, field, clip } => {
+            let db = open(&cli.global)?;
+            let e = select::select(&db.entries, &entry)?;
+            let value = e.field(&field).ok_or_else(|| {
+                error::Failure::NotFound(format!("{}: field '{field}'", e.path()))
+            })?;
+            if clip {
+                copy_and_tell(value)
+            } else {
+                output::print(&format!("{value}\n"))
+            }
+        }
         Command::Show {
             entry,
             reveal,
