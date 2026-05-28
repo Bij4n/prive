@@ -53,3 +53,15 @@ fn ls_a_group() {
         .stdout(predicate::str::contains("Work/Cloud/Steam"))
         .stdout(predicate::str::contains("Bank").not());
 }
+
+#[test]
+fn ls_json_has_no_passwords() {
+    let out = prive(&["ls", "--json"]).output().unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    let all = v.as_array().unwrap();
+    assert_eq!(all.len(), 7);
+    let gh = all.iter().find(|e| e["path"] == "Work/GitHub").unwrap();
+    assert_eq!(gh["has_otp"], true);
+    assert!(gh.get("password").is_none());
+    assert!(!String::from_utf8_lossy(&out.stdout).contains("gh-Secret-1"));
+}
