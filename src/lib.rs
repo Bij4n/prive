@@ -118,6 +118,33 @@ fn dispatch(cli: Cli) -> Result<()> {
                 output::print(&output::render_list(&shown))
             }
         }
+        Command::Pick(args) => {
+            let db = open(&cli.global)?;
+            let Some(e) = pick::pick(&db.entries, args.query.as_deref())? else {
+                return Ok(()); // cancelled
+            };
+            let value = if args.otp {
+                otp::Totp::from_entry(e)
+                    .ok_or_else(|| {
+                        error::Failure::NotFound(format!("{}: no one-time code", e.path()))
+                    })?
+                    .now()
+                    .0
+            } else {
+                let name = args.field.as_deref().unwrap_or("password");
+                e.field(name)
+                    .ok_or_else(|| {
+                        error::Failure::NotFound(format!("{}: field '{name}'", e.path()))
+                    })?
+                    .to_string()
+            };
+            if args.print {
+                output::print(&format!("{value}\n"))
+            } else {
+                eprintln!("{}", e.path());
+                copy_and_tell(&value)
+            }
+        }
         Command::Audit {
             hibp,
             max_age,

@@ -93,6 +93,9 @@ pub enum Command {
         json: bool,
     },
 
+    /// Choose an entry interactively and copy its password
+    Pick(PickArgs),
+
     /// Report weak, reused, old and expired passwords
     Audit {
         /// Also check each password against Have I Been Pwned (sends 5 hex characters of its
@@ -114,6 +117,24 @@ pub enum Command {
         #[arg(value_enum)]
         shell: clap_complete::Shell,
     },
+}
+
+#[derive(Debug, Args)]
+pub struct PickArgs {
+    /// Start with this search text
+    pub query: Option<String>,
+
+    /// Take this field instead of the password
+    #[arg(short, long, conflicts_with = "otp")]
+    pub field: Option<String>,
+
+    /// Take the current one-time code instead of the password
+    #[arg(long)]
+    pub otp: bool,
+
+    /// Print the value instead of copying it
+    #[arg(long)]
+    pub print: bool,
 }
 
 #[derive(Debug, Args)]
