@@ -8,7 +8,7 @@ use keepass::db::{GroupRef, fields};
 use keepass::{Database, DatabaseKey};
 use zeroize::Zeroizing;
 
-use crate::entry::Entry;
+use crate::entry::{CustomField, Entry};
 use crate::unlock::Credentials;
 
 pub struct Db {
@@ -45,6 +45,17 @@ impl Db {
 fn walk(group: &GroupRef<'_>, path: &str, out: &mut Vec<Entry>) {
     for e in group.entries() {
         let get = |k: &str| e.get(k).unwrap_or("").to_string();
+        let mut custom: Vec<CustomField> = e
+            .fields
+            .iter()
+            .filter(|(k, _)| !fields::KNOWN_FIELDS.contains(&k.as_str()))
+            .map(|(k, v)| CustomField {
+                name: k.clone(),
+                value: Zeroizing::new(v.get().clone()),
+                protected: v.is_protected(),
+            })
+            .collect();
+        custom.sort_by(|a, b| a.name.cmp(&b.name));
         out.push(Entry {
             uuid: e.id().uuid().to_string(),
             group: path.to_string(),
@@ -53,6 +64,7 @@ fn walk(group: &GroupRef<'_>, path: &str, out: &mut Vec<Entry>) {
             url: get(fields::URL),
             notes: get(fields::NOTES),
             password: Zeroizing::new(get(fields::PASSWORD)),
+            custom,
             ..Entry::default()
         });
     }
@@ -95,5 +107,22 @@ mod tests {
         assert_eq!(*gh.password, "gh-Secret-1");
         assert_eq!(gh.url, "https://github.com");
         assert!(gh.notes.contains("ünïcödé"));
+    }
+
+    #[test]
+    fn custom_fields_keep_their_protected_flag() {
+        let db = Db::open(&fixture("kdbx41.kdbx"), &creds("fixture-pass")).unwrap();
+        let gh = db
+            .entries
+            .iter()
+            .find(|e| e.path() == "Work/GitHub")
+            .unwrap();
+        let names: Vec<(&str, bool)> = gh
+            .custom
+            .iter()
+            .map(|c| (c.name.as_str(), c.protected))
+            .collect();
+        assert_eq!(names, [("API key", true), ("otp", true), ("plan", false)]);
+        assert_eq!(gh.field("plan"), Some("team"));
     }
 }
