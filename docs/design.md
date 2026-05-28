@@ -8,7 +8,9 @@ truth, and other KeePass apps can change it at any time.
 
 ```
 cli.rs        argument parsing (clap); the CLI is the public interface
-lib.rs        dispatch: one function per command, errors mapped to exit codes
+lib.rs        run(): parse, dispatch, map errors to exit codes
+commands.rs   one function per command
+db.rs         open a KDBX file (password and/or key file) into a list of entries
 config.rs     which database and key file to open, clipboard timeout
 unlock.rs     where the master password comes from (stdin, file, terminal prompt)
 entry.rs      the Entry model every command works on; never Debug-prints secrets
