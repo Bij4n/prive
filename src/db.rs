@@ -56,6 +56,9 @@ fn walk(group: &GroupRef<'_>, path: &str, out: &mut Vec<Entry>) {
             })
             .collect();
         custom.sort_by(|a, b| a.name.cmp(&b.name));
+        let mut attachments: Vec<String> =
+            e.attachments_named().map(|(n, _)| n.to_string()).collect();
+        attachments.sort();
         out.push(Entry {
             uuid: e.id().uuid().to_string(),
             group: path.to_string(),
@@ -67,13 +70,13 @@ fn walk(group: &GroupRef<'_>, path: &str, out: &mut Vec<Entry>) {
             custom,
             tags: e.tags.clone(),
             quality_check: e.quality_check,
+            attachments,
             modified: e.times.last_modification,
             expires: if e.times.expires == Some(true) {
                 e.times.expiry
             } else {
                 None
             },
-            ..Entry::default()
         });
     }
     for sub in group.groups() {
@@ -162,5 +165,16 @@ mod tests {
                 .unwrap()
                 .quality_check
         );
+    }
+
+    #[test]
+    fn attachment_names() {
+        let db = Db::open(&fixture("kdbx41.kdbx"), &creds("fixture-pass")).unwrap();
+        let gh = db
+            .entries
+            .iter()
+            .find(|e| e.path() == "Work/GitHub")
+            .unwrap();
+        assert_eq!(gh.attachments, ["deploy.txt"]);
     }
 }
