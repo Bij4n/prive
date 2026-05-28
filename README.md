@@ -47,6 +47,29 @@ prive gen --words 6              # a passphrase, no database needed
 Entries are named by title, by `Group/Title` path when a title is used twice, or by
 `uuid:<uuid>`.
 
+## In scripts
 
+- stdout carries only the result; prompts, notices and errors go to stderr.
+- Stable exit codes: 0 ok, 1 error, 2 usage, 3 not found, 4 ambiguous, 5 wrong password or no
+  terminal for the prompt.
+- `--password-stdin` or `PRIVE_PASSWORD_FILE` instead of a prompt; prive never waits on a
+  prompt nobody can answer.
+- `--json` on `ls`, `search`, `show`, `otp`, `audit` and `gen`.
+
+```bash
+export GITHUB_TOKEN="$(prive get Work/GitHub -f token)"
+```
+
+More in [`docs/`](docs/): [scripting](docs/scripting.md), [exit codes](docs/exit-codes.md),
+[one-time codes](docs/totp.md), [clipboard](docs/clipboard.md),
+[configuration](docs/config.md), [KeePass compatibility](docs/keepass-compatibility.md),
+[security](docs/security.md), [design](docs/design.md).
+
+## Contributing
+
+Issues and pull requests are welcome: see [`CONTRIBUTING.md`](CONTRIBUTING.md). Security
+reports: [`SECURITY.md`](SECURITY.md).
+
+## License
 
 MIT. The passphrase word list is the EFF large word list (CC BY 3.0 US); see `assets/`.
