@@ -45,6 +45,14 @@ pub struct Global {
 
 #[derive(Debug, Subcommand)]
 pub enum Command {
+    /// List entries: paths and usernames, never passwords
+    Ls {
+        /// Only entries in this group and its subgroups
+        group: Option<String>,
+        #[arg(long)]
+        json: bool,
+    },
+
     /// Generate a password, passphrase or PIN (no database needed)
     Gen(GenArgs),
 

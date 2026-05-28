@@ -49,6 +49,16 @@ pub fn run() -> ExitCode {
 
 fn dispatch(cli: Cli) -> Result<()> {
     match cli.command {
+        Command::Ls { group, json } => {
+            let db = open(&cli.global)?;
+            let shown = select::in_group(&db.entries, group.as_deref().unwrap_or(""));
+            if json {
+                let summaries: Vec<_> = shown.iter().map(|e| e.summary()).collect();
+                output::print_json(&summaries)
+            } else {
+                output::print(&output::render_list(&shown))
+            }
+        }
         Command::Gen(args) => {
             let g = if let Some(n) = args.words {
                 generate::passphrase(n, &args.separator, args.capitalize)?
@@ -83,6 +93,14 @@ fn dispatch(cli: Cli) -> Result<()> {
             output::print(&String::from_utf8_lossy(&out))
         }
     }
+}
+
+/// Open the database the command line or config file points at.
+fn open(global: &cli::Global) -> Result<db::Db> {
+    let cfg = config::Config::load()?;
+    let target = cfg.target(global.db.as_deref(), global.keyfile.as_deref())?;
+    let creds = unlock::KeySource::for_target(global, &target)?;
+    db::Db::open(&target.db, &creds)
 }
 
 /// Copy a secret, then say on stderr when it will be cleared.
