@@ -57,6 +57,17 @@ pub enum Command {
         clip: bool,
     },
 
+    /// Print the current one-time (TOTP) code of an entry
+    Otp {
+        entry: String,
+        /// Copy to the clipboard instead of printing
+        #[arg(short, long, conflicts_with = "json")]
+        clip: bool,
+        /// Print {"code": ..., "seconds_left": ..., "period": ...}
+        #[arg(long)]
+        json: bool,
+    },
+
     /// Show an entry; passwords and protected fields stay hidden unless --reveal
     Show {
         /// Title, Group/Title path, or uuid:<uuid>

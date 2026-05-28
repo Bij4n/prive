@@ -61,6 +61,30 @@ fn dispatch(cli: Cli) -> Result<()> {
                 output::print(&format!("{value}\n"))
             }
         }
+        Command::Otp { entry, clip, json } => {
+            let db = open(&cli.global)?;
+            let e = select::select(&db.entries, &entry)?;
+            let totp = otp::Totp::from_entry(e).ok_or_else(|| {
+                error::Failure::NotFound(format!("{}: no one-time code", e.path()))
+            })?;
+            let (code, left) = totp.now();
+            if json {
+                return output::print_json(&serde_json::json!({
+                    "code": code,
+                    "seconds_left": left,
+                    "period": totp.period,
+                }));
+            }
+            if clip {
+                copy_and_tell(&code)?;
+            } else {
+                output::print(&format!("{code}\n"))?;
+            }
+            if std::io::stderr().is_terminal() {
+                eprintln!("(valid for {left} more seconds)");
+            }
+            Ok(())
+        }
         Command::Show {
             entry,
             reveal,
