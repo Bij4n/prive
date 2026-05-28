@@ -69,4 +69,13 @@ mod tests {
             0
         );
     }
+
+    /// Talks to the real service, so it is opt-in: `cargo test -- --ignored`.
+    #[test]
+    #[ignore = "needs the network"]
+    fn the_real_service_knows_a_famous_password() {
+        let mut cache = HashMap::new();
+        assert!(breach_count("password", &mut cache).unwrap() > 1_000_000);
+        assert_eq!(cache.len(), 1);
+    }
 }
