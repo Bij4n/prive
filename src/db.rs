@@ -235,4 +235,34 @@ mod tests {
             assert!(is_bad_credentials(&err), "{f}: {err:#}");
         }
     }
+
+    #[test]
+    fn every_fixture_format_opens_the_same() {
+        let paths = |f: &str| -> Vec<String> {
+            let db = Db::open(&fixture(f), &creds("fixture-pass")).unwrap();
+            db.entries.iter().map(Entry::path).collect()
+        };
+        let v31 = paths("kdbx31.kdbx");
+        assert_eq!(v31, paths("kdbx40.kdbx"));
+        assert_eq!(v31, paths("kdbx41.kdbx"));
+        assert_eq!(
+            v31.len(),
+            7,
+            "seven live entries; the eighth is in the recycle bin"
+        );
+    }
+
+    #[test]
+    fn key_file_databases_need_the_key_file() {
+        let with = Credentials {
+            password: Some(Zeroizing::new("fixture-pass".into())),
+            keyfile: Some(fixture("keyfile.keyx")),
+        };
+        let db = Db::open(&fixture("keyfile.kdbx"), &with).unwrap();
+        assert_eq!(db.entries[0].title, "Key file entry");
+        let without = Db::open(&fixture("keyfile.kdbx"), &creds("fixture-pass"))
+            .err()
+            .unwrap();
+        assert!(is_bad_credentials(&without), "{without:#}");
+    }
 }
