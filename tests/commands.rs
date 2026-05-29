@@ -389,3 +389,9 @@ fn show_and_ls_agree_on_paths() {
         assert_eq!(v["uuid"], e["uuid"], "{path}");
     }
 }
+
+#[test]
+fn unreadable_code_settings_are_not_reported_as_missing() {
+    // Wi-Fi has no code at all: "not found" (3). A broken otp field is a different error (1).
+    prive(&["otp", "Wi-Fi"]).assert().code(3);
+}
