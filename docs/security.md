@@ -25,6 +25,16 @@ What prive protects against, and what it doesn't. This will grow as the rewrite 
 - The only network access is the optional Have I Been Pwned check (`audit --hibp`), which
   sends 5 hex characters of each password's SHA-1 hash and nothing else.
 
+## Reading a database
+
+- The file is checked to be a KeePass database before you are asked for its password, so a
+  typo in a path never costs you a prompt.
+- prive reads the whole file into memory, decrypts it with the `keepass` crate, and copies
+  each entry into its own structure. Passwords and protected fields are held in memory that is
+  wiped when freed. The decrypted database is dropped as soon as the command is done.
+- A wrong password or key file is reported as such (exit code 5); prive never tells you which
+  of the two was wrong, because the file format can't know.
+
 ## Reporting a problem
 
 Please open a GitHub issue marked "security", or, for anything sensitive, ask for a private
