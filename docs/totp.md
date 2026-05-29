@@ -18,3 +18,10 @@ codes. Not supported: HOTP (counter-based codes), because using one means writin
 back to the database.
 
 Codes are checked against the RFC 6238 test vectors in the test suite.
+
+## When prive can't read a code
+
+`prive otp` exits with 3 when an entry has no one-time code at all. When the entry has code
+settings prive doesn't understand (a field it can't decode, or values out of range), it says
+so and exits with 1, so a typo in the settings isn't mistaken for "no code".
+
