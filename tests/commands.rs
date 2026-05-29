@@ -375,3 +375,17 @@ fn the_same_answers_from_every_format() {
             .stdout("custom-protected\n");
     }
 }
+
+#[test]
+fn show_and_ls_agree_on_paths() {
+    let ls = prive(&["ls", "--json"]).output().unwrap();
+    let all: serde_json::Value = serde_json::from_slice(&ls.stdout).unwrap();
+    for e in all.as_array().unwrap() {
+        let path = e["path"].as_str().unwrap();
+        let shown = prive(&["show", path, "--json"]).output().unwrap();
+        // Titles used twice are ambiguous by title, never by full path.
+        assert!(shown.status.success(), "{path}");
+        let v: serde_json::Value = serde_json::from_slice(&shown.stdout).unwrap();
+        assert_eq!(v["uuid"], e["uuid"], "{path}");
+    }
+}
