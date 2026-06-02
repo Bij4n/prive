@@ -31,6 +31,7 @@ echo 'db = "/home/me/Passwords.kdbx"' > ~/.config/prive/config.toml
 
 prive ls                         # every entry: path and username
 prive ls Work                    # one group and its subgroups
+prive ls --tag cloud             # entries with a tag (prive tags lists them all)
 prive search github              # by title, username, URL, group or tag
 prive show Work/GitHub           # details; secrets hidden
 prive show Work/GitHub --reveal
@@ -38,6 +39,7 @@ prive get Work/GitHub            # just the password, for scripts
 prive get Work/GitHub --clip     # copy it; cleared after 20 seconds
 prive get Work/GitHub -f username
 prive otp Work/GitHub            # current one-time code
+prive open Work/GitHub           # the site in the browser, password on the clipboard
 prive pick                       # fuzzy finder; Enter copies the password
 prive audit                      # weak, reused, old and expired passwords
 prive audit --hibp               # also check Have I Been Pwned (k-anonymity)
