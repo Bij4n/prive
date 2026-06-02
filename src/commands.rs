@@ -29,8 +29,14 @@ fn copy_and_tell(secret: &str) -> Result<()> {
 }
 
 fn field_of<'a>(e: &'a Entry, name: &str) -> Result<&'a str> {
-    Ok(e.field(name)
-        .ok_or_else(|| Failure::NotFound(format!("{}: field '{name}'", e.path())))?)
+    e.field(name).ok_or_else(|| {
+        Failure::NotFound(format!(
+            "{}: field '{name}' (it has: {})",
+            e.path(),
+            e.field_names().join(", ")
+        ))
+        .into()
+    })
 }
 
 fn totp_of(e: &Entry) -> Result<otp::Totp> {

@@ -421,3 +421,13 @@ fn otp_min_validity() {
         .code(1)
         .stderr(predicate::str::contains("shorter than the code's period"));
 }
+
+#[test]
+fn a_missing_field_lists_the_ones_there_are() {
+    prive(&["get", "Work/GitHub", "-f", "token"])
+        .assert()
+        .code(3)
+        .stderr(predicate::str::contains(
+            "it has: title, username, password, url, notes, API key",
+        ));
+}

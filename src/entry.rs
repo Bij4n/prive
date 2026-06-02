@@ -128,6 +128,16 @@ impl Entry {
         }
     }
 
+    /// Names `field` accepts for this entry: the five standard ones, then custom fields.
+    pub fn field_names(&self) -> Vec<String> {
+        let mut names: Vec<String> = ["title", "username", "password", "url", "notes"]
+            .iter()
+            .map(|s| (*s).to_string())
+            .collect();
+        names.extend(self.custom.iter().map(|c| c.name.clone()));
+        names
+    }
+
     /// Any field by name: a standard one (ignoring case; `user`, `login`, `pass` and `note`
     /// are accepted as aliases), else a custom field, exact name first, then ignoring case.
     pub fn field(&self, name: &str) -> Option<&str> {
@@ -262,5 +272,19 @@ mod tests {
         sort_by_path(&mut v);
         let paths: Vec<String> = v.iter().map(Entry::path).collect();
         assert_eq!(paths, ["apple", "Work/A", "work/b", "Zed"]);
+    }
+
+    #[test]
+    fn field_names_list_standard_then_custom() {
+        let mut e = sample();
+        e.custom = vec![CustomField {
+            name: "API key".into(),
+            value: Zeroizing::new("k".into()),
+            protected: true,
+        }];
+        assert_eq!(
+            e.field_names(),
+            ["title", "username", "password", "url", "notes", "API key"]
+        );
     }
 }
