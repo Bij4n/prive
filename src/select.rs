@@ -48,6 +48,55 @@ pub fn select<'a>(entries: &'a [Entry], query: &str) -> Result<&'a Entry, Failur
     }
 }
 
+/// Edit distance between two strings by characters, counting a swap of two neighbours as one
+/// edit (optimal string alignment), since that is the most common typing slip.
+fn distance(a: &str, b: &str) -> usize {
+    let a: Vec<char> = a.chars().collect();
+    let b: Vec<char> = b.chars().collect();
+    let (n, m) = (a.len(), b.len());
+    let mut d = vec![vec![0usize; m + 1]; n + 1];
+    for (i, row) in d.iter_mut().enumerate() {
+        row[0] = i;
+    }
+    for (j, cell) in d[0].iter_mut().enumerate() {
+        *cell = j;
+    }
+    for i in 1..=n {
+        for j in 1..=m {
+            let cost = usize::from(a[i - 1] != b[j - 1]);
+            let mut best = (d[i - 1][j] + 1)
+                .min(d[i][j - 1] + 1)
+                .min(d[i - 1][j - 1] + cost);
+            if i > 1 && j > 1 && a[i - 1] == b[j - 2] && a[i - 2] == b[j - 1] {
+                best = best.min(d[i - 2][j - 2] + 1);
+            }
+            d[i][j] = best;
+        }
+    }
+    d[n][m]
+}
+
+/// Up to three entry paths that look like a misspelling of `query`, closest first.
+pub fn suggestions(entries: &[Entry], query: &str) -> Vec<String> {
+    let q = query.trim_start_matches('/').to_lowercase();
+    if q.is_empty() {
+        return Vec::new();
+    }
+    let limit = (q.chars().count() / 3).max(1);
+    let mut scored: Vec<(usize, String)> = entries
+        .iter()
+        .filter_map(|e| {
+            let by_path = distance(&q, &e.path().to_lowercase());
+            let by_title = distance(&q, &e.title.to_lowercase());
+            let d = by_path.min(by_title);
+            (d <= limit).then(|| (d, e.path()))
+        })
+        .collect();
+    scored.sort();
+    scored.dedup_by(|a, b| a.1 == b.1);
+    scored.into_iter().take(3).map(|(_, p)| p).collect()
+}
+
 /// UUIDs compare as bare lower-case hex: KeePassXC shows `{ab3be06b-edf0-...}`, other tools
 /// print them without braces or dashes.
 fn normalize_uuid(s: &str) -> String {
@@ -223,5 +272,16 @@ mod tests {
     fn an_empty_search_lists_everything() {
         let e = sample();
         assert_eq!(search(&e, "").len(), e.len());
+    }
+
+    #[test]
+    fn suggests_close_names() {
+        let e = sample();
+        assert_eq!(distance("kitten", "sitting"), 3);
+        assert_eq!(distance("bnak", "bank"), 1);
+        assert_eq!(suggestions(&e, "Bnak"), ["Bank"]);
+        assert_eq!(suggestions(&e, "work/githb"), ["Work/GitHub"]);
+        assert!(suggestions(&e, "completely different").is_empty());
+        assert!(suggestions(&e, "").is_empty());
     }
 }
