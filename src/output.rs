@@ -182,16 +182,21 @@ pub fn render_show(e: &Entry, reveal: bool) -> String {
         );
     }
     line("Tags:", &e.tags.join(", "));
-    if !e.custom.is_empty() {
+    // One-time code settings are summed up on the TOTP line, so they aren't listed again.
+    let fields: Vec<&crate::entry::CustomField> = e
+        .custom
+        .iter()
+        .filter(|c| !crate::otp::is_otp_field(&c.name))
+        .collect();
+    if !fields.is_empty() {
         out.push_str("Fields:\n");
-        let width = e
-            .custom
+        let width = fields
             .iter()
             .map(|c| c.name.chars().count())
             .max()
             .unwrap_or(0)
             + 1;
-        for c in &e.custom {
+        for c in fields {
             let value = if c.protected && !reveal {
                 HIDDEN
             } else {

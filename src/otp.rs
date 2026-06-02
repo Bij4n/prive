@@ -135,6 +135,25 @@ impl Totp {
     }
 }
 
+/// Field names one-time code settings are stored under.
+const OTP_FIELDS: [&str; 10] = [
+    "otp",
+    "TimeOtp-Secret-Base32",
+    "TimeOtp-Secret-Hex",
+    "TimeOtp-Secret-Base64",
+    "TimeOtp-Secret",
+    "TimeOtp-Length",
+    "TimeOtp-Period",
+    "TimeOtp-Algorithm",
+    "TOTP Seed",
+    "TOTP Settings",
+];
+
+/// Whether a custom field is one of the one-time code settings.
+pub fn is_otp_field(name: &str) -> bool {
+    OTP_FIELDS.iter().any(|f| f.eq_ignore_ascii_case(name))
+}
+
 /// Whether an entry has any of the fields a one-time code is read from, readable or not.
 pub fn has_otp_settings(entry: &Entry) -> bool {
     [
@@ -624,5 +643,13 @@ mod tests {
         assert!(has_otp_settings(&broken));
         assert!(Totp::from_entry(&broken).is_none());
         assert!(!has_otp_settings(&Entry::default()));
+    }
+
+    #[test]
+    fn otp_setting_names() {
+        assert!(is_otp_field("otp"));
+        assert!(is_otp_field("totp settings"));
+        assert!(is_otp_field("TimeOtp-Period"));
+        assert!(!is_otp_field("API key"));
     }
 }

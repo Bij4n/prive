@@ -506,3 +506,17 @@ fn ls_long_against_the_fixture() {
     assert!(!line("Wi-Fi").contains("2fa"));
     prive(&["ls", "--long", "--json"]).assert().code(2);
 }
+
+#[test]
+fn show_does_not_repeat_the_otp_settings_as_fields() {
+    let out = prive(&["show", "Personal/Legacy 2FA", "--reveal"])
+        .output()
+        .unwrap();
+    let text = String::from_utf8(out.stdout).unwrap();
+    assert!(text.contains("TOTP:"));
+    assert!(!text.contains("TOTP Seed"), "{text}");
+    assert!(
+        !text.contains("JBSWY3DP"),
+        "the secret itself must not be shown: {text}"
+    );
+}
