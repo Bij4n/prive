@@ -14,6 +14,8 @@ The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `l
   excluded from reports in KeePassXC are skipped by `audit`
 - A missing or non-KeePass file is reported before the password is asked for; a wrong
   password or key file exits with 5, nothing found with 3
+- "did you mean" suggestions when a name matches nothing
+- `otp --min-validity` waits for a fresh code when the current one is about to expire
 - `prive gen`: random passwords (every character class guaranteed, optional look-alike
   filtering), passphrases from the EFF large word list, and numeric PINs
 - TOTP code generation for every way KeePass apps store secrets (otpauth URIs, KeeOtp,
@@ -38,6 +40,8 @@ The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `l
   source policy checked in CI
 
 ### Fixed
+- Windows: `--clip` no longer keeps a caller waiting (a script's `$(...)`) until the
+  clipboard is cleared; the helper used to inherit the caller's output pipes
 - CI: the Windows test job no longer hangs until the 6-hour limit (two tests reached a console password prompt); every job has a timeout
 - Release builds use rustls instead of the system OpenSSL, so the musl target links and Linux binaries no longer need `libssl`
 - `pw` and `note` commands report a missing vault before asking for the master password
