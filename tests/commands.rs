@@ -403,3 +403,21 @@ fn a_misspelled_name_gets_suggestions() {
         .code(3)
         .stderr(predicate::str::contains("did you mean: Work/GitHub?"));
 }
+
+#[test]
+fn otp_min_validity() {
+    // Asking for at least 29 s of a 30 s code: either it is fresh already, or prive waits
+    // for the next one. Either way the answer has at least 29 s left.
+    let out = prive(&["otp", "Work/GitHub", "--min-validity", "29", "--json"])
+        .timeout(std::time::Duration::from_secs(40))
+        .output()
+        .unwrap();
+    assert!(out.status.success());
+    let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert!(v["seconds_left"].as_u64().unwrap() >= 29);
+
+    prive(&["otp", "Work/GitHub", "--min-validity", "30"])
+        .assert()
+        .code(1)
+        .stderr(predicate::str::contains("shorter than the code's period"));
+}
