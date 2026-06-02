@@ -22,6 +22,8 @@ What prive protects against, and what it doesn't. This will grow as the rewrite 
 - Writes new files atomically (temporary file, flush, rename), readable only by you on Unix.
 - Keeps secrets in memory that is wiped when it is freed (`zeroize`), and keeps them out of
   debug output.
+- `open` only ever opens http and https addresses, through the system's opener with no
+  shell. KeePass's `cmd://` URLs, which run programs, are refused.
 - The only network access is the optional Have I Been Pwned check (`audit --hibp`), which
   sends 5 hex characters of each password's SHA-1 hash and nothing else.
 
