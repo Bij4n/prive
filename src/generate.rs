@@ -177,8 +177,9 @@ mod tests {
 
     #[test]
     fn passphrases() {
-        let p = passphrase(6, "-", false).unwrap();
-        assert_eq!(p.value.split('-').count(), 6);
+        // "|" because four EFF words contain a hyphen (drop-down, felt-tip, t-shirt, yo-yo).
+        let p = passphrase(6, "|", false).unwrap();
+        assert_eq!(p.value.split('|').count(), 6);
         assert!((p.entropy_bits - 77.55).abs() < 0.01);
         let cap = passphrase(4, " ", true).unwrap();
         assert!(
@@ -210,5 +211,14 @@ mod tests {
         assert!(passphrase(4, "\n", false).is_err());
         assert!(passphrase(4, "", false).is_ok());
         assert!(passphrase(4, " / ", false).is_ok());
+    }
+
+    #[test]
+    fn the_only_non_letters_in_the_list_are_four_hyphens() {
+        let odd: Vec<&str> = words()
+            .into_iter()
+            .filter(|w| !w.chars().all(|c| c.is_ascii_lowercase()))
+            .collect();
+        assert_eq!(odd, ["drop-down", "felt-tip", "t-shirt", "yo-yo"]);
     }
 }
