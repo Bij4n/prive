@@ -70,7 +70,7 @@ pub enum Command {
 
     /// Show an entry; passwords and protected fields stay hidden unless --reveal
     Show {
-        /// Title, Group/Title path, or uuid:<uuid>
+        /// Title, Group/Title path, or uuid:UUID
         entry: String,
         #[arg(long)]
         reveal: bool,
