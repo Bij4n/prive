@@ -68,7 +68,7 @@ Line two – ünïcödé</Value></String>
             <String><Key>Title</Key><Value>Steam</Value></String>
             <String><Key>UserName</Key><Value>gamer</Value></String>
             <String><Key>Password</Key><Value ProtectInMemory="True">vX7#qL9!mZ2$wR4^tY6&amp;</Value></String>
-            <String><Key>otp</Key><Value ProtectInMemory="True">otpauth://totp/Steam:gamer?secret=JBSWY3DPEHPK3PXP&amp;encoder=steam</Value></String>
+            <String><Key>otp</Key><Value ProtectInMemory="True">otpauth://totp/Steam:gamer?secret=JBSWY3DPEHPK3PXP&amp;period=30&amp;digits=5&amp;issuer=Steam&amp;encoder=steam</Value></String>
           </Entry>
         </Group>
       </Group>

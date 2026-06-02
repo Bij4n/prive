@@ -81,7 +81,7 @@ fn steam_codes_match_keepassxc() {
     }
     same_code_as_keepassxc(
         "Work/Cloud/Steam",
-        "otpauth://totp/Steam:gamer?secret=JBSWY3DPEHPK3PXP&encoder=steam",
+        "otpauth://totp/Steam:gamer?secret=JBSWY3DPEHPK3PXP&period=30&digits=5&issuer=Steam&encoder=steam",
     );
 }
 
