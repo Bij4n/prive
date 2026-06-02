@@ -82,6 +82,12 @@ pub enum Command {
         json: bool,
     },
 
+    /// List the tags in use, with how many entries carry each
+    Tags {
+        #[arg(long)]
+        json: bool,
+    },
+
     /// Find entries by title, username, URL, group or tag
     Search {
         query: String,

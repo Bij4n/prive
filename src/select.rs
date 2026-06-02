@@ -143,6 +143,36 @@ pub fn with_tag<'a>(entries: &[&'a Entry], tag: &str) -> Vec<&'a Entry> {
         .collect()
 }
 
+/// Every tag in use and how many entries carry it, most used first, then by name. Tags that
+/// differ only in case are counted together under their most common spelling.
+pub fn tag_counts(entries: &[Entry]) -> Vec<(String, usize)> {
+    use std::collections::HashMap;
+    let mut by_key: HashMap<String, (usize, HashMap<&str, usize>)> = HashMap::new();
+    for e in entries {
+        for t in &e.tags {
+            let slot = by_key.entry(t.to_lowercase()).or_default();
+            slot.0 += 1;
+            *slot.1.entry(t.as_str()).or_default() += 1;
+        }
+    }
+    let mut out: Vec<(String, usize)> = by_key
+        .into_values()
+        .map(|(n, spellings)| {
+            let name = spellings
+                .into_iter()
+                .max_by(|a, b| a.1.cmp(&b.1).then_with(|| b.0.cmp(a.0)))
+                .map(|(s, _)| s.to_string())
+                .unwrap_or_default();
+            (name, n)
+        })
+        .collect();
+    out.sort_by(|a, b| {
+        b.1.cmp(&a.1)
+            .then_with(|| a.0.to_lowercase().cmp(&b.0.to_lowercase()))
+    });
+    out
+}
+
 /// Case-insensitive substring search over the path (group and title), username, URL and tags.
 /// Titles that match exactly come first, then titles that start with the query, then the rest;
 /// within each, the original order is kept.
@@ -309,5 +339,22 @@ mod tests {
         let hits = with_tag(&all, "cloud");
         assert_eq!(hits.len(), 1);
         assert_eq!(hits[0].uuid, "a");
+    }
+
+    #[test]
+    fn tags_are_counted_case_insensitively() {
+        let mut e = sample();
+        e[0].tags = vec!["Cloud".into(), "dev".into()];
+        e[1].tags = vec!["cloud".into()];
+        e[2].tags = vec!["Cloud".into(), "bank".into()];
+        assert_eq!(
+            tag_counts(&e),
+            [
+                ("Cloud".to_string(), 3),
+                ("bank".to_string(), 1),
+                ("dev".to_string(), 1)
+            ]
+        );
+        assert!(tag_counts(&[]).is_empty());
     }
 }

@@ -75,6 +75,28 @@ pub fn ls(global: &Global, group: Option<&str>, tags: &[String], json: bool) -> 
     list(&shown, json)
 }
 
+pub fn tags(global: &Global, json: bool) -> Result<()> {
+    let db = open(global)?;
+    let counts = select::tag_counts(&db.entries);
+    if json {
+        let list: Vec<_> = counts
+            .iter()
+            .map(|(t, n)| serde_json::json!({ "tag": t, "entries": n }))
+            .collect();
+        return output::print_json(&list);
+    }
+    let width = counts
+        .iter()
+        .map(|(_, n)| n.to_string().len())
+        .max()
+        .unwrap_or(1);
+    let text: String = counts
+        .iter()
+        .map(|(t, n)| format!("{n:>width$}  {t}\n"))
+        .collect();
+    output::print(&text)
+}
+
 pub fn search(global: &Global, query: &str, json: bool) -> Result<()> {
     let db = open(global)?;
     let hits = select::search(&db.entries, query);

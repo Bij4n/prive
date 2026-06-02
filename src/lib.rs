@@ -52,6 +52,7 @@ fn dispatch(cli: Cli) -> Result<()> {
     match &cli.command {
         Command::Ls { group, tags, json } => commands::ls(g, group.as_deref(), tags, *json),
         Command::Search { query, json } => commands::search(g, query, *json),
+        Command::Tags { json } => commands::tags(g, *json),
         Command::Show {
             entry,
             reveal,

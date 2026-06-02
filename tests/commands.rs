@@ -460,3 +460,15 @@ fn a_key_file_only_database_opens_without_any_password() {
         .success()
         .stdout("keyonly\n");
 }
+
+#[test]
+fn tags_lists_each_tag_with_its_count() {
+    prive(&["tags"])
+        .assert()
+        .success()
+        .stdout("1  cloud\n1  dev\n");
+    let out = prive(&["tags", "--json"]).output().unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert_eq!(v[0]["tag"], "cloud");
+    assert_eq!(v[0]["entries"], 1);
+}
