@@ -16,6 +16,12 @@ The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `l
   password or key file exits with 5, nothing found with 3
 - "did you mean" suggestions when a name matches nothing
 - `otp --min-validity` waits for a fresh code when the current one is about to expire
+- `prive open`: the entry's site in the browser (http and https only, no shell) and its
+  password on the clipboard
+- `prive tags`, `ls --tag`, `ls --long`
+- `--quiet` for no notices on stderr; a missing field lists the fields the entry has
+- Cancelling `pick` exits with 130, like fzf
+- Fuzz targets for otpauth parsing and entry selection, built and run briefly in CI
 - `prive gen`: random passwords (every character class guaranteed, optional look-alike
   filtering), passphrases from the EFF large word list, and numeric PINs
 - TOTP code generation for every way KeePass apps store secrets (otpauth URIs, KeeOtp,
