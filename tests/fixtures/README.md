@@ -11,6 +11,7 @@ Password for every database: `fixture-pass`. `keyfile.kdbx` also needs `keyfile.
 | `kdbx40.kdbx` | KDBX 4.0, AES-KDF | the same plus entry custom data, which needs format 4 |
 | `kdbx41.kdbx` | KDBX 4.1, AES-KDF | all of `source.xml` |
 | `keyfile.kdbx` | KDBX 3.1, password + key file | one entry |
+| `keyonly.kdbx` | KDBX 3.1, key file only (`keyonly.keyx`), no password | one entry |
 
 KeePassXC writes the oldest format that holds the data, which is how one source gives three
 formats.

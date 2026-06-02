@@ -443,3 +443,20 @@ fn ls_by_tag() {
         .success()
         .stdout("");
 }
+
+#[test]
+fn a_key_file_only_database_opens_without_any_password() {
+    Command::cargo_bin("prive")
+        .unwrap()
+        .env("PRIVE_CONFIG", fixture("no-such-config.toml"))
+        .env_remove("PRIVE_PASSWORD_FILE")
+        .arg("--db")
+        .arg(fixture("keyonly.kdbx"))
+        .arg("--keyfile")
+        .arg(fixture("keyonly.keyx"))
+        .args(["--no-password", "get", "Key only entry", "-f", "username"])
+        .write_stdin("")
+        .assert()
+        .success()
+        .stdout("keyonly\n");
+}
