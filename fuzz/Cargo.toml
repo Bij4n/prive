@@ -1,0 +1,23 @@
+[package]
+name = "prive-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+prive = { path = ".." }
+
+# Kept out of the main workspace: fuzzing needs nightly and its own lock file.
+[workspace]
+members = ["."]
+
+[[bin]]
+name = "otpauth"
+path = "fuzz_targets/otpauth.rs"
+test = false
+doc = false
+bench = false
