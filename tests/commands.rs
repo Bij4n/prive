@@ -395,3 +395,11 @@ fn unreadable_code_settings_are_not_reported_as_missing() {
     // Wi-Fi has no code at all: "not found" (3). A broken otp field is a different error (1).
     prive(&["otp", "Wi-Fi"]).assert().code(3);
 }
+
+#[test]
+fn a_misspelled_name_gets_suggestions() {
+    prive(&["get", "Work/GitHbu"])
+        .assert()
+        .code(3)
+        .stderr(predicate::str::contains("did you mean: Work/GitHub?"));
+}

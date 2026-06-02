@@ -43,7 +43,10 @@ pub fn select<'a>(entries: &'a [Entry], query: &str) -> Result<&'a Entry, Failur
         .collect();
     match by_title.len() {
         1 => Ok(by_title[0]),
-        0 => Err(Failure::NotFound(query.to_string())),
+        0 => Err(Failure::NoSuchEntry {
+            query: query.to_string(),
+            close: suggestions(entries, query),
+        }),
         _ => Err(ambiguous(query, &by_title)),
     }
 }
@@ -215,7 +218,10 @@ mod tests {
     #[test]
     fn not_found() {
         let e = sample();
-        assert!(matches!(select(&e, "nope"), Err(Failure::NotFound(_))));
+        assert!(matches!(
+            select(&e, "nope"),
+            Err(Failure::NoSuchEntry { .. })
+        ));
         assert!(matches!(select(&e, "uuid:zz"), Err(Failure::NotFound(_))));
     }
 

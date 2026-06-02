@@ -10,6 +10,10 @@ pub enum Failure {
     #[error("no entry matches '{0}'")]
     NotFound(String),
 
+    /// Like `NotFound`, with entry paths that look like what was meant.
+    #[error("no entry matches '{query}'")]
+    NoSuchEntry { query: String, close: Vec<String> },
+
     #[error("'{query}' matches {} entries; use the full path", candidates.len())]
     Ambiguous {
         query: String,
@@ -28,7 +32,7 @@ pub enum Failure {
 impl Failure {
     pub fn exit_code(&self) -> u8 {
         match self {
-            Failure::NotFound(_) => 3,
+            Failure::NotFound(_) | Failure::NoSuchEntry { .. } => 3,
             Failure::Ambiguous { .. } => 4,
             Failure::BadCredentials | Failure::NoTerminal => 5,
         }
@@ -43,10 +47,16 @@ pub fn report(err: &anyhow::Error) -> ExitCode {
     }
     match err.downcast_ref::<Failure>() {
         Some(f) => {
-            if let Failure::Ambiguous { candidates, .. } = f {
-                for c in candidates {
-                    eprintln!("  {c}");
+            match f {
+                Failure::Ambiguous { candidates, .. } => {
+                    for c in candidates {
+                        eprintln!("  {c}");
+                    }
                 }
+                Failure::NoSuchEntry { close, .. } if !close.is_empty() => {
+                    eprintln!("  did you mean: {}?", close.join(", "));
+                }
+                _ => {}
             }
             ExitCode::from(f.exit_code())
         }
