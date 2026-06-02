@@ -19,5 +19,9 @@ Guarantees:
 - The entropy figure assumes an attacker knows exactly how the password was made; it is the
   honest number, not a guess based on how the result looks.
 
+Four words in the EFF list contain a hyphen (`drop-down`, `felt-tip`, `t-shirt`, `yo-yo`),
+so with the default `-` separator a passphrase can look one word longer than it is. That
+changes nothing about its strength; use `--separator ' '` if you'd rather see the words apart.
+
 Options: `--no-symbols`, `--no-digits`, `--no-upper`, `--separator` and `--capitalize` (for
 passphrases).
