@@ -494,3 +494,15 @@ fn quiet_leaves_out_notices_but_not_errors() {
         .code(3)
         .stderr(predicate::str::contains("no entry"));
 }
+
+#[test]
+fn ls_long_against_the_fixture() {
+    let out = prive(&["ls", "--long"]).output().unwrap();
+    let text = String::from_utf8(out.stdout).unwrap();
+    let line = |p: &str| text.lines().find(|l| l.contains(p)).unwrap().to_string();
+    assert!(line("Work/GitHub").contains("2fa,file"));
+    assert!(line("Old VPN").contains("expired"));
+    assert!(line("Work/Cloud/Steam").contains("2fa"));
+    assert!(!line("Wi-Fi").contains("2fa"));
+    prive(&["ls", "--long", "--json"]).assert().code(2);
+}
