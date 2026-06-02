@@ -63,7 +63,13 @@ fn list(entries: &[&Entry], json: bool) -> Result<()> {
     }
 }
 
-pub fn ls(global: &Global, group: Option<&str>, tags: &[String], json: bool) -> Result<()> {
+pub fn ls(
+    global: &Global,
+    group: Option<&str>,
+    tags: &[String],
+    long: bool,
+    json: bool,
+) -> Result<()> {
     let db = open(global)?;
     let mut shown = select::in_group(&db.entries, group.unwrap_or(""));
     for t in tags {
@@ -73,6 +79,9 @@ pub fn ls(global: &Global, group: Option<&str>, tags: &[String], json: bool) -> 
         && shown.is_empty()
     {
         return Err(Failure::NotFound(format!("group '{g}'")).into());
+    }
+    if long {
+        return output::print(&output::render_long_list(&shown));
     }
     list(&shown, json)
 }

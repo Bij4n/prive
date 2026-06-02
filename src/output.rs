@@ -82,6 +82,43 @@ pub fn render_audit(r: &crate::audit::Report) -> String {
     out
 }
 
+/// `ls --long`: the date it last changed, markers for a one-time code (`2fa`), attachments
+/// (`file`) and expiry (`expired`), then the path and username.
+pub fn render_long_list(entries: &[&Entry]) -> String {
+    let now = chrono::Utc::now().naive_utc();
+    let width = entries
+        .iter()
+        .map(|e| e.path().chars().count())
+        .max()
+        .unwrap_or(0);
+    let mut out = String::new();
+    for e in entries {
+        let date = e
+            .modified
+            .map(|m| m.format("%Y-%m-%d").to_string())
+            .unwrap_or_else(|| "-".repeat(10));
+        let mut marks = Vec::new();
+        if crate::otp::Totp::from_entry(e).is_some() {
+            marks.push("2fa");
+        }
+        if !e.attachments.is_empty() {
+            marks.push("file");
+        }
+        if e.expires.is_some_and(|x| x < now) {
+            marks.push("expired");
+        }
+        let line = format!(
+            "{date}  {:<13} {:<width$}  {}",
+            marks.join(","),
+            e.path(),
+            e.username
+        );
+        out.push_str(line.trim_end());
+        out.push('\n');
+    }
+    out
+}
+
 /// `show --json`: every field, with the password and protected values left out (`null`)
 /// unless `reveal`.
 #[derive(Debug, Serialize)]
@@ -319,6 +356,28 @@ mod tests {
             render_audit(&r),
             "Work/GitHub\n  - weak (strength 1/4)\n  - reused by 1 other entry\n\
              1 of 3 checked entries need attention, 1 skipped (excluded or no password)\n"
+        );
+    }
+
+    #[test]
+    fn long_list_marks_codes_files_and_expiry() {
+        let mut a = github();
+        a.modified = chrono::NaiveDate::from_ymd_opt(2026, 5, 1)
+            .unwrap()
+            .and_hms_opt(9, 0, 0);
+        a.attachments = vec!["k.pem".into()];
+        let mut b = Entry {
+            title: "Old".into(),
+            expires: chrono::NaiveDate::from_ymd_opt(2020, 1, 1)
+                .unwrap()
+                .and_hms_opt(0, 0, 0),
+            ..Default::default()
+        };
+        b.modified = None;
+        assert_eq!(
+            render_long_list(&[&a, &b]),
+            "2026-05-01  file          Work/GitHub  demo\n\
+             ----------  expired       Old\n"
         );
     }
 }

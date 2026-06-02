@@ -52,7 +52,12 @@ fn dispatch(cli: Cli) -> Result<()> {
     let g = &cli.global;
     output::set_quiet(g.quiet);
     match &cli.command {
-        Command::Ls { group, tags, json } => commands::ls(g, group.as_deref(), tags, *json),
+        Command::Ls {
+            group,
+            tags,
+            long,
+            json,
+        } => commands::ls(g, group.as_deref(), tags, *long, *json),
         Command::Search { query, json } => commands::search(g, query, *json),
         Command::Tags { json } => commands::tags(g, *json),
         Command::Show {

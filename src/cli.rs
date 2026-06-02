@@ -114,6 +114,9 @@ pub enum Command {
         /// Only entries with this tag (repeat for several: all must match)
         #[arg(short, long = "tag", value_name = "TAG")]
         tags: Vec<String>,
+        /// Also show when each changed, and whether it has a code, files or has expired
+        #[arg(short, long, conflicts_with = "json")]
+        long: bool,
         #[arg(long)]
         json: bool,
     },
