@@ -6,6 +6,7 @@
 //! rules the code keeps.
 
 pub mod audit;
+pub mod browser;
 pub mod cli;
 pub mod clip;
 pub mod commands;
