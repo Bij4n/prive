@@ -357,4 +357,12 @@ mod tests {
         );
         assert!(tag_counts(&[]).is_empty());
     }
+
+    #[test]
+    fn non_ascii_names_match_without_case() {
+        let e = vec![entry("Büro", "Ärztekammer", "x"), entry("", "ÉCOLE", "y")];
+        assert_eq!(select(&e, "büro/ärztekammer").unwrap().uuid, "x");
+        assert_eq!(select(&e, "école").unwrap().uuid, "y");
+        assert_eq!(search(&e, "ärzte").len(), 1);
+    }
 }
