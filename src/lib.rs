@@ -67,6 +67,7 @@ fn dispatch(cli: Cli) -> Result<()> {
             json,
         } => commands::otp(g, entry, *min_validity, *clip, *json),
         Command::Pick(args) => commands::pick(g, args),
+        Command::Open { entry, no_copy } => commands::open_url(g, entry, *no_copy),
         Command::Audit {
             hibp,
             max_age,

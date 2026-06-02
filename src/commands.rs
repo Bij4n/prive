@@ -8,7 +8,9 @@ use zeroize::Zeroizing;
 
 use crate::cli::{GenArgs, Global, PickArgs};
 use crate::error::Failure;
-use crate::{audit, clip, config, db, entry::Entry, generate, otp, output, pick, select, unlock};
+use crate::{
+    audit, browser, clip, config, db, entry::Entry, generate, otp, output, pick, select, unlock,
+};
 
 /// Open the database the command line or config file points at.
 fn open(global: &Global) -> Result<db::Db> {
@@ -159,6 +161,19 @@ pub fn otp(global: &Global, entry: &str, min_validity: u64, clip: bool, json: bo
     }
     if std::io::stderr().is_terminal() {
         eprintln!("(valid for {left} more seconds)");
+    }
+    Ok(())
+}
+
+/// The everyday login: open the site, password on the clipboard ready to paste.
+pub fn open_url(global: &Global, entry: &str, no_copy: bool) -> Result<()> {
+    let db = open(global)?;
+    let e = select::select(&db.entries, entry)?;
+    let url = browser::web_url(&e.url).map_err(|err| anyhow::anyhow!("{}: {err}", e.path()))?;
+    browser::open(&url)?;
+    eprintln!("Opened {url}");
+    if !no_copy && !e.password.is_empty() {
+        copy_and_tell(&e.password)?;
     }
     Ok(())
 }

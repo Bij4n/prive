@@ -472,3 +472,11 @@ fn tags_lists_each_tag_with_its_count() {
     assert_eq!(v[0]["tag"], "cloud");
     assert_eq!(v[0]["entries"], 1);
 }
+
+#[test]
+fn open_refuses_entries_without_a_web_address() {
+    prive(&["open", "Wi-Fi"])
+        .assert()
+        .code(1)
+        .stderr(predicate::str::contains("Wi-Fi: the entry has no URL"));
+}

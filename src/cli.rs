@@ -72,6 +72,14 @@ pub enum Command {
         json: bool,
     },
 
+    /// Open an entry's URL in the browser and copy its password
+    Open {
+        entry: String,
+        /// Only open the URL; don't copy anything
+        #[arg(long)]
+        no_copy: bool,
+    },
+
     /// Show an entry; passwords and protected fields stay hidden unless --reveal
     Show {
         /// Title, Group/Title path, or uuid:UUID
