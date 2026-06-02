@@ -1,12 +1,12 @@
 # Commands
 
 Global options: `--db <file>` (or `PRIVE_DB`), `--keyfile <file>` (or `PRIVE_KEYFILE`),
-`--password-stdin`, `--no-password` (key file only). Entries are named by title,
+`--password-stdin`, `--no-password` (key file only), `--quiet` (no notices on stderr). Entries are named by title,
 `Group/Title` path, or `uuid:<uuid>`.
 
 | Command | What it prints |
 |---|---|
-| `ls [GROUP] [-t TAG]... [--json]` | Every entry (or one group and its subgroups, or those with all the given tags): path, then username. Never a password. |
+| `ls [GROUP] [-t TAG]... [-l] [--json]` | Every entry (or one group and its subgroups, or those with all the given tags): path, then username. Never a password. `--long` adds the date each last changed and markers: `2fa` (has a one-time code), `file` (has attachments), `expired`. |
 | `search QUERY [--json]` | Entries whose path, username, URL or tags contain QUERY; exact and prefix title matches first. Exit 3 if none. |
 | `show ENTRY [--reveal] [--json]` | All of an entry. Password and protected fields hidden unless `--reveal`; in JSON they are `null`. |
 | `get ENTRY [-f FIELD] [--clip]` | One field and a newline; the password by default. `-f` takes `username`, `url`, `notes`, `title` or any custom field's name. |
