@@ -1,7 +1,7 @@
 name: Advisories
 
 # Checks Cargo.lock against the RustSec advisory database. Weekly, and whenever the lock
-# file changes. Reported, not blocking, until 1.0.
+# file changes. Reported as annotations, not a failed run (and no failure emails), until 1.0.
 on:
   schedule:
     - cron: "17 6 * * 1"
@@ -14,9 +14,9 @@ jobs:
     name: RustSec advisories
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v6
       - uses: rustsec/audit-check@v2.0.0
+        continue-on-error: true
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
