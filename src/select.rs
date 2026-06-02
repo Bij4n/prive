@@ -134,6 +134,15 @@ pub fn in_group<'a>(entries: &'a [Entry], group: &str) -> Vec<&'a Entry> {
         .collect()
 }
 
+/// Entries carrying `tag`, ignoring case.
+pub fn with_tag<'a>(entries: &[&'a Entry], tag: &str) -> Vec<&'a Entry> {
+    entries
+        .iter()
+        .copied()
+        .filter(|e| e.tags.iter().any(|t| t.eq_ignore_ascii_case(tag)))
+        .collect()
+}
+
 /// Case-insensitive substring search over the path (group and title), username, URL and tags.
 /// Titles that match exactly come first, then titles that start with the query, then the rest;
 /// within each, the original order is kept.
@@ -289,5 +298,16 @@ mod tests {
         assert_eq!(suggestions(&e, "work/githb"), ["Work/GitHub"]);
         assert!(suggestions(&e, "completely different").is_empty());
         assert!(suggestions(&e, "").is_empty());
+    }
+
+    #[test]
+    fn tag_filter_is_exact_but_ignores_case() {
+        let mut e = sample();
+        e[0].tags = vec!["Cloud".into(), "dev".into()];
+        e[1].tags = vec!["cloudy".into()];
+        let all: Vec<&Entry> = e.iter().collect();
+        let hits = with_tag(&all, "cloud");
+        assert_eq!(hits.len(), 1);
+        assert_eq!(hits[0].uuid, "a");
     }
 }

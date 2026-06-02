@@ -61,9 +61,12 @@ fn list(entries: &[&Entry], json: bool) -> Result<()> {
     }
 }
 
-pub fn ls(global: &Global, group: Option<&str>, json: bool) -> Result<()> {
+pub fn ls(global: &Global, group: Option<&str>, tags: &[String], json: bool) -> Result<()> {
     let db = open(global)?;
-    let shown = select::in_group(&db.entries, group.unwrap_or(""));
+    let mut shown = select::in_group(&db.entries, group.unwrap_or(""));
+    for t in tags {
+        shown = select::with_tag(&shown, t);
+    }
     if let Some(g) = group
         && shown.is_empty()
     {

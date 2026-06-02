@@ -50,7 +50,7 @@ pub fn run() -> ExitCode {
 fn dispatch(cli: Cli) -> Result<()> {
     let g = &cli.global;
     match &cli.command {
-        Command::Ls { group, json } => commands::ls(g, group.as_deref(), *json),
+        Command::Ls { group, tags, json } => commands::ls(g, group.as_deref(), tags, *json),
         Command::Search { query, json } => commands::search(g, query, *json),
         Command::Show {
             entry,

@@ -431,3 +431,15 @@ fn a_missing_field_lists_the_ones_there_are() {
             "it has: title, username, password, url, notes, API key",
         ));
 }
+
+#[test]
+fn ls_by_tag() {
+    prive(&["ls", "--tag", "dev"])
+        .assert()
+        .success()
+        .stdout(predicate::str::starts_with("Work/GitHub"));
+    prive(&["ls", "-t", "dev", "-t", "nope"])
+        .assert()
+        .success()
+        .stdout("");
+}

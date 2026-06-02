@@ -93,6 +93,9 @@ pub enum Command {
     Ls {
         /// Only entries in this group and its subgroups
         group: Option<String>,
+        /// Only entries with this tag (repeat for several: all must match)
+        #[arg(short, long = "tag", value_name = "TAG")]
+        tags: Vec<String>,
         #[arg(long)]
         json: bool,
     },
