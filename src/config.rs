@@ -90,17 +90,26 @@ impl Config {
                 keyfile: keyfile.map(Path::to_path_buf),
             }),
             None => {
-                let db = self.db.clone().context(
+                let db = self.db.as_deref().map(expand_home).context(
                     "no database given: use --db, set PRIVE_DB, or run `prive init <file>`",
                 )?;
                 Ok(Target {
                     db,
                     keyfile: keyfile
                         .map(Path::to_path_buf)
-                        .or_else(|| self.keyfile.clone()),
+                        .or_else(|| self.keyfile.as_deref().map(expand_home)),
                 })
             }
         }
+    }
+}
+
+/// A leading `~/` in a config file path means the home directory, as people write it.
+/// (Paths from the command line are already expanded by the shell.)
+fn expand_home(p: &Path) -> PathBuf {
+    match (p.strip_prefix("~"), dirs::home_dir()) {
+        (Ok(rest), Some(home)) => home.join(rest),
+        _ => p.to_path_buf(),
     }
 }
 
@@ -182,5 +191,23 @@ mod tests {
             t.keyfile.as_deref(),
             Some(Path::new("/media/usb/other.key"))
         );
+    }
+
+    #[test]
+    fn a_tilde_in_the_config_means_home() {
+        let cfg = Config {
+            db: Some("~/Passwords.kdbx".into()),
+            keyfile: Some("~/keys/db.keyx".into()),
+            ..Config::default()
+        };
+        let t = cfg.target(None, None).unwrap();
+        let home = dirs::home_dir().unwrap();
+        assert_eq!(t.db, home.join("Passwords.kdbx"));
+        assert_eq!(t.keyfile.unwrap(), home.join("keys/db.keyx"));
+        let abs = Config {
+            db: Some("/srv/p.kdbx".into()),
+            ..Config::default()
+        };
+        assert_eq!(abs.target(None, None).unwrap().db, Path::new("/srv/p.kdbx"));
     }
 }

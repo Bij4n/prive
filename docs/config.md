@@ -10,8 +10,8 @@ prive needs no configuration. The optional config file lives at `$PRIVE_CONFIG`,
 | Windows | `%APPDATA%\prive\config.toml` |
 
 ```toml
-# Database opened when neither --db nor PRIVE_DB is given.
-db = "/home/me/Passwords.kdbx"
+# Database opened when neither --db nor PRIVE_DB is given. A leading ~/ means your home.
+db = "~/Passwords.kdbx"
 
 # Key file for that database, if it uses one. Not used with --db.
 keyfile = "/home/me/Passwords.keyx"
