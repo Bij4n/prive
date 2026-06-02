@@ -520,3 +520,17 @@ fn show_does_not_repeat_the_otp_settings_as_fields() {
         "the secret itself must not be shown: {text}"
     );
 }
+
+#[test]
+fn show_json_keeps_otp_settings_listed_but_hidden() {
+    let out = prive(&["show", "Work/GitHub", "--json"]).output().unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    let otp = v["fields"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|f| f["name"] == "otp")
+        .expect("scripts can still see that an otp field exists");
+    assert!(otp["value"].is_null());
+    assert_eq!(otp["protected"], true);
+}
