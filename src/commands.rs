@@ -97,11 +97,23 @@ pub fn get(global: &Global, entry: &str, field: &str, clip: bool) -> Result<()> 
     }
 }
 
-pub fn otp(global: &Global, entry: &str, clip: bool, json: bool) -> Result<()> {
+pub fn otp(global: &Global, entry: &str, min_validity: u64, clip: bool, json: bool) -> Result<()> {
     let db = open(global)?;
     let e = select::select(&db.entries, entry)?;
     let totp = totp_of(e)?;
-    let (code, left) = totp.now();
+    let (mut code, mut left) = totp.now();
+    anyhow::ensure!(
+        min_validity < totp.period,
+        "--min-validity must be shorter than the code's period ({} s)",
+        totp.period
+    );
+    if left < min_validity {
+        if std::io::stderr().is_terminal() {
+            eprintln!("(waiting {left} s for a fresh code)");
+        }
+        std::thread::sleep(std::time::Duration::from_secs(left));
+        (code, left) = totp.now();
+    }
     if json {
         return output::print_json(&serde_json::json!({
             "code": code,

@@ -60,6 +60,10 @@ pub enum Command {
     /// Print the current one-time (TOTP) code of an entry
     Otp {
         entry: String,
+        /// If the current code expires sooner than this, wait for the next one (useful in
+        /// scripts that type the code somewhere slow)
+        #[arg(long, value_name = "SECONDS", default_value_t = 0)]
+        min_validity: u64,
         /// Copy to the clipboard instead of printing
         #[arg(short, long, conflicts_with = "json")]
         clip: bool,

@@ -58,7 +58,12 @@ fn dispatch(cli: Cli) -> Result<()> {
             json,
         } => commands::show(g, entry, *reveal, *json),
         Command::Get { entry, field, clip } => commands::get(g, entry, field, *clip),
-        Command::Otp { entry, clip, json } => commands::otp(g, entry, *clip, *json),
+        Command::Otp {
+            entry,
+            min_validity,
+            clip,
+            json,
+        } => commands::otp(g, entry, *min_validity, *clip, *json),
         Command::Pick(args) => commands::pick(g, args),
         Command::Audit {
             hibp,
