@@ -144,7 +144,7 @@ pub fn otp(global: &Global, entry: &str, min_validity: u64, clip: bool, json: bo
 pub fn pick(global: &Global, args: &PickArgs) -> Result<()> {
     let db = open(global)?;
     let Some(e) = pick::pick(&db.entries, args.query.as_deref())? else {
-        return Ok(()); // cancelled
+        return Err(Failure::Cancelled.into());
     };
     let value = Zeroizing::new(if args.otp {
         totp_of(e)?.now().0

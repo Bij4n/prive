@@ -10,6 +10,7 @@ prive's exit codes are part of its interface: scripts can rely on them.
 | 3 | No entry matches the name given |
 | 4 | The name matches more than one entry; the candidates are listed on stderr |
 | 5 | Wrong password or key file, or a password was needed but stdin is not a terminal |
+| 130 | You cancelled an interactive choice (Esc or Ctrl-C in `pick`), as with fzf |
 
 Errors are printed to stderr, prefixed with `prive:`. Nothing is printed to stdout when a
 command fails, so `$(prive get ...)` is empty on failure rather than holding an error message.

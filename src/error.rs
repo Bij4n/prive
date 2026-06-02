@@ -23,6 +23,10 @@ pub enum Failure {
     #[error("could not open the database: wrong password or key file")]
     BadCredentials,
 
+    /// The user backed out of an interactive choice (Esc or Ctrl-C in the picker).
+    #[error("cancelled")]
+    Cancelled,
+
     #[error(
         "no password given: stdin is not a terminal (use --password-stdin or PRIVE_PASSWORD_FILE)"
     )]
@@ -35,12 +39,18 @@ impl Failure {
             Failure::NotFound(_) | Failure::NoSuchEntry { .. } => 3,
             Failure::Ambiguous { .. } => 4,
             Failure::BadCredentials | Failure::NoTerminal => 5,
+            // What shells and fzf use for an interrupted command, so `$(prive pick --print)`
+            // can tell a cancel from an empty value.
+            Failure::Cancelled => 130,
         }
     }
 }
 
 /// Print an error to stderr and choose the exit code.
 pub fn report(err: &anyhow::Error) -> ExitCode {
+    if let Some(Failure::Cancelled) = err.downcast_ref::<Failure>() {
+        return ExitCode::from(130); // the user knows; no message needed
+    }
     eprintln!("prive: {err}");
     for cause in err.chain().skip(1) {
         eprintln!("  caused by: {cause}");
@@ -78,6 +88,7 @@ mod tests {
         assert_eq!(amb.exit_code(), 4);
         assert_eq!(Failure::BadCredentials.exit_code(), 5);
         assert_eq!(Failure::NoTerminal.exit_code(), 5);
+        assert_eq!(Failure::Cancelled.exit_code(), 130);
     }
 
     #[test]

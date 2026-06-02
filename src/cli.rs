@@ -14,7 +14,7 @@ use clap::{Args, Parser, Subcommand};
         prive opens the same .kdbx file as KeePassXC, KeePassDX and Strongbox. \
         Results go to stdout and everything else to stderr, so commands compose in scripts.\n\n\
         Exit codes: 0 ok, 1 error, 2 usage, 3 not found, 4 ambiguous entry, \
-        5 wrong password or no terminal for the prompt.",
+        5 wrong password or no terminal for the prompt, 130 cancelled.",
     after_help = "Entries are named by title, by Group/Title path, or by uuid:<uuid>."
 )]
 pub struct Cli {
