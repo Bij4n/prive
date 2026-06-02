@@ -19,6 +19,7 @@ otp.rs        TOTP from every format KeePass apps use
 generate.rs   passwords, EFF passphrases, PINs
 audit.rs      weak / reused / old / expired / breached report
 hibp.rs       Have I Been Pwned range lookups (the only network access)
+browser.rs    open http(s) URLs with the system opener, never a shell
 clip.rs       clipboard copy with a detached clearing helper
 output.rs     everything printed: list, show, audit, JSON, pipe-safe stdout
 pick.rs       fuzzy picker on stderr

@@ -22,12 +22,15 @@ There are no packaged releases yet. With a recent stable Rust (1.88 or later):
 cargo install --git https://github.com/Bij4n/prive --locked
 ```
 
+Shell completions, man pages and other ways in: [docs/install.md](docs/install.md). Coming from
+prive 0.5? See [docs/migrating-from-0.5.md](docs/migrating-from-0.5.md).
+
 ## Quick start
 
 ```bash
 # Tell prive which database to use (or pass --db / set PRIVE_DB each time)
 mkdir -p ~/.config/prive
-echo 'db = "/home/me/Passwords.kdbx"' > ~/.config/prive/config.toml
+echo 'db = "~/Passwords.kdbx"' > ~/.config/prive/config.toml
 
 prive ls                         # every entry: path and username
 prive ls Work                    # one group and its subgroups
