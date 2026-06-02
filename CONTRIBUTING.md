@@ -26,6 +26,8 @@ with `tests/fixtures/make.sh` (needs `keepassxc-cli`). Never commit real data.
 - stdout is for results only; prompts, notices and errors go to stderr.
 - Exit codes are an interface (`docs/exit-codes.md`); don't change their meaning.
 - Never print, log or `Debug`-format a secret. Wrap secrets in `zeroize::Zeroizing`.
+- No `unsafe`. The lint is denied crate-wide; the one exception (marking standard handles
+  non-inheritable on Windows, in `clip.rs`) carries a `SAFETY` comment.
 - No new network access without discussion. Today the only request prive makes is the
   optional Have I Been Pwned range lookup.
 - Keep dependencies few and well maintained; say why in the pull request when adding one.

@@ -32,6 +32,8 @@ pub fn copy(secret: &str, seconds: u64) -> Result<()> {
         .stdout(Stdio::piped())
         .stderr(Stdio::null());
     detach(&mut cmd);
+    #[cfg(windows)]
+    keep_std_handles_from_helper();
     let mut child = cmd.spawn().context("starting the clipboard helper")?;
 
     {
@@ -178,3 +180,26 @@ fn detach(cmd: &mut Command) {
 
 #[cfg(not(any(unix, windows)))]
 fn detach(_cmd: &mut Command) {}
+
+/// On Windows a new process inherits every inheritable handle of its parent, including the
+/// pipes our own caller reads our output from. If the clipboard helper held those open, a
+/// caller waiting for our output (a script's `$(...)`, a test harness) would wait until the
+/// helper exits, that is, until the clipboard is cleared. So our standard handles are marked
+/// not inheritable before the helper starts; its own pipes are set up by `Command`.
+#[cfg(windows)]
+#[allow(unsafe_code)]
+fn keep_std_handles_from_helper() {
+    use windows_sys::Win32::Foundation::{HANDLE_FLAG_INHERIT, SetHandleInformation};
+    use windows_sys::Win32::System::Console::{
+        GetStdHandle, STD_ERROR_HANDLE, STD_INPUT_HANDLE, STD_OUTPUT_HANDLE,
+    };
+    for which in [STD_INPUT_HANDLE, STD_OUTPUT_HANDLE, STD_ERROR_HANDLE] {
+        // SAFETY: GetStdHandle only reads this process's own standard handle; it may return
+        // null or INVALID_HANDLE_VALUE, which SetHandleInformation rejects with an error that
+        // is ignored. Clearing the inherit flag closes nothing and changes no data.
+        unsafe {
+            let handle = GetStdHandle(which);
+            let _ = SetHandleInformation(handle, HANDLE_FLAG_INHERIT, 0);
+        }
+    }
+}
