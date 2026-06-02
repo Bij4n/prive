@@ -26,7 +26,7 @@ fn open(global: &Global) -> Result<db::Db> {
 fn copy_and_tell(secret: &str) -> Result<()> {
     let seconds = config::Config::load()?.clipboard_seconds();
     clip::copy(secret, seconds)?;
-    eprintln!("Copied. The clipboard clears in {seconds} s.");
+    output::notice("Copied. The clipboard clears in {seconds} s.");
     Ok(())
 }
 
@@ -142,7 +142,7 @@ pub fn otp(global: &Global, entry: &str, min_validity: u64, clip: bool, json: bo
     );
     if left < min_validity {
         if std::io::stderr().is_terminal() {
-            eprintln!("(waiting {left} s for a fresh code)");
+            output::notice("(waiting {left} s for a fresh code)");
         }
         std::thread::sleep(std::time::Duration::from_secs(left));
         (code, left) = totp.now();
@@ -160,7 +160,7 @@ pub fn otp(global: &Global, entry: &str, min_validity: u64, clip: bool, json: bo
         output::print(&format!("{code}\n"))?;
     }
     if std::io::stderr().is_terminal() {
-        eprintln!("(valid for {left} more seconds)");
+        output::notice("(valid for {left} more seconds)");
     }
     Ok(())
 }
@@ -171,7 +171,7 @@ pub fn open_url(global: &Global, entry: &str, no_copy: bool) -> Result<()> {
     let e = select::select(&db.entries, entry)?;
     let url = browser::web_url(&e.url).map_err(|err| anyhow::anyhow!("{}: {err}", e.path()))?;
     browser::open(&url)?;
-    eprintln!("Opened {url}");
+    output::notice("Opened {url}");
     if !no_copy && !e.password.is_empty() {
         copy_and_tell(&e.password)?;
     }
@@ -191,7 +191,7 @@ pub fn pick(global: &Global, args: &PickArgs) -> Result<()> {
     if args.print {
         output::print(&format!("{}\n", value.as_str()))
     } else {
-        eprintln!("{}", e.path());
+        output::notice(&e.path());
         copy_and_tell(&value)
     }
 }
@@ -235,7 +235,7 @@ pub fn generate(args: &GenArgs) -> Result<()> {
         output::print(&format!("{}\n", g.value))?;
     }
     if std::io::stderr().is_terminal() {
-        eprintln!("({:.0} bits of entropy)", g.entropy_bits);
+        output::notice(&format!("({:.0} bits of entropy)", g.entropy_bits));
     }
     Ok(())
 }

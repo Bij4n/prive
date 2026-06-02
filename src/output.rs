@@ -9,6 +9,21 @@ use crate::entry::Entry;
 
 const HIDDEN: &str = "******** (--reveal shows it)";
 
+static QUIET: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// `--quiet`: notices on stderr ("Copied", seconds left, entropy) are left out. Errors and
+/// prompts still appear.
+pub fn set_quiet(quiet: bool) {
+    QUIET.store(quiet, std::sync::atomic::Ordering::Relaxed);
+}
+
+/// A notice for the person at the terminal, on stderr, unless `--quiet`.
+pub fn notice(text: &str) {
+    if !QUIET.load(std::sync::atomic::Ordering::Relaxed) {
+        eprintln!("{text}");
+    }
+}
+
 /// Write text to stdout. A closed pipe (`prive ls | head -1`) is not an error: the reader
 /// has what it wanted, so prive stops quietly instead of panicking like `println!` does.
 pub fn print(text: &str) -> Result<()> {

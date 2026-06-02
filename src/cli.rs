@@ -39,6 +39,10 @@ pub struct Global {
     #[arg(long, global = true, conflicts_with = "no_password")]
     pub password_stdin: bool,
 
+    /// Leave out notices on stderr ("Copied", seconds left, entropy); errors still show
+    #[arg(short, long, global = true)]
+    pub quiet: bool,
+
     /// The database has no password, only a key file
     #[arg(long, global = true, requires = "keyfile")]
     pub no_password: bool,

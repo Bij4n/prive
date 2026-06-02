@@ -480,3 +480,17 @@ fn open_refuses_entries_without_a_web_address() {
         .code(1)
         .stderr(predicate::str::contains("Wi-Fi: the entry has no URL"));
 }
+
+#[test]
+fn quiet_leaves_out_notices_but_not_errors() {
+    let dir = tempfile::tempdir().unwrap();
+    prive(&["--quiet", "get", "Bank", "--clip"])
+        .env("PRIVE_CLIPBOARD_FILE", dir.path().join("clip"))
+        .assert()
+        .success()
+        .stderr(predicate::str::is_empty());
+    prive(&["-q", "get", "Nope"])
+        .assert()
+        .code(3)
+        .stderr(predicate::str::contains("no entry"));
+}
