@@ -534,3 +534,32 @@ fn show_json_keeps_otp_settings_listed_but_hidden() {
     assert!(otp["value"].is_null());
     assert_eq!(otp["protected"], true);
 }
+
+#[test]
+fn piping_into_a_reader_that_stops_early_is_not_an_error() {
+    // `prive ls | head -1`: the reader closes the pipe after one line.
+    let mut child = std::process::Command::new(assert_cmd::cargo::cargo_bin("prive"))
+        .env("PRIVE_CONFIG", fixture("no-such-config.toml"))
+        .arg("--db")
+        .arg(fixture("kdbx41.kdbx"))
+        .args(["--password-stdin", "ls"])
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .unwrap();
+    {
+        use std::io::Write;
+        child
+            .stdin
+            .take()
+            .unwrap()
+            .write_all(b"fixture-pass\n")
+            .unwrap();
+    }
+    drop(child.stdout.take()); // close our end before prive writes anything
+    let out = child.wait_with_output().unwrap();
+    let err = String::from_utf8_lossy(&out.stderr);
+    assert!(!err.contains("panicked"), "{err}");
+    assert!(out.status.success(), "status {:?}: {err}", out.status);
+}
