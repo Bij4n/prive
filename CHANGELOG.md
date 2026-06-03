@@ -21,6 +21,9 @@ The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `l
 - `prive tags`, `ls --tag`, `ls --long`
 - `--quiet` for no notices on stderr; a missing field lists the fields the entry has
 - Cancelling `pick` exits with 130, like fzf
+- A leading `~/` in config file paths means the home directory
+- `show` lists one-time code settings once, on its TOTP line, not again under Fields
+- `docs/install.md` (completions, man pages) and `docs/migrating-from-0.5.md`
 - Fuzz targets for otpauth parsing and entry selection, built and run briefly in CI
 - `prive gen`: random passwords (every character class guaranteed, optional look-alike
   filtering), passphrases from the EFF large word list, and numeric PINs
