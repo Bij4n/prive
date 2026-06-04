@@ -566,3 +566,46 @@ fn piping_into_a_reader_that_stops_early_is_not_an_error() {
     assert!(!err.contains("panicked"), "{err}");
     assert!(out.status.success(), "status {:?}: {err}", out.status);
 }
+
+#[cfg(unix)]
+#[test]
+fn run_passes_secrets_only_through_the_environment() {
+    prive(&[
+        "run",
+        "--env",
+        "PW=Work/GitHub",
+        "-e",
+        "USER_NAME=Work/GitHub:username",
+        "-e",
+        "KEY=Work/GitHub:API key",
+        "--",
+        "sh",
+        "-c",
+        r#"printf '%s|%s|%s' "$PW" "$USER_NAME" "$KEY""#,
+    ])
+    .assert()
+    .success()
+    .stdout("gh-Secret-1|demo|custom-protected");
+}
+
+#[cfg(unix)]
+#[test]
+fn run_passes_the_exit_code_on() {
+    prive(&["run", "-e", "X=Bank", "--", "sh", "-c", "exit 7"])
+        .assert()
+        .code(7);
+}
+
+#[test]
+fn run_refuses_bad_specs_before_asking_for_anything() {
+    prive(&["run", "-e", "1BAD=Bank", "--", "true"])
+        .assert()
+        .code(1)
+        .stderr(predicate::str::contains(
+            "not a valid environment variable name",
+        ));
+    prive(&["run", "-e", "X=Nobody", "--", "true"])
+        .assert()
+        .code(3);
+    prive(&["run", "-e", "X=Bank"]).assert().code(2); // no command
+}
