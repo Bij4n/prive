@@ -58,6 +58,29 @@ pub fn resolve(entries: &[Entry], spec: &EnvSpec) -> Result<Zeroizing<String>> {
     Err(not_found.into())
 }
 
+/// Replace this process with `program` (Unix) or run it and pass its exit code on (Windows),
+/// with `vars` added to the environment. Returns only if starting it failed.
+pub fn exec(program: &str, args: &[String], vars: &[(String, Zeroizing<String>)]) -> Result<i32> {
+    use anyhow::Context;
+    let mut cmd = std::process::Command::new(program);
+    cmd.args(args);
+    for (name, value) in vars {
+        cmd.env(name, value.as_str());
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        // exec only comes back on failure.
+        let err = cmd.exec();
+        Err(err).with_context(|| format!("running {program}"))
+    }
+    #[cfg(not(unix))]
+    {
+        let status = cmd.status().with_context(|| format!("running {program}"))?;
+        Ok(status.code().unwrap_or(1))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -97,6 +97,21 @@ pub enum Command {
         json: bool,
     },
 
+    /// Run a command with secrets in its environment (never printed, never on disk)
+    Run {
+        /// NAME=ENTRY (the password) or NAME=ENTRY:FIELD; repeat for several
+        #[arg(
+            short,
+            long = "env",
+            value_name = "NAME=ENTRY[:FIELD]",
+            required = true
+        )]
+        env: Vec<String>,
+        /// The command and its arguments, after `--`
+        #[arg(last = true, required = true, value_name = "COMMAND")]
+        command: Vec<String>,
+    },
+
     /// Open an entry's URL in the browser and copy its password
     Open {
         entry: String,

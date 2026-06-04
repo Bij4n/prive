@@ -273,6 +273,22 @@ pub fn otp(global: &Global, entry: &str, min_validity: u64, clip: bool, json: bo
     Ok(())
 }
 
+pub fn run(global: &Global, specs: &[String], command: &[String]) -> Result<()> {
+    let specs: Vec<crate::run::EnvSpec> = specs
+        .iter()
+        .map(|s| crate::run::parse_spec(s))
+        .collect::<Result<_>>()?;
+    let db = open(global)?;
+    let vars = specs
+        .iter()
+        .map(|s| Ok((s.name.clone(), crate::run::resolve(&db.entries, s)?)))
+        .collect::<Result<Vec<_>>>()?;
+    drop(db); // the child gets only what it asked for
+    let (program, args) = command.split_first().expect("clap requires a command");
+    let code = crate::run::exec(program, args, &vars)?;
+    std::process::exit(code);
+}
+
 /// The everyday login: open the site, password on the clipboard ready to paste.
 pub fn open_url(global: &Global, entry: &str, no_copy: bool) -> Result<()> {
     let db = open(global)?;
