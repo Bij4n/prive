@@ -6,3 +6,4 @@
 
 #[cfg(unix)]
 pub mod dir;
+pub mod proto;
