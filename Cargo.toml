@@ -45,7 +45,7 @@ zeroize = "1"
 zxcvbn = "3"
 
 [target.'cfg(unix)'.dependencies]
-nix = { version = "0.31", features = ["socket", "user", "process", "resource", "fs"] }
+nix = { version = "0.31", features = ["socket", "user", "process", "resource", "fs", "poll"] }
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_System_Console"] }
