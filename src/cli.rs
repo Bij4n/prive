@@ -53,6 +53,15 @@ pub enum Command {
     /// Unlock the database once; later commands use it without asking (Linux and macOS)
     Unlock,
 
+    /// Forget the unlocked database now
+    Lock,
+
+    /// Say whether a database is unlocked, and for how long
+    Status {
+        #[arg(long)]
+        json: bool,
+    },
+
     /// Print one field of an entry (the password by default), nothing else
     Get {
         entry: String,

@@ -69,6 +69,8 @@ fn dispatch(cli: Cli) -> Result<()> {
     output::set_quiet(g.quiet);
     match &cli.command {
         Command::Unlock => commands::unlock(g),
+        Command::Lock => commands::lock(),
+        Command::Status { json } => commands::status(*json),
         Command::Ls {
             group,
             tags,

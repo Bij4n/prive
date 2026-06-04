@@ -80,6 +80,45 @@ pub fn unlock(global: &Global) -> Result<()> {
     }
 }
 
+pub fn lock() -> Result<()> {
+    #[cfg(unix)]
+    {
+        if crate::agent::client::lock()? {
+            output::notice("Locked.");
+        } else {
+            output::notice("Nothing was unlocked.");
+        }
+    }
+    Ok(())
+}
+
+pub fn status(json: bool) -> Result<()> {
+    #[cfg(unix)]
+    let state = crate::agent::client::status()?;
+    #[cfg(not(unix))]
+    let state: Option<(Option<std::path::PathBuf>, u64)> = None;
+    let (db, left) = match state {
+        Some((Some(db), left)) => (Some(db), left),
+        _ => (None, 0),
+    };
+    if json {
+        return output::print_json(&serde_json::json!({
+            "unlocked": db.is_some(),
+            "db": db,
+            "seconds_left": left,
+        }));
+    }
+    match db {
+        Some(db) => output::print(&format!(
+            "unlocked: {} (locks in {} min {} s if unused)\n",
+            db.display(),
+            left / 60,
+            left % 60
+        )),
+        None => output::print("locked\n"),
+    }
+}
+
 /// Copy a secret, then say on stderr when it will be cleared.
 fn copy_and_tell(secret: &str) -> Result<()> {
     let seconds = config::Config::load()?.clipboard_seconds();
