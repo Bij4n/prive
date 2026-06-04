@@ -1,0 +1,84 @@
+//! The unlock-once agent, end to end. Each test gets its own private agent directory and a
+//! one-minute timeout, and locks the agent when it is done.
+#![cfg(unix)]
+
+use std::path::{Path, PathBuf};
+
+use assert_cmd::Command;
+use predicates::prelude::*;
+
+fn fixture(name: &str) -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures")
+        .join(name)
+}
+
+struct Sandbox {
+    dir: tempfile::TempDir,
+    db: PathBuf,
+}
+
+impl Sandbox {
+    fn new() -> Sandbox {
+        let dir = tempfile::tempdir().unwrap();
+        let db = dir.path().join("db.kdbx");
+        std::fs::copy(fixture("kdbx41.kdbx"), &db).unwrap();
+        std::fs::write(dir.path().join("config.toml"), "agent_minutes = 1\n").unwrap();
+        Sandbox { dir, db }
+    }
+
+    fn agent_dir(&self) -> PathBuf {
+        self.dir.path().join("agent")
+    }
+
+    /// prive with this sandbox's database, config and agent directory, and no password source.
+    fn prive(&self, args: &[&str]) -> Command {
+        let mut cmd = Command::cargo_bin("prive").unwrap();
+        cmd.env("PRIVE_CONFIG", self.dir.path().join("config.toml"))
+            .env("PRIVE_AGENT_DIR", self.agent_dir())
+            .env_remove("PRIVE_NO_AGENT")
+            .env_remove("PRIVE_PASSWORD_FILE")
+            .arg("--db")
+            .arg(&self.db)
+            .args(args)
+            .write_stdin("")
+            .timeout(std::time::Duration::from_secs(30));
+        cmd
+    }
+
+    fn unlock(&self) {
+        self.prive(&["--password-stdin", "unlock"])
+            .write_stdin("fixture-pass\n")
+            .assert()
+            .success()
+            .stderr(predicate::str::contains("Unlocked db.kdbx"));
+    }
+}
+
+impl Drop for Sandbox {
+    fn drop(&mut self) {
+        let _ = self.prive(&["lock"]).output();
+    }
+}
+
+#[test]
+fn unlock_once_then_no_password_until_locked() {
+    let s = Sandbox::new();
+    // Before unlocking there is no password source: exit 5 at once.
+    s.prive(&["get", "Bank"]).assert().code(5);
+    s.unlock();
+    s.prive(&["get", "Bank"])
+        .assert()
+        .success()
+        .stdout("b4nk-P@ss-2026!\n");
+    s.prive(&["otp", "Work/GitHub"]).assert().success();
+    s.prive(&["lock"])
+        .assert()
+        .success()
+        .stderr(predicate::str::contains("Locked."));
+    s.prive(&["get", "Bank"]).assert().code(5);
+}
+
+fn _is_dir(p: &Path) -> bool {
+    p.is_dir()
+}
