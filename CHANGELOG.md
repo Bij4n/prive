@@ -8,6 +8,11 @@ The 1.0 rewrite has started: prive becomes a terminal client for KeePass (`.kdbx
 The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `legacy-0.5.0`.
 
 ### Added
+- `prive unlock`, `lock`, `status`: a background agent keeps the opened database so a session
+  needs one password prompt. Private socket directory (mode 700, checked), same-user check on
+  every connection, master password dropped after opening, forgets the database when the
+  file changes on disk or after `agent_minutes` (15) idle; no core dumps, non-dumpable on
+  Linux. `--no-agent` / `PRIVE_NO_AGENT` skip it. Linux, macOS and the BSDs
 - Reading KeePass databases (KDBX 3.1, 4.0, 4.1; password and/or key file), and the commands
   `ls`, `search`, `show` (`--reveal`), `get` (`--field`, `--clip`), `otp`, `pick` and `audit`
   (`--hibp`, `--max-age`), with `--json` where it fits. The recycle bin is left out; entries
@@ -49,6 +54,7 @@ The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `l
   source policy checked in CI
 
 ### Fixed
+- Notices printed their `{...}` placeholders instead of the values ("clears in {seconds} s")
 - Windows: `--clip` no longer keeps a caller waiting (a script's `$(...)`) until the
   clipboard is cleared; the helper used to inherit the caller's output pipes
 - CI: the Windows test job no longer hangs until the 6-hour limit (two tests reached a console password prompt); every job has a timeout
