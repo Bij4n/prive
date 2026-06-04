@@ -2,7 +2,7 @@
 //! one-minute timeout, and locks the agent when it is done.
 #![cfg(unix)]
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use assert_cmd::Command;
 use predicates::prelude::*;
@@ -79,6 +79,25 @@ fn unlock_once_then_no_password_until_locked() {
     s.prive(&["get", "Bank"]).assert().code(5);
 }
 
-fn _is_dir(p: &Path) -> bool {
-    p.is_dir()
+#[test]
+fn status_before_and_after() {
+    let s = Sandbox::new();
+    s.prive(&["status"]).assert().success().stdout("locked\n");
+    s.unlock();
+    let out = s.prive(&["status", "--json"]).output().unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert_eq!(v["unlocked"], true);
+    assert!(v["db"].as_str().unwrap().ends_with("db.kdbx"));
+    let left = v["seconds_left"].as_u64().unwrap();
+    assert!((1..=60).contains(&left), "{left}");
+}
+
+#[test]
+fn a_wrong_password_starts_nothing() {
+    let s = Sandbox::new();
+    s.prive(&["--password-stdin", "unlock"])
+        .write_stdin("wrong\n")
+        .assert()
+        .code(5);
+    s.prive(&["status"]).assert().stdout("locked\n");
 }
