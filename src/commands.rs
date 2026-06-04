@@ -12,14 +12,37 @@ use crate::{
     audit, browser, clip, config, db, entry::Entry, generate, otp, output, pick, select, unlock,
 };
 
-/// Open the database the command line or config file points at.
+/// Open the database the command line or config file points at: from the agent if it holds
+/// it, otherwise by reading the file and asking for the password.
 fn open(global: &Global) -> Result<db::Db> {
     let cfg = config::Config::load()?;
     let target = cfg.target(global.db.as_deref(), global.keyfile.as_deref())?;
+    #[cfg(unix)]
+    if let Some(db) = from_agent(&target.db) {
+        return Ok(db);
+    }
     // A missing or non-KeePass file is reported before the password is asked for.
     let bytes = db::read_file(&target.db)?;
     let creds = unlock::KeySource::for_target(global, &target)?;
     db::Db::from_bytes(&target.db, &bytes, &creds)
+}
+
+/// The agent's copy of `path`, if it holds one. Anything going wrong with the agent just means
+/// asking for the password as usual.
+#[cfg(unix)]
+fn from_agent(path: &std::path::Path) -> Option<db::Db> {
+    use crate::agent::client::{Answer, entries};
+    match entries(path) {
+        Ok(Answer::Entries(entries)) => Some(db::Db {
+            path: path.to_path_buf(),
+            entries,
+        }),
+        Ok(Answer::Locked(reason)) if reason.contains("changed on disk") => {
+            output::notice("The database changed on disk since `prive unlock`; asking again.");
+            None
+        }
+        _ => None,
+    }
 }
 
 /// Open the database once, then hand it to the agent so later commands need no password.
