@@ -5,6 +5,7 @@
 //! command prints goes through [`output`]. See `docs/design.md` for the module map and the
 //! rules the code keeps.
 
+pub mod agent;
 pub mod audit;
 pub mod browser;
 pub mod cli;
