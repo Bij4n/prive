@@ -37,6 +37,13 @@ What prive protects against, and what it doesn't. This will grow as the rewrite 
 - A wrong password or key file is reported as such (exit code 5); prive never tells you which
   of the two was wrong, because the file format can't know.
 
+## The agent
+
+`prive unlock` keeps a decrypted database in a background process for a while. It answers
+only your own user, over a socket in a private directory, drops the master password after
+opening, forgets everything when the file changes or after the idle timeout, and turns off
+core dumps and (on Linux) debugger attachment. Details in [agent.md](agent.md).
+
 ## Reporting a problem
 
 Please open a GitHub issue marked "security", or, for anything sensitive, ask for a private

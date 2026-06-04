@@ -6,9 +6,10 @@ prive opens the same `.kdbx` file as KeePassXC, KeePassDX (Android) and Strongbo
 your passwords live in one file you own: those apps cover the phone and the browser, prive
 covers the terminal. It prints exactly what you ask for, nothing else, so it fits in scripts.
 
-> **Status: rewrite in progress (0.6).** Reading works: `ls`, `search`, `show`, `get`, `otp`,
-> `pick`, `audit` and `gen`. Unlock-once, imports from other password managers, file
-> encryption and editing are next; see the [roadmap](docs/roadmap.md).
+> **Status: rewrite in progress (0.6).** Reading works (`ls`, `search`, `show`, `get`, `otp`,
+> `open`, `pick`, `audit`, `gen`), and `prive unlock` keeps the database open so a session
+> costs one password prompt. Imports from other password managers, file encryption and
+> editing are next; see the [roadmap](docs/roadmap.md).
 >
 > The old 0.5 line (its own `.pv` vault format and a PGP toolkit) is kept at the tag
 > `legacy-0.5.0`. It had serious problems, PGP secret keys stored unencrypted among them;
@@ -32,6 +33,7 @@ prive 0.5? See [docs/migrating-from-0.5.md](docs/migrating-from-0.5.md).
 mkdir -p ~/.config/prive
 echo 'db = "~/Passwords.kdbx"' > ~/.config/prive/config.toml
 
+prive unlock                     # password once; later commands don't ask (15 min idle)
 prive ls                         # every entry: path and username
 prive ls Work                    # one group and its subgroups
 prive ls --tag cloud             # entries with a tag (prive tags lists them all)
@@ -47,6 +49,7 @@ prive pick                       # fuzzy finder; Enter copies the password
 prive audit                      # weak, reused, old and expired passwords
 prive audit --hibp               # also check Have I Been Pwned (k-anonymity)
 prive gen --words 6              # a passphrase, no database needed
+prive lock                       # forget the unlocked database now
 ```
 
 Entries are named by title, by `Group/Title` path when a title is used twice, or by
