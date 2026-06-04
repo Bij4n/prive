@@ -16,6 +16,7 @@ fn fixture(name: &str) -> PathBuf {
 fn prive(args: &[&str]) -> Command {
     let mut cmd = Command::cargo_bin("prive").unwrap();
     cmd.env("PRIVE_CONFIG", fixture("no-such-config.toml"))
+        .env("PRIVE_NO_AGENT", "1")
         .env_remove("PRIVE_DB")
         .env_remove("PRIVE_KEYFILE")
         .env_remove("PRIVE_PASSWORD_FILE")

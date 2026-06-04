@@ -39,6 +39,15 @@ pub struct Global {
     #[arg(long, global = true, conflicts_with = "no_password")]
     pub password_stdin: bool,
 
+    /// Don't use the unlocked database from `prive unlock`; read the file and ask
+    #[arg(
+        long,
+        global = true,
+        env = "PRIVE_NO_AGENT",
+        value_parser = clap::builder::FalseyValueParser::new()
+    )]
+    pub no_agent: bool,
+
     /// Leave out notices on stderr ("Copied", seconds left, entropy); errors still show
     #[arg(short, long, global = true)]
     pub quiet: bool,

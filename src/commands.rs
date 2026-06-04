@@ -18,7 +18,9 @@ fn open(global: &Global) -> Result<db::Db> {
     let cfg = config::Config::load()?;
     let target = cfg.target(global.db.as_deref(), global.keyfile.as_deref())?;
     #[cfg(unix)]
-    if let Some(db) = from_agent(&target.db) {
+    if !global.no_agent
+        && let Some(db) = from_agent(&target.db)
+    {
         return Ok(db);
     }
     // A missing or non-KeePass file is reported before the password is asked for.
