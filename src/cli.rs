@@ -104,9 +104,13 @@ pub enum Command {
             short,
             long = "env",
             value_name = "NAME=ENTRY[:FIELD]",
-            required = true
+            required_unless_present = "from"
         )]
         env: Vec<String>,
+        /// Also export every custom field of this entry whose name is a valid variable name
+        /// (e.g. AWS_ACCESS_KEY_ID); repeat for several entries
+        #[arg(long, value_name = "ENTRY")]
+        from: Vec<String>,
         /// The command and its arguments, after `--`
         #[arg(last = true, required = true, value_name = "COMMAND")]
         command: Vec<String>,

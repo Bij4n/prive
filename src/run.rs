@@ -58,6 +58,17 @@ pub fn resolve(entries: &[Entry], spec: &EnvSpec) -> Result<Zeroizing<String>> {
     Err(not_found.into())
 }
 
+/// Every custom field of `entry` whose name is a valid environment variable name, e.g. an
+/// entry holding `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` as fields.
+pub fn fields_as_env(entry: &Entry) -> Vec<(String, Zeroizing<String>)> {
+    entry
+        .custom
+        .iter()
+        .filter(|c| valid_name(&c.name))
+        .map(|c| (c.name.clone(), Zeroizing::new(c.value.to_string())))
+        .collect()
+}
+
 /// Replace this process with `program` (Unix) or run it and pass its exit code on (Windows),
 /// with `vars` added to the environment. Returns only if starting it failed.
 pub fn exec(program: &str, args: &[String], vars: &[(String, Zeroizing<String>)]) -> Result<i32> {
@@ -129,5 +140,27 @@ mod tests {
         assert_eq!(get("O=Odd: name").unwrap(), "odd-pw");
         assert!(get("X=Work/GitHub:nope").is_err());
         assert!(get("X=Nobody").is_err());
+    }
+
+    #[test]
+    fn exportable_fields() {
+        let e = Entry {
+            custom: vec![
+                crate::entry::CustomField {
+                    name: "AWS_ACCESS_KEY_ID".into(),
+                    value: Zeroizing::new("AKIA".into()),
+                    protected: false,
+                },
+                crate::entry::CustomField {
+                    name: "API key".into(),
+                    value: Zeroizing::new("no".into()),
+                    protected: true,
+                },
+            ],
+            ..Entry::default()
+        };
+        let vars = fields_as_env(&e);
+        assert_eq!(vars.len(), 1);
+        assert_eq!(vars[0].0, "AWS_ACCESS_KEY_ID");
     }
 }

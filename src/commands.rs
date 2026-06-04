@@ -273,16 +273,28 @@ pub fn otp(global: &Global, entry: &str, min_validity: u64, clip: bool, json: bo
     Ok(())
 }
 
-pub fn run(global: &Global, specs: &[String], command: &[String]) -> Result<()> {
+pub fn run(global: &Global, specs: &[String], from: &[String], command: &[String]) -> Result<()> {
     let specs: Vec<crate::run::EnvSpec> = specs
         .iter()
         .map(|s| crate::run::parse_spec(s))
         .collect::<Result<_>>()?;
     let db = open(global)?;
-    let vars = specs
-        .iter()
-        .map(|s| Ok((s.name.clone(), crate::run::resolve(&db.entries, s)?)))
-        .collect::<Result<Vec<_>>>()?;
+    let mut vars = Vec::new();
+    for name in from {
+        let e = select::select(&db.entries, name)?;
+        let fields = crate::run::fields_as_env(e);
+        if fields.is_empty() {
+            anyhow::bail!(
+                "{}: no custom fields named like environment variables",
+                e.path()
+            );
+        }
+        vars.extend(fields);
+    }
+    // --env comes last, so it overrides a field of the same name.
+    for s in &specs {
+        vars.push((s.name.clone(), crate::run::resolve(&db.entries, s)?));
+    }
     drop(db); // the child gets only what it asked for
     let (program, args) = command.split_first().expect("clap requires a command");
     let code = crate::run::exec(program, args, &vars)?;
