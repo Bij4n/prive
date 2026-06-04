@@ -9,6 +9,9 @@ use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
 pub const DEFAULT_CLIPBOARD_SECONDS: u64 = 20;
+/// How long the agent keeps a database unlocked without being used, by default.
+pub const DEFAULT_AGENT_MINUTES: u64 = 15;
+
 /// Shortest and longest clipboard timeouts accepted from the config file.
 pub const CLIPBOARD_SECONDS_RANGE: std::ops::RangeInclusive<u64> = 1..=600;
 
@@ -24,6 +27,9 @@ pub struct Config {
     /// Seconds before a copied secret is cleared from the clipboard.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub clipboard_seconds: Option<u64>,
+    /// Minutes the agent keeps a database unlocked after its last use (1 to 1440).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub agent_minutes: Option<u64>,
 }
 
 impl Config {
@@ -46,6 +52,13 @@ impl Config {
             .with_context(|| format!("reading config {}", path.display()))?;
         let cfg: Config =
             toml::from_str(&text).with_context(|| format!("parsing config {}", path.display()))?;
+        if let Some(m) = cfg.agent_minutes {
+            anyhow::ensure!(
+                (1..=1440).contains(&m),
+                "agent_minutes in {} must be between 1 and 1440",
+                path.display()
+            );
+        }
         if let Some(n) = cfg.clipboard_seconds {
             anyhow::ensure!(
                 CLIPBOARD_SECONDS_RANGE.contains(&n),
@@ -70,6 +83,10 @@ impl Config {
 
     pub fn clipboard_seconds(&self) -> u64 {
         self.clipboard_seconds.unwrap_or(DEFAULT_CLIPBOARD_SECONDS)
+    }
+
+    pub fn agent_idle(&self) -> std::time::Duration {
+        std::time::Duration::from_secs(60 * self.agent_minutes.unwrap_or(DEFAULT_AGENT_MINUTES))
     }
 }
 
@@ -209,5 +226,16 @@ mod tests {
             ..Config::default()
         };
         assert_eq!(abs.target(None, None).unwrap().db, Path::new("/srv/p.kdbx"));
+    }
+
+    #[test]
+    fn agent_minutes() {
+        assert_eq!(Config::default().agent_idle().as_secs(), 15 * 60);
+        let dir = tempfile::tempdir().unwrap();
+        let p = dir.path().join("c.toml");
+        std::fs::write(&p, "agent_minutes = 0\n").unwrap();
+        assert!(Config::load_from(&p).is_err());
+        std::fs::write(&p, "agent_minutes = 60\n").unwrap();
+        assert_eq!(Config::load_from(&p).unwrap().agent_idle().as_secs(), 3600);
     }
 }

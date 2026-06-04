@@ -16,6 +16,9 @@ db = "~/Passwords.kdbx"
 # Key file for that database, if it uses one. Not used with --db.
 keyfile = "/home/me/Passwords.keyx"
 
+# Minutes the agent keeps a database unlocked after its last use (1-1440, default 15).
+agent_minutes = 15
+
 # Seconds before a copied secret is cleared from the clipboard (1-600, default 20).
 clipboard_seconds = 20
 ```
