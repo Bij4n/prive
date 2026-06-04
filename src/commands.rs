@@ -26,7 +26,7 @@ fn open(global: &Global) -> Result<db::Db> {
 fn copy_and_tell(secret: &str) -> Result<()> {
     let seconds = config::Config::load()?.clipboard_seconds();
     clip::copy(secret, seconds)?;
-    output::notice("Copied. The clipboard clears in {seconds} s.");
+    output::notice(&format!("Copied. The clipboard clears in {seconds} s."));
     Ok(())
 }
 

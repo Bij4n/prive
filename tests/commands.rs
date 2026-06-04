@@ -145,7 +145,9 @@ fn get_clip_copies_and_prints_nothing() {
         .assert()
         .success()
         .stdout(predicate::str::is_empty())
-        .stderr(predicate::str::contains("Copied"));
+        .stderr(predicate::str::contains(
+            "Copied. The clipboard clears in 20 s.",
+        ));
     assert_eq!(std::fs::read_to_string(&clip).unwrap(), "b4nk-P@ss-2026!");
 }
 
