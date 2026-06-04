@@ -609,3 +609,26 @@ fn run_refuses_bad_specs_before_asking_for_anything() {
         .code(3);
     prive(&["run", "-e", "X=Bank"]).assert().code(2); // no command
 }
+
+#[cfg(unix)]
+#[test]
+fn run_from_exports_upper_case_fields_only() {
+    prive(&[
+        "run",
+        "--from",
+        "Old VPN",
+        "--",
+        "sh",
+        "-c",
+        r#"printf '%s|%s|%s' "$VPN_SERVER" "$VPN_TOKEN" "${otp:-none}""#,
+    ])
+    .assert()
+    .success()
+    .stdout("vpn.example.invalid|tok-123|none");
+    prive(&["run", "--from", "Bank", "--", "true"])
+        .assert()
+        .code(1)
+        .stderr(predicate::str::contains(
+            "no custom fields named like environment variables",
+        ));
+}

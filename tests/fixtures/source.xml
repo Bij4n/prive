@@ -35,6 +35,8 @@
         <String><Key>Title</Key><Value>Old VPN</Value></String>
         <String><Key>UserName</Key><Value>vpnuser</Value></String>
         <String><Key>Password</Key><Value ProtectInMemory="True">kH3@pN8%sJ5*eB1(cG7)</Value></String>
+        <String><Key>VPN_SERVER</Key><Value>vpn.example.invalid</Value></String>
+        <String><Key>VPN_TOKEN</Key><Value ProtectInMemory="True">tok-123</Value></String>
       </Entry>
       <Group>
         <UUID>AAAAAAAAAAAAAAAAAAAAAQ==</UUID>

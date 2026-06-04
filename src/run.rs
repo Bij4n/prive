@@ -58,13 +58,23 @@ pub fn resolve(entries: &[Entry], spec: &EnvSpec) -> Result<Zeroizing<String>> {
     Err(not_found.into())
 }
 
-/// Every custom field of `entry` whose name is a valid environment variable name, e.g. an
-/// entry holding `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` as fields.
+/// Names `--from` exports: upper case, digits and `_`, the way environment variables are
+/// written (`AWS_ACCESS_KEY_ID`). Fields like `plan` or `otp` stay put.
+pub fn exported_name(name: &str) -> bool {
+    valid_name(name)
+        && name
+            .chars()
+            .all(|c| c.is_ascii_uppercase() || c.is_ascii_digit() || c == '_')
+        && !crate::otp::is_otp_field(name)
+}
+
+/// Every custom field of `entry` named like an environment variable, e.g. an entry holding
+/// `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` as fields.
 pub fn fields_as_env(entry: &Entry) -> Vec<(String, Zeroizing<String>)> {
     entry
         .custom
         .iter()
-        .filter(|c| valid_name(&c.name))
+        .filter(|c| exported_name(&c.name))
         .map(|c| (c.name.clone(), Zeroizing::new(c.value.to_string())))
         .collect()
 }
@@ -162,5 +172,18 @@ mod tests {
         let vars = fields_as_env(&e);
         assert_eq!(vars.len(), 1);
         assert_eq!(vars[0].0, "AWS_ACCESS_KEY_ID");
+    }
+
+    #[test]
+    fn only_upper_case_names_are_exported() {
+        assert!(exported_name("AWS_REGION"));
+        assert!(exported_name("_X1"));
+        assert!(!exported_name("plan"));
+        assert!(!exported_name("Api_Key"));
+        assert!(
+            !exported_name("OTP"),
+            "one-time code settings are never exported"
+        );
+        assert!(!exported_name("1ABC"));
     }
 }
