@@ -17,6 +17,7 @@ use crate::agent::{dir, frame, peer};
 /// Run the agent until it is locked or idle for `idle`. `ready` is called once the socket is
 /// listening, so whoever started the agent can stop waiting.
 pub fn serve(idle: Duration, ready: impl FnOnce()) -> Result<()> {
+    harden();
     let socket_dir = dir::agent_dir();
     dir::ensure_private(&socket_dir)?;
     let path = dir::socket_path();
@@ -100,6 +101,15 @@ fn answer(stream: UnixStream, state: &mut State, deadline: Instant) -> Result<bo
         },
     )?;
     Ok(stop)
+}
+
+/// Keep the decrypted database out of core dumps and away from debuggers of the same user
+/// where the system allows it. Best effort: failures are ignored.
+fn harden() {
+    use nix::sys::resource::{Resource, setrlimit};
+    let _ = setrlimit(Resource::RLIMIT_CORE, 0, 0);
+    #[cfg(any(target_os = "linux", target_os = "android"))]
+    let _ = nix::sys::prctl::set_dumpable(false);
 }
 
 /// True if an agent answers on the socket in `dir`.
