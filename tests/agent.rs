@@ -147,3 +147,33 @@ fn no_agent_reads_the_file_even_when_unlocked() {
         .code(5);
     s.prive(&["get", "Bank"]).assert().success();
 }
+
+#[test]
+fn the_agent_directory_is_private_and_a_loose_one_is_refused() {
+    use std::os::unix::fs::PermissionsExt;
+    let s = Sandbox::new();
+    s.unlock();
+    let mode = std::fs::metadata(s.agent_dir())
+        .unwrap()
+        .permissions()
+        .mode()
+        & 0o777;
+    assert_eq!(mode, 0o700);
+    s.prive(&["lock"]).assert().success();
+
+    // Someone loosened it: prive won't use it, and says why.
+    std::fs::set_permissions(s.agent_dir(), std::fs::Permissions::from_mode(0o755)).unwrap();
+    s.prive(&["--password-stdin", "unlock"])
+        .write_stdin("fixture-pass\n")
+        .assert()
+        .code(1)
+        .stderr(predicate::str::contains("must be 700"));
+}
+
+#[test]
+fn a_second_unlock_reuses_the_running_agent() {
+    let s = Sandbox::new();
+    s.unlock();
+    s.unlock();
+    s.prive(&["get", "Bank"]).assert().success();
+}
