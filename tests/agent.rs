@@ -101,3 +101,49 @@ fn a_wrong_password_starts_nothing() {
         .code(5);
     s.prive(&["status"]).assert().stdout("locked\n");
 }
+
+#[test]
+fn a_change_on_disk_means_unlocking_again() {
+    let s = Sandbox::new();
+    s.unlock();
+    // KeePassXC (or a sync tool) writes a new version of the file.
+    std::fs::copy(fixture("kdbx40.kdbx"), &s.db).unwrap();
+    s.prive(&["get", "Bank"])
+        .assert()
+        .code(5)
+        .stderr(predicate::str::contains("changed on disk"));
+    // The agent has forgotten the old copy, not kept serving it.
+    s.prive(&["status"]).assert().stdout("locked\n");
+}
+
+#[test]
+fn only_the_unlocked_database_is_served() {
+    let s = Sandbox::new();
+    s.unlock();
+    let other = s.dir.path().join("other.kdbx");
+    std::fs::copy(fixture("kdbx31.kdbx"), &other).unwrap();
+    s.prive(&["get", "Bank"]).assert().success();
+    Command::cargo_bin("prive")
+        .unwrap()
+        .env("PRIVE_CONFIG", s.dir.path().join("config.toml"))
+        .env("PRIVE_AGENT_DIR", s.agent_dir())
+        .env_remove("PRIVE_PASSWORD_FILE")
+        .arg("--db")
+        .arg(&other)
+        .args(["get", "Bank"])
+        .write_stdin("")
+        .assert()
+        .code(5);
+}
+
+#[test]
+fn no_agent_reads_the_file_even_when_unlocked() {
+    let s = Sandbox::new();
+    s.unlock();
+    s.prive(&["--no-agent", "get", "Bank"]).assert().code(5);
+    s.prive(&["get", "Bank"])
+        .env("PRIVE_NO_AGENT", "1")
+        .assert()
+        .code(5);
+    s.prive(&["get", "Bank"]).assert().success();
+}
