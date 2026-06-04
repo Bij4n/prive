@@ -10,3 +10,4 @@ pub mod frame;
 #[cfg(unix)]
 pub mod peer;
 pub mod proto;
+pub mod state;
