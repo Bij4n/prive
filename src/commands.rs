@@ -22,6 +22,41 @@ fn open(global: &Global) -> Result<db::Db> {
     db::Db::from_bytes(&target.db, &bytes, &creds)
 }
 
+/// Open the database once, then hand it to the agent so later commands need no password.
+pub fn unlock(global: &Global) -> Result<()> {
+    #[cfg(unix)]
+    {
+        let cfg = config::Config::load()?;
+        let target = cfg.target(global.db.as_deref(), global.keyfile.as_deref())?;
+        let bytes = db::read_file(&target.db)?;
+        let creds = unlock::KeySource::for_target(global, &target)?;
+        // Check the password here, so a wrong one is exit code 5 like everywhere else.
+        db::Db::from_bytes(&target.db, &bytes, &creds)?;
+        let idle = cfg.agent_idle();
+        crate::agent::client::start(idle)?;
+        crate::agent::client::unlock(
+            &target.db,
+            creds.keyfile.clone(),
+            creds.password.as_ref().map(|p| p.as_str()),
+        )?;
+        let name = target
+            .db
+            .file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_default();
+        output::notice(&format!(
+            "Unlocked {name}. It locks after {} minutes unused, or with `prive lock`.",
+            idle.as_secs() / 60
+        ));
+        Ok(())
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = global;
+        anyhow::bail!("unlocking once isn't available on this system yet; each command asks")
+    }
+}
+
 /// Copy a secret, then say on stderr when it will be cleared.
 fn copy_and_tell(secret: &str) -> Result<()> {
     let seconds = config::Config::load()?.clipboard_seconds();

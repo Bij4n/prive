@@ -50,6 +50,9 @@ pub struct Global {
 
 #[derive(Debug, Subcommand)]
 pub enum Command {
+    /// Unlock the database once; later commands use it without asking (Linux and macOS)
+    Unlock,
+
     /// Print one field of an entry (the password by default), nothing else
     Get {
         entry: String,

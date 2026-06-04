@@ -68,6 +68,7 @@ fn dispatch(cli: Cli) -> Result<()> {
     let g = &cli.global;
     output::set_quiet(g.quiet);
     match &cli.command {
+        Command::Unlock => commands::unlock(g),
         Command::Ls {
             group,
             tags,
