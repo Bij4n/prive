@@ -19,6 +19,10 @@ pub fn set_quiet(quiet: bool) {
 
 /// A notice for the person at the terminal, on stderr, unless `--quiet`.
 pub fn notice(text: &str) {
+    debug_assert!(
+        !(text.contains('{') && text.contains('}')),
+        "notice with an unformatted placeholder: {text}"
+    );
     if !QUIET.load(std::sync::atomic::Ordering::Relaxed) {
         eprintln!("{text}");
     }

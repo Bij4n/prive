@@ -151,7 +151,7 @@ pub fn otp(global: &Global, entry: &str, min_validity: u64, clip: bool, json: bo
     );
     if left < min_validity {
         if std::io::stderr().is_terminal() {
-            output::notice("(waiting {left} s for a fresh code)");
+            output::notice(&format!("(waiting {left} s for a fresh code)"));
         }
         std::thread::sleep(std::time::Duration::from_secs(left));
         (code, left) = totp.now();
@@ -169,7 +169,7 @@ pub fn otp(global: &Global, entry: &str, min_validity: u64, clip: bool, json: bo
         output::print(&format!("{code}\n"))?;
     }
     if std::io::stderr().is_terminal() {
-        output::notice("(valid for {left} more seconds)");
+        output::notice(&format!("(valid for {left} more seconds)"));
     }
     Ok(())
 }
@@ -180,7 +180,7 @@ pub fn open_url(global: &Global, entry: &str, no_copy: bool) -> Result<()> {
     let e = select::select(&db.entries, entry)?;
     let url = browser::web_url(&e.url).map_err(|err| anyhow::anyhow!("{}: {err}", e.path()))?;
     browser::open(&url)?;
-    output::notice("Opened {url}");
+    output::notice(&format!("Opened {url}"));
     if !no_copy && !e.password.is_empty() {
         copy_and_tell(&e.password)?;
     }
