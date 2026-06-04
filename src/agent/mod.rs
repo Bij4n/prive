@@ -5,6 +5,8 @@
 //! command asks for the password, as before.
 
 #[cfg(unix)]
+pub mod client;
+#[cfg(unix)]
 pub mod dir;
 pub mod frame;
 #[cfg(unix)]

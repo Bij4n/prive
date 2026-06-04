@@ -42,6 +42,21 @@ pub fn run() -> ExitCode {
             Err(e) => error::report(&e),
         };
     }
+    #[cfg(unix)]
+    if args.get(1).map(String::as_str) == Some(agent::client::AGENT_ARG) {
+        let seconds = args.get(2).and_then(|s| s.parse().ok()).unwrap_or(900);
+        let started = agent::server::serve(std::time::Duration::from_secs(seconds), || {
+            use std::io::Write;
+            let mut out = std::io::stdout();
+            let _ = writeln!(out, "ok");
+            let _ = out.flush();
+        });
+        if let Err(e) = started {
+            println!("err: {e:#}");
+            return ExitCode::from(1);
+        }
+        return ExitCode::SUCCESS;
+    }
     let cli = Cli::parse();
     match dispatch(cli) {
         Ok(()) => ExitCode::SUCCESS,
