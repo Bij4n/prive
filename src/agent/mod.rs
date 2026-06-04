@@ -6,4 +6,5 @@
 
 #[cfg(unix)]
 pub mod dir;
+pub mod frame;
 pub mod proto;
