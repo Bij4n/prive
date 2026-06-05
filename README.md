@@ -65,7 +65,9 @@ Entries are named by title, by `Group/Title` path when a title is used twice, or
 - `--json` on `ls`, `search`, `show`, `otp`, `audit` and `gen`.
 
 ```bash
-export GITHUB_TOKEN="$(prive get Work/GitHub -f token)"
+# Secrets for one command, never on screen, in history or on disk
+prive run -e GITHUB_TOKEN=Work/GitHub:token -- gh repo list
+prive run --from Work/AWS -- aws s3 ls
 ```
 
 More in [`docs/`](docs/): [scripting](docs/scripting.md), [exit codes](docs/exit-codes.md),
