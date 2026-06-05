@@ -632,3 +632,15 @@ fn run_from_exports_upper_case_fields_only() {
             "no custom fields named like environment variables",
         ));
 }
+
+#[cfg(windows)]
+#[test]
+fn run_on_windows_sets_variables_and_passes_the_exit_code() {
+    prive(&["run", "-e", "PW=Bank", "--", "cmd", "/C", "echo %PW%"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("b4nk-P@ss-2026!"));
+    prive(&["run", "-e", "PW=Bank", "--", "cmd", "/C", "exit 7"])
+        .assert()
+        .code(7);
+}
