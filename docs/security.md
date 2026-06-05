@@ -37,6 +37,12 @@ What prive protects against, and what it doesn't. This will grow as the rewrite 
 - A wrong password or key file is reported as such (exit code 5); prive never tells you which
   of the two was wrong, because the file format can't know.
 
+## Running commands
+
+`prive run` puts secrets in a child process's environment only, never on its command line
+(visible to every user through `ps`) or in a file. The environment is readable by other
+processes of the same user, as with any tool that takes credentials that way.
+
 ## The agent
 
 `prive unlock` keeps a decrypted database in a background process for a while. It answers

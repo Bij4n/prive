@@ -8,6 +8,8 @@ The 1.0 rewrite has started: prive becomes a terminal client for KeePass (`.kdbx
 The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `legacy-0.5.0`.
 
 ### Added
+- `prive run -e NAME=ENTRY[:FIELD] --from ENTRY -- COMMAND`: secrets in a command's
+  environment, never on the command line or disk; the command's exit code is passed on
 - `prive unlock`, `lock`, `status`: a background agent keeps the opened database so a session
   needs one password prompt. Private socket directory (mode 700, checked), same-user check on
   every connection, master password dropped after opening, forgets the database when the
