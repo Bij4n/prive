@@ -5,6 +5,8 @@
 //! place becomes a custom field; anything prive can't carry over is listed in the
 //! [`Report`].
 
+pub mod csvtable;
+
 use zeroize::Zeroizing;
 
 /// One login (or note, card, ...) as it came out of the other app.
