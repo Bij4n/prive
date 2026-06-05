@@ -6,6 +6,7 @@
 //! [`Report`].
 
 pub mod csvtable;
+pub mod google;
 
 use zeroize::Zeroizing;
 
@@ -50,6 +51,20 @@ pub struct Report {
     pub notes: Vec<String>,
 }
 
+/// A title for an entry that came without one: the host of its URL, without `www.`.
+pub fn title_from_url(url: &str) -> String {
+    let rest = url.split_once("://").map(|(_, r)| r).unwrap_or(url);
+    let host = rest.split(['/', '?', '#']).next().unwrap_or("");
+    let host = host.rsplit_once('@').map(|(_, h)| h).unwrap_or(host);
+    let host = host.split(':').next().unwrap_or(host);
+    let host = host.strip_prefix("www.").unwrap_or(host);
+    if host.is_empty() {
+        "untitled".to_string()
+    } else {
+        host.to_lowercase()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -66,5 +81,19 @@ mod tests {
         let shown = format!("{r:?}");
         assert!(!shown.contains("hunter2") && !shown.contains("ABC") && !shown.contains("1234"));
         assert!(shown.contains("PIN") && shown.contains("has_otp: true"));
+    }
+
+    #[test]
+    fn titles_from_urls() {
+        assert_eq!(
+            title_from_url("https://www.GitHub.com/login?x=1"),
+            "github.com"
+        );
+        assert_eq!(
+            title_from_url("http://user@host.invalid:8080/a"),
+            "host.invalid"
+        );
+        assert_eq!(title_from_url("example.org"), "example.org");
+        assert_eq!(title_from_url(""), "untitled");
     }
 }
