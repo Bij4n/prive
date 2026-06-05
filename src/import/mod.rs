@@ -5,6 +5,7 @@
 //! place becomes a custom field; anything prive can't carry over is listed in the
 //! [`Report`].
 
+pub mod apple;
 pub mod csvtable;
 pub mod google;
 
