@@ -18,6 +18,7 @@ pub mod error;
 pub mod fsutil;
 pub mod generate;
 pub mod hibp;
+pub mod import;
 pub mod otp;
 pub mod output;
 pub mod pick;
