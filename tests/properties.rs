@@ -136,3 +136,13 @@ proptest! {
         prop_assert!(code.bytes().all(|b| b"23456789BCDFGHJKMNPQRTVWXY".contains(&b)));
     }
 }
+
+proptest! {
+    #[test]
+    fn csv_imports_never_panic(text in ".{0,400}") {
+        let _ = prive::import::google::parse(&text);
+        let _ = prive::import::apple::parse(&text);
+        let _ = prive::import::google::parse(&format!("name,url,username,password,note\n{text}"));
+        let _ = prive::import::apple::parse(&format!("Title,URL,Username,Password,Notes,OTPAuth\n{text}"));
+    }
+}
