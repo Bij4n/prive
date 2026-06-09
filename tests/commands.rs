@@ -831,3 +831,19 @@ fn search_all_reaches_notes_but_not_passwords() {
         .stdout(predicate::str::starts_with("Work/GitHub"));
     prive(&["search", "--all", "gh-Secret-1"]).assert().code(3);
 }
+
+#[test]
+fn history_shows_when_and_whether_the_password_changed() {
+    let out = prive(&["history", "Work/GitHub"]).output().unwrap();
+    let text = String::from_utf8(out.stdout).unwrap();
+    assert_eq!(text.lines().count(), 2, "{text}");
+    assert!(text.lines().next().unwrap().ends_with("  now"));
+    assert!(text.contains("password changed after this"));
+    assert!(!text.contains("old-password"));
+    prive(&["history", "Work/GitHub", "--reveal"])
+        .assert()
+        .stdout(predicate::str::contains(": old-password"));
+    prive(&["history", "Bank"])
+        .assert()
+        .stdout("Bank has no earlier versions\n");
+}

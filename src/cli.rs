@@ -136,6 +136,16 @@ pub enum Command {
         no_copy: bool,
     },
 
+    /// An entry's earlier versions: when each was saved, and whether the password changed
+    History {
+        entry: String,
+        /// Show the old passwords themselves
+        #[arg(long)]
+        reveal: bool,
+        #[arg(long)]
+        json: bool,
+    },
+
     /// List an entry's attached files, or write one out
     File {
         entry: String,

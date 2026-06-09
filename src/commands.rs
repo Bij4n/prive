@@ -341,6 +341,55 @@ pub fn codes(global: &Global, query: Option<&str>, json: bool) -> Result<()> {
     output::print(&text)
 }
 
+/// When an entry was changed before, and what changed about its password.
+pub fn history(global: &Global, entry: &str, reveal: bool, json: bool) -> Result<()> {
+    let db = open(global)?;
+    let e = select::select(&db.entries, entry)?;
+    let when = |m: Option<chrono::NaiveDateTime>| {
+        m.map(|t| t.format("%Y-%m-%d %H:%M").to_string())
+            .unwrap_or_else(|| "unknown date".into())
+    };
+    // Each version's password compared with the one saved after it.
+    let mut newer = e.password.as_str();
+    let mut rows = Vec::new();
+    for v in &e.history {
+        let changed = v.password.as_str() != newer;
+        rows.push((when(v.modified), v, changed));
+        newer = v.password.as_str();
+    }
+    if json {
+        let list: Vec<_> = rows
+            .iter()
+            .map(|(t, v, changed)| {
+                serde_json::json!({
+                    "saved": t,
+                    "username": v.username,
+                    "password_changed_after": changed,
+                    "password": reveal.then(|| v.password.as_str()),
+                })
+            })
+            .collect();
+        return output::print_json(&list);
+    }
+    if rows.is_empty() {
+        return output::print(&format!("{} has no earlier versions\n", e.path()));
+    }
+    let mut text = format!("{}  now\n", when(e.modified));
+    for (t, v, changed) in rows {
+        let mark = if changed {
+            "password changed after this"
+        } else {
+            "same password"
+        };
+        if reveal {
+            text.push_str(&format!("{t}  {mark}: {}\n", v.password.as_str()));
+        } else {
+            text.push_str(&format!("{t}  {mark}\n"));
+        }
+    }
+    output::print(&text)
+}
+
 /// List an entry's attachments, or write one to a new file or to stdout.
 pub fn file(
     global: &Global,

@@ -103,6 +103,11 @@ fn dispatch(cli: Cli) -> Result<()> {
         } => commands::import_check(file, *from, map),
         Command::Run { env, from, command } => commands::run(g, env, from, command),
         Command::Open { entry, no_copy } => commands::open_url(g, entry, *no_copy),
+        Command::History {
+            entry,
+            reveal,
+            json,
+        } => commands::history(g, entry, *reveal, *json),
         Command::File { entry, name, out } => {
             commands::file(g, entry, name.as_deref(), out.as_deref())
         }
