@@ -92,9 +92,14 @@ fn walk(
             })
             .collect();
         custom.sort_by(|a, b| a.name.cmp(&b.name));
-        let mut attachments: Vec<String> =
-            e.attachments_named().map(|(n, _)| n.to_string()).collect();
-        attachments.sort();
+        let mut attachments: Vec<crate::entry::Attachment> = e
+            .attachments_named()
+            .map(|(n, a)| crate::entry::Attachment {
+                name: n.to_string(),
+                data: Zeroizing::new(a.data.get().clone()),
+            })
+            .collect();
+        attachments.sort_by(|a, b| a.name.cmp(&b.name));
         out.push(Entry {
             uuid: e.id().uuid().to_string(),
             group: path.to_string(),
@@ -214,7 +219,8 @@ mod tests {
             .iter()
             .find(|e| e.path() == "Work/GitHub")
             .unwrap();
-        assert_eq!(gh.attachments, ["deploy.txt"]);
+        assert_eq!(gh.attachment_names(), ["deploy.txt"]);
+        assert_eq!(&gh.attachments[0].data[..], b"deploy-key-bytes\n");
     }
 
     #[test]

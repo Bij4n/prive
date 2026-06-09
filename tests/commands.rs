@@ -91,7 +91,7 @@ fn show_hides_secrets_until_revealed() {
         .stdout(predicate::str::contains("6 digits every 30 s, SHA-1"))
         .stdout(predicate::str::contains("API key: ********"))
         .stdout(predicate::str::contains("plan:    team"))
-        .stdout(predicate::str::contains("Files:     deploy.txt"))
+        .stdout(predicate::str::contains("Files:     deploy.txt (17 B)"))
         .stdout(predicate::str::contains("gh-Secret-1").not())
         .stdout(predicate::str::contains("custom-protected").not());
     prive(&["show", "Work/GitHub", "--reveal"])

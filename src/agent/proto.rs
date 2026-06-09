@@ -89,7 +89,8 @@ pub struct WireEntry {
     pub modified: Option<chrono::NaiveDateTime>,
     pub expires: Option<chrono::NaiveDateTime>,
     pub quality_check: bool,
-    pub attachments: Vec<String>,
+    /// (name, hex of the contents)
+    pub attachments: Vec<(String, String)>,
 }
 
 impl From<&Entry> for WireEntry {
@@ -111,7 +112,11 @@ impl From<&Entry> for WireEntry {
             modified: e.modified,
             expires: e.expires,
             quality_check: e.quality_check,
-            attachments: e.attachments.clone(),
+            attachments: e
+                .attachments
+                .iter()
+                .map(|a| (a.name.clone(), hex::encode(&a.data[..])))
+                .collect(),
         }
     }
 }
@@ -139,7 +144,14 @@ impl From<WireEntry> for Entry {
             modified: w.modified,
             expires: w.expires,
             quality_check: w.quality_check,
-            attachments: w.attachments,
+            attachments: w
+                .attachments
+                .into_iter()
+                .map(|(name, data)| crate::entry::Attachment {
+                    name,
+                    data: Zeroizing::new(hex::decode(data).unwrap_or_default()),
+                })
+                .collect(),
         }
     }
 }

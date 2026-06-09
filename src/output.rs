@@ -86,6 +86,22 @@ pub fn render_audit(r: &crate::audit::Report) -> String {
     out
 }
 
+/// `1.2 KB`-style sizes for people.
+pub fn human_size(bytes: usize) -> String {
+    const UNITS: [&str; 4] = ["B", "KB", "MB", "GB"];
+    let mut size = bytes as f64;
+    let mut unit = 0;
+    while size >= 1024.0 && unit < UNITS.len() - 1 {
+        size /= 1024.0;
+        unit += 1;
+    }
+    if unit == 0 {
+        format!("{bytes} B")
+    } else {
+        format!("{size:.1} {}", UNITS[unit])
+    }
+}
+
 /// `ls --long`: the date it last changed, markers for a one-time code (`2fa`), attachments
 /// (`file`) and expiry (`expired`), then the path and username.
 pub fn render_long_list(entries: &[&Entry]) -> String {
@@ -159,7 +175,7 @@ pub fn show_json(e: &Entry, reveal: bool) -> ShowJson {
                 protected: c.protected,
             })
             .collect(),
-        attachments: e.attachments.clone(),
+        attachments: e.attachment_names(),
         modified: e.modified.map(iso),
         expires: e.expires.map(iso),
     }
@@ -210,7 +226,12 @@ pub fn render_show(e: &Entry, reveal: bool) -> String {
         }
     }
     if !e.attachments.is_empty() {
-        out.push_str(&format!("{:<10} {}\n", "Files:", e.attachments.join(", ")));
+        let files: Vec<String> = e
+            .attachments
+            .iter()
+            .map(|a| format!("{} ({})", a.name, human_size(a.data.len())))
+            .collect();
+        out.push_str(&format!("{:<10} {}\n", "Files:", files.join(", ")));
     }
     if let Some(m) = e.modified {
         out.push_str(&format!(
@@ -310,12 +331,15 @@ mod tests {
     fn notes_are_indented_and_times_shown() {
         let mut e = github();
         e.notes = "line one\nline two".into();
-        e.attachments = vec!["deploy.pem".into()];
+        e.attachments = vec![crate::entry::Attachment {
+            name: "deploy.pem".into(),
+            data: zeroize::Zeroizing::new(vec![0; 2048]),
+        }];
         e.modified = chrono::NaiveDate::from_ymd_opt(2026, 5, 1)
             .unwrap()
             .and_hms_opt(14, 3, 0);
         let text = render_show(&e, false);
-        assert!(text.contains("Files:     deploy.pem\n"));
+        assert!(text.contains("Files:     deploy.pem (2.0 KB)\n"));
         assert!(text.contains("Modified:  2026-05-01 14:03\n"));
         assert!(text.ends_with("Notes:\n  line one\n  line two\n"));
     }
@@ -374,7 +398,10 @@ mod tests {
         a.modified = chrono::NaiveDate::from_ymd_opt(2026, 5, 1)
             .unwrap()
             .and_hms_opt(9, 0, 0);
-        a.attachments = vec!["k.pem".into()];
+        a.attachments = vec![crate::entry::Attachment {
+            name: "k.pem".into(),
+            data: zeroize::Zeroizing::new(vec![1, 2, 3]),
+        }];
         let mut b = Entry {
             title: "Old".into(),
             expires: chrono::NaiveDate::from_ymd_opt(2020, 1, 1)

@@ -25,8 +25,8 @@ pub struct Entry {
     pub expires: Option<NaiveDateTime>,
     /// False when the user excluded the entry from password reports in KeePassXC.
     pub quality_check: bool,
-    /// Names of attached files. Their contents are not read.
-    pub attachments: Vec<String>,
+    /// Attached files, by name, with their contents.
+    pub attachments: Vec<Attachment>,
 }
 
 #[derive(Clone)]
@@ -35,6 +35,27 @@ pub struct CustomField {
     pub value: Zeroizing<String>,
     /// KeePass "protected" flag: shown hidden by default.
     pub protected: bool,
+}
+
+/// A file attached to an entry (a key, a certificate, a scan). Its bytes are treated as
+/// secret: wiped from memory when freed, never printed by `Debug`.
+#[derive(Clone)]
+pub struct Attachment {
+    pub name: String,
+    pub data: Zeroizing<Vec<u8>>,
+}
+
+impl std::fmt::Debug for Attachment {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} ({} bytes)", self.name, self.data.len())
+    }
+}
+
+impl Entry {
+    /// The names of the attached files, in order.
+    pub fn attachment_names(&self) -> Vec<String> {
+        self.attachments.iter().map(|a| a.name.clone()).collect()
+    }
 }
 
 /// What listings print: enough to find and name an entry, never a secret.
