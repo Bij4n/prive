@@ -9,6 +9,7 @@ pub mod apple;
 pub mod csvtable;
 pub mod google;
 pub mod lastpass;
+pub mod proton;
 
 use zeroize::Zeroizing;
 
