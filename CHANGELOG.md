@@ -15,6 +15,9 @@ The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `l
   Writing the KeePass database comes next
 - `prive file ENTRY [NAME] [--out PATH]`: list or write out an entry's attachments
 - `prive codes [QUERY]`: every current one-time code at once
+- `prive history ENTRY`: earlier versions, when they were saved and whether the password
+  changed (old passwords with `--reveal`)
+- `unlock --minutes N`; `gen --count N`
 - `search --all` also looks in notes and unprotected fields (never in secrets)
 - `prive run -e NAME=ENTRY[:FIELD] --from ENTRY -- COMMAND`: secrets in a command's
   environment, never on the command line or disk; the command's exit code is passed on
