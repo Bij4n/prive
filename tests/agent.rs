@@ -177,3 +177,13 @@ fn a_second_unlock_reuses_the_running_agent() {
     s.unlock();
     s.prive(&["get", "Bank"]).assert().success();
 }
+
+#[test]
+fn attachments_come_through_the_agent_intact() {
+    let s = Sandbox::new();
+    s.unlock();
+    s.prive(&["file", "Work/GitHub", "deploy.txt"])
+        .assert()
+        .success()
+        .stdout("deploy-key-bytes\n");
+}
