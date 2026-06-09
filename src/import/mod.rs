@@ -103,12 +103,14 @@ impl Format {
     }
 
     pub fn parse(self, text: &str) -> anyhow::Result<(Vec<Record>, Report)> {
-        match self {
+        let (mut records, mut report) = match self {
             Format::Proton => proton::parse(text),
             Format::Apple => apple::parse(text),
             Format::Google => google::parse(text),
             Format::Lastpass => lastpass::parse(text),
-        }
+        }?;
+        tidy_otp(&mut records, &mut report);
+        Ok((records, report))
     }
 
     /// Recognise an export from its header line. The most specific formats are checked first.
@@ -125,6 +127,30 @@ impl Format {
         } else {
             None
         }
+    }
+}
+
+/// Put every one-time code into the otpauth form KeePass apps read. One that can't be read is
+/// not thrown away: it stays on the entry as a field named `otp (unreadable)`, and the report
+/// says which entries to fix by hand.
+pub fn tidy_otp(records: &mut [Record], report: &mut Report) {
+    let mut unreadable = Vec::new();
+    for r in records.iter_mut() {
+        let Some(raw) = r.otp.take() else { continue };
+        match otp::normalize(&raw, &r.title, &r.username) {
+            Some(uri) => r.otp = Some(uri),
+            None => {
+                unreadable.push(r.title.clone());
+                r.extra.push(("otp (unreadable)".to_string(), raw, true));
+            }
+        }
+    }
+    if !unreadable.is_empty() {
+        report.notes.push(format!(
+            "{} one-time code(s) couldn't be read and were kept as a field to fix by hand: {}",
+            unreadable.len(),
+            unreadable.join(", ")
+        ));
     }
 }
 
@@ -210,5 +236,34 @@ mod tests {
         );
         assert!(text.contains("1 have no password"));
         assert!(text.contains("secure note"));
+    }
+
+    #[test]
+    fn unreadable_codes_are_kept_and_reported() {
+        let mut records = vec![
+            Record {
+                title: "Good".into(),
+                otp: Some(Zeroizing::new("JBSWY3DPEHPK3PXP".into())),
+                ..Record::default()
+            },
+            Record {
+                title: "Bad".into(),
+                otp: Some(Zeroizing::new("not base32!".into())),
+                ..Record::default()
+            },
+        ];
+        let mut report = Report::default();
+        tidy_otp(&mut records, &mut report);
+        assert!(
+            records[0]
+                .otp
+                .as_ref()
+                .unwrap()
+                .starts_with("otpauth://totp/Good?")
+        );
+        assert!(records[1].otp.is_none());
+        assert_eq!(records[1].extra[0].0, "otp (unreadable)");
+        assert_eq!(*records[1].extra[0].1, "not base32!");
+        assert!(report.notes[0].contains("Bad"));
     }
 }
