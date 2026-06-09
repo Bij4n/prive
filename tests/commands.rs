@@ -700,3 +700,50 @@ fn import_check_needs_check_for_now_and_names_unknown_files() {
         .code(1)
         .stderr(predicate::str::contains("--from"));
 }
+
+#[test]
+fn import_check_generic_csv() {
+    Command::cargo_bin("prive")
+        .unwrap()
+        .args(["import", "--check"])
+        .arg(fixture("exports/bitwarden.csv"))
+        .assert()
+        .success()
+        .stdout(predicate::str::starts_with(
+            "CSV export: 2 entries, 1 with one-time codes, in 1 group(s)",
+        ))
+        .stdout(predicate::str::contains("username <- login_username"));
+    Command::cargo_bin("prive")
+        .unwrap()
+        .args([
+            "import",
+            "--check",
+            "--map",
+            "title=Site",
+            "--map",
+            "username=Who",
+            "--map",
+            "password=Secret",
+        ])
+        .arg(fixture("exports/custom.csv"))
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("2 entries"))
+        .stdout(predicate::str::contains("title <- Site"));
+    Command::cargo_bin("prive")
+        .unwrap()
+        .args([
+            "import",
+            "--check",
+            "--from",
+            "google",
+            "--map",
+            "title=Site",
+        ])
+        .arg(fixture("exports/custom.csv"))
+        .assert()
+        .code(1)
+        .stderr(predicate::str::contains(
+            "--map only applies with --from csv",
+        ));
+}

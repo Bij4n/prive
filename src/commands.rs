@@ -324,20 +324,17 @@ pub fn import_check(
     let text = Zeroizing::new(
         std::fs::read_to_string(file).with_context(|| format!("reading {}", file.display()))?,
     );
-    let format = match from {
-        Some(f) => f,
-        None => crate::import::Format::detect(&text).with_context(|| {
+    let map = crate::import::generic::parse_map(map)?;
+    // --map only makes sense for the generic CSV reader, so it implies --from csv.
+    let format = match (from, map.is_empty()) {
+        (Some(f), _) => f,
+        (None, false) => crate::import::Format::Csv,
+        (None, true) => crate::import::Format::detect(&text).with_context(|| {
             format!(
                 "can't tell which app made {}; name it with --from (proton, apple, google, lastpass, csv)",
                 file.display()
             )
         })?,
-    };
-    let map = crate::import::generic::parse_map(map)?;
-    let format = if map.is_empty() {
-        format
-    } else {
-        crate::import::Format::Csv
     };
     let (records, report) = format.parse(&text, &map)?;
     output::print(&format!(
