@@ -79,7 +79,7 @@ fn dispatch(cli: Cli) -> Result<()> {
             long,
             json,
         } => commands::ls(g, group.as_deref(), tags, *long, *json),
-        Command::Search { query, json } => commands::search(g, query, *json),
+        Command::Search { query, all, json } => commands::search(g, query, *all, *json),
         Command::Tags { json } => commands::tags(g, *json),
         Command::Show {
             entry,

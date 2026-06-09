@@ -173,6 +173,27 @@ pub fn tag_counts(entries: &[Entry]) -> Vec<(String, usize)> {
     out
 }
 
+/// `search`, also looking in notes and unprotected custom fields (never in passwords or
+/// protected fields: finding an entry by its secret would make search a way to test guesses).
+pub fn search_everywhere<'a>(entries: &'a [Entry], query: &str) -> Vec<&'a Entry> {
+    let q = query.to_lowercase();
+    let mut hits = search(entries, query);
+    for e in entries {
+        if hits.iter().any(|h| std::ptr::eq(*h, e)) {
+            continue;
+        }
+        let in_notes = e.notes.to_lowercase().contains(&q);
+        let in_fields = e
+            .custom
+            .iter()
+            .any(|c| !c.protected && c.value.to_lowercase().contains(&q));
+        if in_notes || in_fields {
+            hits.push(e);
+        }
+    }
+    hits
+}
+
 /// Case-insensitive substring search over the path (group and title), username, URL and tags.
 /// Titles that match exactly come first, then titles that start with the query, then the rest;
 /// within each, the original order is kept.
@@ -364,5 +385,27 @@ mod tests {
         assert_eq!(select(&e, "büro/ärztekammer").unwrap().uuid, "x");
         assert_eq!(select(&e, "école").unwrap().uuid, "y");
         assert_eq!(search(&e, "ärzte").len(), 1);
+    }
+
+    #[test]
+    fn searching_notes_and_open_fields_but_never_secrets() {
+        let mut e = sample();
+        e[2].notes = "branch: Downtown".into();
+        e[0].custom = vec![
+            crate::entry::CustomField {
+                name: "plan".into(),
+                value: zeroize::Zeroizing::new("Enterprise".into()),
+                protected: false,
+            },
+            crate::entry::CustomField {
+                name: "key".into(),
+                value: zeroize::Zeroizing::new("hidden-thing".into()),
+                protected: true,
+            },
+        ];
+        assert_eq!(search_everywhere(&e, "downtown")[0].uuid, "c");
+        assert_eq!(search_everywhere(&e, "enterprise")[0].uuid, "a");
+        assert!(search_everywhere(&e, "hidden-thing").is_empty());
+        assert!(search_everywhere(&e, "p").iter().all(|x| x.title != "nope"));
     }
 }

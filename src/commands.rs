@@ -207,9 +207,13 @@ pub fn tags(global: &Global, json: bool) -> Result<()> {
     output::print(&text)
 }
 
-pub fn search(global: &Global, query: &str, json: bool) -> Result<()> {
+pub fn search(global: &Global, query: &str, all: bool, json: bool) -> Result<()> {
     let db = open(global)?;
-    let hits = select::search(&db.entries, query);
+    let hits = if all {
+        select::search_everywhere(&db.entries, query)
+    } else {
+        select::search(&db.entries, query)
+    };
     // Like grep: nothing found is a failure scripts can test for (exit code 3).
     if hits.is_empty() {
         return Err(Failure::NotFound(query.to_string()).into());

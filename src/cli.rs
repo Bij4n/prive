@@ -161,6 +161,9 @@ pub enum Command {
     /// Find entries by title, username, URL, group or tag
     Search {
         query: String,
+        /// Also look in notes and unprotected custom fields (never in passwords)
+        #[arg(short = 'a', long)]
+        all: bool,
         #[arg(long)]
         json: bool,
     },

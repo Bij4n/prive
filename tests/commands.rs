@@ -821,3 +821,13 @@ fn codes_lists_every_entry_with_a_code() {
         .stdout(predicate::str::starts_with("Work/Cloud/Steam  "));
     prive(&["codes", "zzz"]).assert().code(3);
 }
+
+#[test]
+fn search_all_reaches_notes_but_not_passwords() {
+    prive(&["search", "ünïcödé"]).assert().code(3);
+    prive(&["search", "--all", "ünïcödé"])
+        .assert()
+        .success()
+        .stdout(predicate::str::starts_with("Work/GitHub"));
+    prive(&["search", "--all", "gh-Secret-1"]).assert().code(3);
+}
