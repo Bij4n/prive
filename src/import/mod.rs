@@ -54,6 +54,34 @@ pub struct Report {
     pub notes: Vec<String>,
 }
 
+impl Report {
+    /// The summary printed after reading an export.
+    pub fn render(&self, records: &[Record]) -> String {
+        let with_otp = records.iter().filter(|r| r.otp.is_some()).count();
+        let groups: std::collections::BTreeSet<&str> = records
+            .iter()
+            .map(|r| r.group.as_str())
+            .filter(|g| !g.is_empty())
+            .collect();
+        let empty_pw = records.iter().filter(|r| r.password.is_empty()).count();
+        let mut out = format!(
+            "{} entries, {} with one-time codes, in {} group(s)\n",
+            self.records,
+            with_otp,
+            groups.len()
+        );
+        if empty_pw > 0 {
+            out.push_str(&format!(
+                "  {empty_pw} have no password (kept as they are)\n"
+            ));
+        }
+        for note in &self.notes {
+            out.push_str(&format!("  {note}\n"));
+        }
+        out
+    }
+}
+
 /// The export formats prive reads.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
 pub enum Format {
@@ -155,5 +183,22 @@ mod tests {
             assert_eq!(Format::detect(header), Some(want), "{header}");
         }
         assert_eq!(Format::detect("a,b,c\n"), None);
+    }
+
+    #[test]
+    fn report_summary() {
+        let (records, report) = lastpass::parse(
+            "url,username,password,totp,extra,name,grouping,fav\n\
+             https://a.invalid,u,p,JBSWY3DPEHPK3PXP,,A,Work,0\n\
+             http://sn,,,,text,Note,Personal,0\n",
+        )
+        .unwrap();
+        let text = report.render(&records);
+        assert!(
+            text.starts_with("2 entries, 1 with one-time codes, in 2 group(s)\n"),
+            "{text}"
+        );
+        assert!(text.contains("1 have no password"));
+        assert!(text.contains("secure note"));
     }
 }
