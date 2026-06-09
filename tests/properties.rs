@@ -146,3 +146,35 @@ proptest! {
         let _ = prive::import::apple::parse(&format!("Title,URL,Username,Password,Notes,OTPAuth\n{text}"));
     }
 }
+
+proptest! {
+    /// What the agent sends is what the client gets back, for any entry contents.
+    #[test]
+    fn entries_cross_the_agent_wire_unchanged(
+        title in ".{0,20}", user in ".{0,20}", pw in ".{0,40}", notes in ".{0,80}",
+        tags in prop::collection::vec("[a-z]{1,8}", 0..4),
+        file in prop::collection::vec(any::<u8>(), 0..64),
+    ) {
+        use prive::agent::proto::WireEntry;
+        use prive::entry::{Attachment, Entry};
+        use zeroize::Zeroizing;
+        let e = Entry {
+            uuid: "u".into(),
+            title: title.clone(),
+            username: user.clone(),
+            password: Zeroizing::new(pw.clone()),
+            notes: notes.clone(),
+            tags: tags.clone(),
+            attachments: vec![Attachment { name: "f".into(), data: Zeroizing::new(file.clone()) }],
+            ..Entry::default()
+        };
+        let json = serde_json::to_string(&WireEntry::from(&e)).unwrap();
+        let back = Entry::from(serde_json::from_str::<WireEntry>(&json).unwrap());
+        prop_assert_eq!(back.title, title);
+        prop_assert_eq!(back.username, user);
+        prop_assert_eq!(back.password.as_str(), pw.as_str());
+        prop_assert_eq!(back.notes, notes);
+        prop_assert_eq!(back.tags, tags);
+        prop_assert_eq!(&back.attachments[0].data[..], &file[..]);
+    }
+}
