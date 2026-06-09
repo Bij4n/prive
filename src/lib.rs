@@ -70,7 +70,7 @@ fn dispatch(cli: Cli) -> Result<()> {
     let g = &cli.global;
     output::set_quiet(g.quiet);
     match &cli.command {
-        Command::Unlock => commands::unlock(g),
+        Command::Unlock { minutes } => commands::unlock(g, *minutes),
         Command::Lock => commands::lock(),
         Command::Status { json } => commands::status(*json),
         Command::Ls {

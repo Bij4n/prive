@@ -187,3 +187,17 @@ fn attachments_come_through_the_agent_intact() {
         .success()
         .stdout("deploy-key-bytes\n");
 }
+
+#[test]
+fn unlock_minutes_sets_this_sessions_timeout() {
+    let s = Sandbox::new();
+    s.prive(&["--password-stdin", "unlock", "--minutes", "5"])
+        .write_stdin("fixture-pass\n")
+        .assert()
+        .success()
+        .stderr(predicate::str::contains("after 5 minutes"));
+    let out = s.prive(&["status", "--json"]).output().unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    let left = v["seconds_left"].as_u64().unwrap();
+    assert!((241..=300).contains(&left), "{left}");
+}

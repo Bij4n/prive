@@ -60,7 +60,11 @@ pub struct Global {
 #[derive(Debug, Subcommand)]
 pub enum Command {
     /// Unlock the database once; later commands use it without asking (Linux and macOS)
-    Unlock,
+    Unlock {
+        /// Lock after this many minutes unused, this time (default: agent_minutes, 15)
+        #[arg(long, value_parser = clap::value_parser!(u64).range(1..=1440))]
+        minutes: Option<u64>,
+    },
 
     /// Forget the unlocked database now
     Lock,

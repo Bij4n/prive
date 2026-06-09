@@ -48,7 +48,7 @@ fn from_agent(path: &std::path::Path) -> Option<db::Db> {
 }
 
 /// Open the database once, then hand it to the agent so later commands need no password.
-pub fn unlock(global: &Global) -> Result<()> {
+pub fn unlock(global: &Global, minutes: Option<u64>) -> Result<()> {
     #[cfg(unix)]
     {
         let cfg = config::Config::load()?;
@@ -57,7 +57,9 @@ pub fn unlock(global: &Global) -> Result<()> {
         let creds = unlock::KeySource::for_target(global, &target)?;
         // Check the password here, so a wrong one is exit code 5 like everywhere else.
         db::Db::from_bytes(&target.db, &bytes, &creds)?;
-        let idle = cfg.agent_idle();
+        let idle = minutes
+            .map(|m| std::time::Duration::from_secs(m * 60))
+            .unwrap_or_else(|| cfg.agent_idle());
         crate::agent::client::start(idle)?;
         crate::agent::client::unlock(
             &target.db,
@@ -77,7 +79,7 @@ pub fn unlock(global: &Global) -> Result<()> {
     }
     #[cfg(not(unix))]
     {
-        let _ = global;
+        let _ = (global, minutes);
         anyhow::bail!("unlocking once isn't available on this system yet; each command asks")
     }
 }
