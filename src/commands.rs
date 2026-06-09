@@ -301,6 +301,63 @@ pub fn run(global: &Global, specs: &[String], from: &[String], command: &[String
     std::process::exit(code);
 }
 
+/// List an entry's attachments, or write one to a new file or to stdout.
+pub fn file(
+    global: &Global,
+    entry: &str,
+    name: Option<&str>,
+    out: Option<&std::path::Path>,
+) -> Result<()> {
+    let db = open(global)?;
+    let e = select::select(&db.entries, entry)?;
+    let Some(name) = name else {
+        let text: String = e
+            .attachments
+            .iter()
+            .map(|a| format!("{}\t{}\n", a.name, a.data.len()))
+            .collect();
+        return output::print(&text);
+    };
+    let a = e
+        .attachments
+        .iter()
+        .find(|a| a.name == name)
+        .or_else(|| {
+            e.attachments
+                .iter()
+                .find(|a| a.name.eq_ignore_ascii_case(name))
+        })
+        .ok_or_else(|| {
+            Failure::NotFound(format!(
+                "{}: no file '{name}' (it has: {})",
+                e.path(),
+                e.attachment_names().join(", ")
+            ))
+        })?;
+    match out {
+        Some(path) => {
+            crate::fsutil::write_new_file(path, &a.data)?;
+            output::notice(&format!(
+                "Wrote {} ({}).",
+                path.display(),
+                output::human_size(a.data.len())
+            ));
+            Ok(())
+        }
+        None => {
+            if std::io::stdout().is_terminal() {
+                anyhow::bail!("not writing a file to the terminal; use --out PATH or a pipe");
+            }
+            use std::io::Write;
+            let mut stdout = std::io::stdout().lock();
+            match stdout.write_all(&a.data).and_then(|()| stdout.flush()) {
+                Err(err) if err.kind() == std::io::ErrorKind::BrokenPipe => Ok(()),
+                other => Ok(other?),
+            }
+        }
+    }
+}
+
 /// The everyday login: open the site, password on the clipboard ready to paste.
 pub fn open_url(global: &Global, entry: &str, no_copy: bool) -> Result<()> {
     let db = open(global)?;

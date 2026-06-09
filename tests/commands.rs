@@ -747,3 +747,51 @@ fn import_check_generic_csv() {
             "--map only applies with --from csv",
         ));
 }
+
+#[test]
+fn file_lists_and_writes_attachments() {
+    prive(&["file", "Work/GitHub"])
+        .assert()
+        .success()
+        .stdout("deploy.txt\t17\n");
+    prive(&["file", "Work/GitHub", "deploy.txt"])
+        .assert()
+        .success()
+        .stdout("deploy-key-bytes\n");
+    let dir = tempfile::tempdir().unwrap();
+    let out = dir.path().join("key");
+    prive(&[
+        "file",
+        "Work/GitHub",
+        "deploy.txt",
+        "--out",
+        out.to_str().unwrap(),
+    ])
+    .assert()
+    .success()
+    .stdout(predicate::str::is_empty());
+    assert_eq!(std::fs::read(&out).unwrap(), b"deploy-key-bytes\n");
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        assert_eq!(
+            std::fs::metadata(&out).unwrap().permissions().mode() & 0o777,
+            0o600
+        );
+    }
+    // Never over an existing file.
+    prive(&[
+        "file",
+        "Work/GitHub",
+        "deploy.txt",
+        "--out",
+        out.to_str().unwrap(),
+    ])
+    .assert()
+    .code(1)
+    .stderr(predicate::str::contains("already exists"));
+    prive(&["file", "Work/GitHub", "nope"])
+        .assert()
+        .code(3)
+        .stderr(predicate::str::contains("it has: deploy.txt"));
+}

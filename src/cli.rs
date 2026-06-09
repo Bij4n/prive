@@ -124,6 +124,16 @@ pub enum Command {
         no_copy: bool,
     },
 
+    /// List an entry's attached files, or write one out
+    File {
+        entry: String,
+        /// The file to write out; without it, the files are listed
+        name: Option<String>,
+        /// Write it here (readable only by you) instead of to stdout
+        #[arg(short, long, value_name = "PATH", requires = "name")]
+        out: Option<std::path::PathBuf>,
+    },
+
     /// Show an entry; passwords and protected fields stay hidden unless --reveal
     Show {
         /// Title, Group/Title path, or uuid:UUID
