@@ -16,6 +16,7 @@ Global options: `--db <file>` (or `PRIVE_DB`), `--keyfile <file>` (or `PRIVE_KEY
 | `get ENTRY [-f FIELD] [--clip]` | One field and a newline; the password by default. `-f` takes `username`, `url`, `notes`, `title` or any custom field's name. |
 | `otp ENTRY [--min-validity S] [--clip] [--json]` | The current one-time code. In a terminal, stderr says how long it stays valid. With `--min-validity S`, a code expiring in under S seconds is skipped for the next one. |
 | `run [-e NAME=ENTRY[:FIELD]]... [--from ENTRY]... -- COMMAND...` | Runs COMMAND with those secrets in its environment and exits with its exit code. See [run.md](run.md). |
+| `file ENTRY [NAME] [-o PATH]` | Without NAME, the entry's attached files and their sizes (tab-separated). With NAME, that file's bytes to stdout (refused on a terminal) or to a new file at PATH, readable only by you. |
 | `open ENTRY [--no-copy]` | Opens the entry's URL in the browser (http and https only; a bare `github.com` gets https://) and copies the password. `cmd://` and other schemes are refused. |
 | `tags [--json]` | Every tag in use with how many entries carry it. |
 | `pick [QUERY] [-f FIELD \| --otp] [--print]` | Fuzzy-find an entry, then copy its password (or the field, or the code). `--print` prints it instead. |
