@@ -474,19 +474,15 @@ pub fn audit(global: &Global, hibp: bool, max_age: i64, json: bool) -> Result<()
 }
 
 pub fn generate(args: &GenArgs) -> Result<()> {
-    let g = if let Some(n) = args.words {
-        generate::passphrase(n, &args.separator, args.capitalize)?
-    } else if let Some(n) = args.pin {
-        generate::pin(n)?
-    } else {
-        generate::password(&generate::CharsetSpec {
-            length: args.length,
-            upper: !args.no_upper,
-            digits: !args.no_digits,
-            symbols: !args.no_symbols,
-            avoid_ambiguous: args.avoid_ambiguous,
-        })?
-    };
+    if args.count > 1 {
+        let mut text = String::new();
+        for _ in 0..args.count {
+            text.push_str(&one_generated(args)?.value);
+            text.push('\n');
+        }
+        return output::print(&text);
+    }
+    let g = one_generated(args)?;
     if args.json {
         return output::print_json(&g);
     }
@@ -499,6 +495,22 @@ pub fn generate(args: &GenArgs) -> Result<()> {
         output::notice(&format!("({:.0} bits of entropy)", g.entropy_bits));
     }
     Ok(())
+}
+
+fn one_generated(args: &GenArgs) -> Result<generate::Generated> {
+    Ok(if let Some(n) = args.words {
+        generate::passphrase(n, &args.separator, args.capitalize)?
+    } else if let Some(n) = args.pin {
+        generate::pin(n)?
+    } else {
+        generate::password(&generate::CharsetSpec {
+            length: args.length,
+            upper: !args.no_upper,
+            digits: !args.no_digits,
+            symbols: !args.no_symbols,
+            avoid_ambiguous: args.avoid_ambiguous,
+        })?
+    })
 }
 
 pub fn completions(shell: clap_complete::Shell) -> Result<()> {

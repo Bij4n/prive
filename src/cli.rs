@@ -280,8 +280,12 @@ pub struct GenArgs {
     pub pin: Option<usize>,
 
     /// Copy to the clipboard instead of printing; cleared after a timeout
-    #[arg(short, long, conflicts_with = "json")]
+    #[arg(short, long, conflicts_with_all = ["json", "count"])]
     pub clip: bool,
+
+    /// Print this many, one per line
+    #[arg(short = 'n', long, default_value_t = 1, value_parser = clap::value_parser!(u16).range(1..=1000))]
+    pub count: u16,
 
     /// Print {"value": ..., "entropy_bits": ...}
     #[arg(long)]

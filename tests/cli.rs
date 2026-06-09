@@ -147,3 +147,15 @@ fn gen_without_look_alikes_or_symbols() {
     assert!(pw.chars().all(|c| c.is_ascii_alphanumeric()));
     assert!(!pw.chars().any(|c| "0O1lI".contains(c)));
 }
+
+#[test]
+fn gen_count() {
+    let out = prive()
+        .args(["gen", "-n", "5", "--pin", "4"])
+        .output()
+        .unwrap();
+    let text = String::from_utf8(out.stdout).unwrap();
+    assert_eq!(text.lines().count(), 5);
+    assert!(text.lines().all(|l| l.len() == 4));
+    prive().args(["gen", "-n", "2", "--clip"]).assert().code(2);
+}
