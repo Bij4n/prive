@@ -201,3 +201,13 @@ fn unlock_minutes_sets_this_sessions_timeout() {
     let left = v["seconds_left"].as_u64().unwrap();
     assert!((241..=300).contains(&left), "{left}");
 }
+
+#[test]
+fn history_comes_through_the_agent() {
+    let s = Sandbox::new();
+    s.unlock();
+    s.prive(&["history", "Work/GitHub", "--reveal"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(": old-password"));
+}

@@ -847,3 +847,18 @@ fn history_shows_when_and_whether_the_password_changed() {
         .assert()
         .stdout("Bank has no earlier versions\n");
 }
+
+#[test]
+fn history_json_hides_old_passwords_unless_revealed() {
+    let out = prive(&["history", "Work/GitHub", "--json"])
+        .output()
+        .unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert_eq!(v[0]["password_changed_after"], true);
+    assert!(v[0]["password"].is_null());
+    let out = prive(&["history", "Work/GitHub", "--json", "--reveal"])
+        .output()
+        .unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert_eq!(v[0]["password"], "old-password");
+}
