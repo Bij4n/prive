@@ -8,6 +8,14 @@ The 1.0 rewrite has started: prive becomes a terminal client for KeePass (`.kdbx
 The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `legacy-0.5.0`.
 
 ### Added
+- `prive import FILE --check`: reads exports from Proton Pass, Apple Passwords, Google
+  Password Manager, LastPass, and any other CSV (`--from csv`, with `--map field=Column`;
+  covers Bitwarden, 1Password, Dashlane), recognised from the header, and reports what would
+  come across. One-time codes become otpauth URIs; unreadable ones are kept and listed.
+  Writing the KeePass database comes next
+- `prive file ENTRY [NAME] [--out PATH]`: list or write out an entry's attachments
+- `prive codes [QUERY]`: every current one-time code at once
+- `search --all` also looks in notes and unprotected fields (never in secrets)
 - `prive run -e NAME=ENTRY[:FIELD] --from ENTRY -- COMMAND`: secrets in a command's
   environment, never on the command line or disk; the command's exit code is passed on
 - `prive unlock`, `lock`, `status`: a background agent keeps the opened database so a session
