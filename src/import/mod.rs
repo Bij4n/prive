@@ -91,6 +91,8 @@ pub enum Format {
     Apple,
     Google,
     Lastpass,
+    /// Any other CSV (Bitwarden, 1Password, Dashlane, ...), by column names.
+    Csv,
 }
 
 impl Format {
@@ -100,15 +102,25 @@ impl Format {
             Format::Apple => "Apple Passwords",
             Format::Google => "Google Password Manager",
             Format::Lastpass => "LastPass",
+            Format::Csv => "CSV",
         }
     }
 
-    pub fn parse(self, text: &str) -> anyhow::Result<(Vec<Record>, Report)> {
+    /// Read an export. `map` (`field`, `Column`) pairs only apply to the generic CSV format.
+    pub fn parse(
+        self,
+        text: &str,
+        map: &[(String, String)],
+    ) -> anyhow::Result<(Vec<Record>, Report)> {
+        if !map.is_empty() && self != Format::Csv {
+            anyhow::bail!("--map only applies with --from csv");
+        }
         let (mut records, mut report) = match self {
             Format::Proton => proton::parse(text),
             Format::Apple => apple::parse(text),
             Format::Google => google::parse(text),
             Format::Lastpass => lastpass::parse(text),
+            Format::Csv => generic::parse(text, map),
         }?;
         tidy_otp(&mut records, &mut report);
         Ok((records, report))
@@ -123,8 +135,14 @@ impl Format {
             Some(Format::Lastpass)
         } else if table.has("otpauth") || (table.has("title") && table.has("notes")) {
             Some(Format::Apple)
-        } else if table.has("name") && table.has("url") && table.has("password") {
+        } else if table.has("name")
+            && table.has("url")
+            && table.has("password")
+            && table.headers().len() <= 5
+        {
             Some(Format::Google)
+        } else if table.has("password") || table.has("login_password") {
+            Some(Format::Csv)
         } else {
             None
         }
@@ -220,6 +238,13 @@ mod tests {
             assert_eq!(Format::detect(header), Some(want), "{header}");
         }
         assert_eq!(Format::detect("a,b,c\n"), None);
+        // Bitwarden's CSV has name/url-like columns too, but more of them: generic CSV.
+        assert_eq!(
+            Format::detect(
+                "folder,favorite,type,name,notes,fields,reprompt,login_uri,login_username,login_password,login_totp\n"
+            ),
+            Some(Format::Csv)
+        );
     }
 
     #[test]

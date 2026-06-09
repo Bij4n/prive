@@ -315,7 +315,11 @@ pub fn open_url(global: &Global, entry: &str, no_copy: bool) -> Result<()> {
 }
 
 /// Read an export and print what would come across. Needs no database.
-pub fn import_check(file: &std::path::Path, from: Option<crate::import::Format>) -> Result<()> {
+pub fn import_check(
+    file: &std::path::Path,
+    from: Option<crate::import::Format>,
+    map: &[String],
+) -> Result<()> {
     use anyhow::Context;
     let text = Zeroizing::new(
         std::fs::read_to_string(file).with_context(|| format!("reading {}", file.display()))?,
@@ -324,12 +328,18 @@ pub fn import_check(file: &std::path::Path, from: Option<crate::import::Format>)
         Some(f) => f,
         None => crate::import::Format::detect(&text).with_context(|| {
             format!(
-                "can't tell which app made {}; name it with --from (proton, apple, google, lastpass)",
+                "can't tell which app made {}; name it with --from (proton, apple, google, lastpass, csv)",
                 file.display()
             )
         })?,
     };
-    let (records, report) = format.parse(&text)?;
+    let map = crate::import::generic::parse_map(map)?;
+    let format = if map.is_empty() {
+        format
+    } else {
+        crate::import::Format::Csv
+    };
+    let (records, report) = format.parse(&text, &map)?;
     output::print(&format!(
         "{} export: {}",
         format.label(),

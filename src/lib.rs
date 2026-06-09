@@ -97,8 +97,9 @@ fn dispatch(cli: Cli) -> Result<()> {
         Command::Import {
             file,
             from,
+            map,
             check: _,
-        } => commands::import_check(file, *from),
+        } => commands::import_check(file, *from, map),
         Command::Run { env, from, command } => commands::run(g, env, from, command),
         Command::Open { entry, no_copy } => commands::open_url(g, entry, *no_copy),
         Command::Audit {

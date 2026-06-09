@@ -171,6 +171,9 @@ pub enum Command {
         /// Which app made it [default: recognised from its header]
         #[arg(long, value_enum)]
         from: Option<crate::import::Format>,
+        /// For --from csv: which column holds a field, e.g. --map username=Login (repeat)
+        #[arg(long, value_name = "FIELD=COLUMN")]
+        map: Vec<String>,
         /// Only read and report. (Writing a KeePass database from it comes next.)
         #[arg(long, required = true)]
         check: bool,
