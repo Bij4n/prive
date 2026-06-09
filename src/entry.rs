@@ -27,6 +27,25 @@ pub struct Entry {
     pub quality_check: bool,
     /// Attached files, by name, with their contents.
     pub attachments: Vec<Attachment>,
+    /// Earlier versions KeePass kept, newest first: when each was saved, and its password.
+    pub history: Vec<Version>,
+}
+
+/// One saved earlier version of an entry.
+#[derive(Clone)]
+pub struct Version {
+    pub modified: Option<NaiveDateTime>,
+    pub username: String,
+    pub password: Zeroizing<String>,
+}
+
+impl std::fmt::Debug for Version {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Version")
+            .field("modified", &self.modified)
+            .field("password", &"<hidden>")
+            .finish_non_exhaustive()
+    }
 }
 
 #[derive(Clone)]
@@ -93,6 +112,7 @@ impl Default for Entry {
             // KeePass's default: an entry takes part in reports unless excluded.
             quality_check: true,
             attachments: Vec::new(),
+            history: Vec::new(),
         }
     }
 }

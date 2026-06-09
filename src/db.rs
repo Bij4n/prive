@@ -72,6 +72,24 @@ impl Db {
     }
 }
 
+/// Earlier versions, newest first, whatever order the file keeps them in.
+fn history(e: &keepass::db::EntryRef<'_>) -> Vec<crate::entry::Version> {
+    let Some(h) = &e.history else {
+        return Vec::new();
+    };
+    let mut versions: Vec<crate::entry::Version> = h
+        .get_entries()
+        .iter()
+        .map(|old| crate::entry::Version {
+            modified: old.times.last_modification,
+            username: old.get(fields::USERNAME).unwrap_or("").to_string(),
+            password: Zeroizing::new(old.get(fields::PASSWORD).unwrap_or("").to_string()),
+        })
+        .collect();
+    versions.sort_by_key(|v| std::cmp::Reverse(v.modified));
+    versions
+}
+
 /// Collect entries depth-first, leaving out the recycle bin and everything in it.
 fn walk(
     group: &GroupRef<'_>,
@@ -112,6 +130,7 @@ fn walk(
             tags: e.tags.clone(),
             quality_check: e.quality_check,
             attachments,
+            history: history(&e),
             modified: e.times.last_modification,
             expires: if e.times.expires == Some(true) {
                 e.times.expiry
@@ -284,5 +303,17 @@ mod tests {
             .err()
             .unwrap();
         assert!(is_bad_credentials(&without), "{without:#}");
+    }
+
+    #[test]
+    fn history_is_read() {
+        let db = Db::open(&fixture("kdbx41.kdbx"), &creds("fixture-pass")).unwrap();
+        let gh = db
+            .entries
+            .iter()
+            .find(|e| e.path() == "Work/GitHub")
+            .unwrap();
+        assert_eq!(gh.history.len(), 1);
+        assert_eq!(*gh.history[0].password, "old-password");
     }
 }

@@ -91,6 +91,8 @@ pub struct WireEntry {
     pub quality_check: bool,
     /// (name, hex of the contents)
     pub attachments: Vec<(String, String)>,
+    /// (saved at, username, password), newest first
+    pub history: Vec<(Option<chrono::NaiveDateTime>, String, String)>,
 }
 
 impl From<&Entry> for WireEntry {
@@ -116,6 +118,11 @@ impl From<&Entry> for WireEntry {
                 .attachments
                 .iter()
                 .map(|a| (a.name.clone(), hex::encode(&a.data[..])))
+                .collect(),
+            history: e
+                .history
+                .iter()
+                .map(|v| (v.modified, v.username.clone(), v.password.to_string()))
                 .collect(),
         }
     }
@@ -150,6 +157,15 @@ impl From<WireEntry> for Entry {
                 .map(|(name, data)| crate::entry::Attachment {
                     name,
                     data: Zeroizing::new(hex::decode(data).unwrap_or_default()),
+                })
+                .collect(),
+            history: w
+                .history
+                .into_iter()
+                .map(|(modified, username, password)| crate::entry::Version {
+                    modified,
+                    username,
+                    password: Zeroizing::new(password),
                 })
                 .collect(),
         }
