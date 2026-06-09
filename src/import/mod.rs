@@ -54,6 +54,42 @@ pub struct Report {
     pub notes: Vec<String>,
 }
 
+/// The export formats prive reads.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
+pub enum Format {
+    Proton,
+    Apple,
+    Google,
+    Lastpass,
+}
+
+impl Format {
+    pub fn parse(self, text: &str) -> anyhow::Result<(Vec<Record>, Report)> {
+        match self {
+            Format::Proton => proton::parse(text),
+            Format::Apple => apple::parse(text),
+            Format::Google => google::parse(text),
+            Format::Lastpass => lastpass::parse(text),
+        }
+    }
+
+    /// Recognise an export from its header line. The most specific formats are checked first.
+    pub fn detect(text: &str) -> Option<Format> {
+        let table = csvtable::Table::parse(text).ok()?;
+        if table.has("vault") && table.has("type") {
+            Some(Format::Proton)
+        } else if table.has("grouping") && table.has("extra") {
+            Some(Format::Lastpass)
+        } else if table.has("otpauth") || (table.has("title") && table.has("notes")) {
+            Some(Format::Apple)
+        } else if table.has("name") && table.has("url") && table.has("password") {
+            Some(Format::Google)
+        } else {
+            None
+        }
+    }
+}
+
 /// A title for an entry that came without one: the host of its URL, without `www.`.
 pub fn title_from_url(url: &str) -> String {
     let rest = url.split_once("://").map(|(_, r)| r).unwrap_or(url);
@@ -98,5 +134,26 @@ mod tests {
         );
         assert_eq!(title_from_url("example.org"), "example.org");
         assert_eq!(title_from_url(""), "untitled");
+    }
+
+    #[test]
+    fn formats_are_recognised_from_their_headers() {
+        let cases = [
+            (
+                "type,name,url,email,username,password,note,totp,createTime,modifyTime,vault\n",
+                Format::Proton,
+            ),
+            (
+                "url,username,password,totp,extra,name,grouping,fav\n",
+                Format::Lastpass,
+            ),
+            ("Title,URL,Username,Password,Notes,OTPAuth\n", Format::Apple),
+            ("name,url,username,password,note\n", Format::Google),
+            ("name,url,username,password\n", Format::Google),
+        ];
+        for (header, want) in cases {
+            assert_eq!(Format::detect(header), Some(want), "{header}");
+        }
+        assert_eq!(Format::detect("a,b,c\n"), None);
     }
 }
