@@ -97,6 +97,14 @@ pub enum Command {
         json: bool,
     },
 
+    /// Every current one-time code, like an authenticator app's list
+    Codes {
+        /// Only entries matching this search
+        query: Option<String>,
+        #[arg(long)]
+        json: bool,
+    },
+
     /// Run a command with secrets in its environment (never printed, never on disk)
     Run {
         /// NAME=ENTRY (the password) or NAME=ENTRY:FIELD; repeat for several

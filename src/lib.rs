@@ -94,6 +94,7 @@ fn dispatch(cli: Cli) -> Result<()> {
             json,
         } => commands::otp(g, entry, *min_validity, *clip, *json),
         Command::Pick(args) => commands::pick(g, args),
+        Command::Codes { query, json } => commands::codes(g, query.as_deref(), *json),
         Command::Import {
             file,
             from,

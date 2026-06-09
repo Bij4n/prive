@@ -301,6 +301,40 @@ pub fn run(global: &Global, specs: &[String], from: &[String], command: &[String
     std::process::exit(code);
 }
 
+/// The current code of every entry that has one (or of those matching `query`).
+pub fn codes(global: &Global, query: Option<&str>, json: bool) -> Result<()> {
+    let db = open(global)?;
+    let pool: Vec<&Entry> = match query {
+        Some(q) => select::search(&db.entries, q),
+        None => db.entries.iter().collect(),
+    };
+    let rows: Vec<(String, String, u64)> = pool
+        .iter()
+        .filter_map(|e| otp::Totp::from_entry(e).map(|t| (e.path(), t.now())))
+        .map(|(path, (code, left))| (path, code, left))
+        .collect();
+    if rows.is_empty() {
+        return Err(Failure::NotFound("entries with one-time codes".into()).into());
+    }
+    if json {
+        let list: Vec<_> = rows
+            .iter()
+            .map(|(p, c, l)| serde_json::json!({ "path": p, "code": c, "seconds_left": l }))
+            .collect();
+        return output::print_json(&list);
+    }
+    let width = rows
+        .iter()
+        .map(|(p, _, _)| p.chars().count())
+        .max()
+        .unwrap_or(0);
+    let text: String = rows
+        .iter()
+        .map(|(p, c, l)| format!("{p:<width$}  {c:<10} {l:>2}s\n"))
+        .collect();
+    output::print(&text)
+}
+
 /// List an entry's attachments, or write one to a new file or to stdout.
 pub fn file(
     global: &Global,

@@ -795,3 +795,29 @@ fn file_lists_and_writes_attachments() {
         .code(3)
         .stderr(predicate::str::contains("it has: deploy.txt"));
 }
+
+#[test]
+fn codes_lists_every_entry_with_a_code() {
+    let out = prive(&["codes", "--json"]).output().unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    let paths: Vec<&str> = v
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|r| r["path"].as_str().unwrap())
+        .collect();
+    assert_eq!(
+        paths,
+        [
+            "Bank",
+            "Personal/Legacy 2FA",
+            "Work/Cloud/Steam",
+            "Work/GitHub"
+        ]
+    );
+    prive(&["codes", "steam"])
+        .assert()
+        .success()
+        .stdout(predicate::str::starts_with("Work/Cloud/Steam  "));
+    prive(&["codes", "zzz"]).assert().code(3);
+}
