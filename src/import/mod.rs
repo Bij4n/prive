@@ -8,6 +8,7 @@
 pub mod apple;
 pub mod csvtable;
 pub mod google;
+pub mod lastpass;
 
 use zeroize::Zeroizing;
 
