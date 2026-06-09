@@ -94,6 +94,11 @@ fn dispatch(cli: Cli) -> Result<()> {
             json,
         } => commands::otp(g, entry, *min_validity, *clip, *json),
         Command::Pick(args) => commands::pick(g, args),
+        Command::Import {
+            file,
+            from,
+            check: _,
+        } => commands::import_check(file, *from),
         Command::Run { env, from, command } => commands::run(g, env, from, command),
         Command::Open { entry, no_copy } => commands::open_url(g, entry, *no_copy),
         Command::Audit {

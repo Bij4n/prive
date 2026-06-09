@@ -164,6 +164,18 @@ pub enum Command {
     /// Choose an entry interactively and copy its password
     Pick(PickArgs),
 
+    /// Read another password manager's export and say what would come across
+    Import {
+        /// The export file (CSV)
+        file: std::path::PathBuf,
+        /// Which app made it [default: recognised from its header]
+        #[arg(long, value_enum)]
+        from: Option<crate::import::Format>,
+        /// Only read and report. (Writing a KeePass database from it comes next.)
+        #[arg(long, required = true)]
+        check: bool,
+    },
+
     /// Report weak, reused, old and expired passwords
     Audit {
         /// Also check each password against Have I Been Pwned (sends 5 hex characters of its

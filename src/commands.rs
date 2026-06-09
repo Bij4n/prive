@@ -314,6 +314,25 @@ pub fn open_url(global: &Global, entry: &str, no_copy: bool) -> Result<()> {
     Ok(())
 }
 
+/// Read an export and print what would come across. Needs no database.
+pub fn import_check(file: &std::path::Path, from: Option<crate::import::Format>) -> Result<()> {
+    use anyhow::Context;
+    let text = Zeroizing::new(
+        std::fs::read_to_string(file).with_context(|| format!("reading {}", file.display()))?,
+    );
+    let format = match from {
+        Some(f) => f,
+        None => crate::import::Format::detect(&text).with_context(|| {
+            format!(
+                "can't tell which app made {}; name it with --from (proton, apple, google, lastpass)",
+                file.display()
+            )
+        })?,
+    };
+    let (records, report) = format.parse(&text)?;
+    output::print(&format!("{:?} export: {}", format, report.render(&records)))
+}
+
 pub fn pick(global: &Global, args: &PickArgs) -> Result<()> {
     let db = open(global)?;
     let Some(e) = pick::pick(&db.entries, args.query.as_deref())? else {
