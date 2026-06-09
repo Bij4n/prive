@@ -1,0 +1,4 @@
+Title,URL,Username,Password,Notes,OTPAuth
+github.com (demo),https://github.com/,demo,gh-Secret-1,,otpauth://totp/GitHub:demo?secret=JBSWY3DPEHPK3PXP&issuer=GitHub
+Bank,https://bank.example.invalid/,me,b4nk-P@ss-2026!,"Account 1234
+Branch 5",

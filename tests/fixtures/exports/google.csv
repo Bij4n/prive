@@ -1,0 +1,3 @@
+name,url,username,password,note
+github.com,https://github.com/login,demo,gh-Secret-1,work account
+,https://www.example.invalid/,me,ex-pw,

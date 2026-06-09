@@ -1,0 +1,5 @@
+url,username,password,totp,extra,name,grouping,fav
+https://github.com/login,demo,gh-Secret-1,JBSWY3DPEHPK3PXP,,GitHub,Work\Dev,1
+http://sn,,,,"NoteType:Credit Card
+Number:4111",Visa,Personal,0
+https://example.invalid,me,ex-pw,,,,,0

@@ -644,3 +644,59 @@ fn run_on_windows_sets_variables_and_passes_the_exit_code() {
         .assert()
         .code(7);
 }
+
+#[test]
+fn import_check_recognises_each_export() {
+    for (file, label, first_line) in [
+        (
+            "proton.csv",
+            "Proton Pass",
+            "3 entries, 1 with one-time codes, in 2 group(s)",
+        ),
+        (
+            "apple.csv",
+            "Apple Passwords",
+            "2 entries, 1 with one-time codes, in 0 group(s)",
+        ),
+        (
+            "google.csv",
+            "Google Password Manager",
+            "2 entries, 0 with one-time codes, in 0 group(s)",
+        ),
+        (
+            "lastpass.csv",
+            "LastPass",
+            "3 entries, 1 with one-time codes, in 2 group(s)",
+        ),
+    ] {
+        Command::cargo_bin("prive")
+            .unwrap()
+            .args(["import", "--check"])
+            .arg(fixture(&format!("exports/{file}")))
+            .assert()
+            .success()
+            .stdout(predicate::str::starts_with(format!(
+                "{label} export: {first_line}"
+            )));
+    }
+}
+
+#[test]
+fn import_check_needs_check_for_now_and_names_unknown_files() {
+    Command::cargo_bin("prive")
+        .unwrap()
+        .arg("import")
+        .arg(fixture("exports/google.csv"))
+        .assert()
+        .code(2);
+    let dir = tempfile::tempdir().unwrap();
+    let odd = dir.path().join("odd.csv");
+    std::fs::write(&odd, "a,b,c\n1,2,3\n").unwrap();
+    Command::cargo_bin("prive")
+        .unwrap()
+        .args(["import", "--check"])
+        .arg(&odd)
+        .assert()
+        .code(1)
+        .stderr(predicate::str::contains("--from"));
+}

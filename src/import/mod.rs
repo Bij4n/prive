@@ -92,6 +92,15 @@ pub enum Format {
 }
 
 impl Format {
+    pub fn label(self) -> &'static str {
+        match self {
+            Format::Proton => "Proton Pass",
+            Format::Apple => "Apple Passwords",
+            Format::Google => "Google Password Manager",
+            Format::Lastpass => "LastPass",
+        }
+    }
+
     pub fn parse(self, text: &str) -> anyhow::Result<(Vec<Record>, Report)> {
         match self {
             Format::Proton => proton::parse(text),

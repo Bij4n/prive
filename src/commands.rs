@@ -330,7 +330,11 @@ pub fn import_check(file: &std::path::Path, from: Option<crate::import::Format>)
         })?,
     };
     let (records, report) = format.parse(&text)?;
-    output::print(&format!("{:?} export: {}", format, report.render(&records)))
+    output::print(&format!(
+        "{} export: {}",
+        format.label(),
+        report.render(&records)
+    ))
 }
 
 pub fn pick(global: &Global, args: &PickArgs) -> Result<()> {

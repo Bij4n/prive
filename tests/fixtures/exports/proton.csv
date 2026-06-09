@@ -1,0 +1,4 @@
+type,name,url,email,username,password,note,totp,createTime,modifyTime,vault
+login,GitHub,"https://github.com, https://gist.github.com",me@example.invalid,demo,gh-Secret-1,,otpauth://totp/GitHub:demo?secret=JBSWY3DPEHPK3PXP&issuer=GitHub,1716200000,1716300000,Work
+login,Shop,https://shop.example.invalid,buyer@example.invalid,,s-pw-2026,size M,,1716200000,1716300000,Personal
+note,Wi-Fi codes,,,,,guest: 1234,,1716200000,1716300000,Personal
