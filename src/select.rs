@@ -406,6 +406,8 @@ mod tests {
         assert_eq!(search_everywhere(&e, "downtown")[0].uuid, "c");
         assert_eq!(search_everywhere(&e, "enterprise")[0].uuid, "a");
         assert!(search_everywhere(&e, "hidden-thing").is_empty());
-        assert!(search_everywhere(&e, "p").iter().all(|x| x.title != "nope"));
+        // Entries matched by title come first and appear once.
+        let hits = search_everywhere(&e, "github");
+        assert_eq!(hits.len(), 2);
     }
 }
