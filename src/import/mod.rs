@@ -7,6 +7,7 @@
 
 pub mod apple;
 pub mod csvtable;
+pub mod generic;
 pub mod google;
 pub mod lastpass;
 pub mod otp;
