@@ -211,3 +211,34 @@ fn history_comes_through_the_agent() {
         .success()
         .stdout(predicate::str::contains(": old-password"));
 }
+
+#[test]
+fn a_garbled_request_gets_nothing_and_the_agent_carries_on() {
+    use std::io::{BufRead, BufReader, Write};
+    let s = Sandbox::new();
+    s.unlock();
+    let sock = s.agent_dir().join("agent.sock");
+    let mut stream = std::os::unix::net::UnixStream::connect(&sock).unwrap();
+    stream.write_all(b"this is not json\n").unwrap();
+    let mut reply = String::new();
+    let _ = BufReader::new(&stream).read_line(&mut reply);
+    assert!(reply.is_empty() || !reply.contains("gh-Secret-1"));
+    // Still serving its own clients afterwards.
+    s.prive(&["get", "Bank"]).assert().success();
+}
+
+#[test]
+fn an_old_protocol_version_is_turned_away() {
+    use std::io::{BufRead, BufReader, Write};
+    let s = Sandbox::new();
+    s.unlock();
+    let sock = s.agent_dir().join("agent.sock");
+    let mut stream = std::os::unix::net::UnixStream::connect(&sock).unwrap();
+    stream
+        .write_all(br#"{"v":0,"op":"entries","db":"/x"}"#)
+        .unwrap();
+    stream.write_all(b"\n").unwrap();
+    let mut reply = String::new();
+    BufReader::new(&stream).read_line(&mut reply).unwrap();
+    assert!(reply.contains("not supported"), "{reply}");
+}
