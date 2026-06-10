@@ -862,3 +862,22 @@ fn history_json_hides_old_passwords_unless_revealed() {
     let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
     assert_eq!(v[0]["password"], "old-password");
 }
+
+#[test]
+fn every_command_with_json_prints_valid_json() {
+    for args in [
+        &["ls", "--json"][..],
+        &["search", "github", "--json"],
+        &["show", "Bank", "--json"],
+        &["otp", "Bank", "--json"],
+        &["audit", "--json"],
+        &["tags", "--json"],
+        &["codes", "--json"],
+        &["history", "Work/GitHub", "--json"],
+    ] {
+        let out = prive(args).output().unwrap();
+        assert!(out.status.success(), "{args:?}");
+        serde_json::from_slice::<serde_json::Value>(&out.stdout)
+            .unwrap_or_else(|e| panic!("{args:?}: {e}"));
+    }
+}
