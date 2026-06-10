@@ -7,9 +7,10 @@ your passwords live in one file you own: those apps cover the phone and the brow
 covers the terminal. It prints exactly what you ask for, nothing else, so it fits in scripts.
 
 > **Status: rewrite in progress (0.6).** Reading works (`ls`, `search`, `show`, `get`, `otp`,
-> `open`, `pick`, `audit`, `gen`), and `prive unlock` keeps the database open so a session
-> costs one password prompt. Imports from other password managers, file encryption and
-> editing are next; see the [roadmap](docs/roadmap.md).
+> `codes`, `open`, `file`, `history`, `pick`, `audit`, `gen`), `prive unlock` keeps the
+> database open so a session costs one password prompt, and `prive run` hands secrets to
+> other commands. Next: creating databases from other apps' exports, file encryption and
+> editing; see the [roadmap](docs/roadmap.md).
 >
 > The old 0.5 line (its own `.pv` vault format and a PGP toolkit) is kept at the tag
 > `legacy-0.5.0`. It had serious problems, PGP secret keys stored unencrypted among them;
