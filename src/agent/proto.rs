@@ -156,6 +156,8 @@ impl From<WireEntry> for Entry {
                 .into_iter()
                 .map(|(name, data)| crate::entry::Attachment {
                     name,
+                    // The agent only ever sends hex it made itself; anything else is a bug,
+                    // and an empty file is safer than a guess.
                     data: Zeroizing::new(hex::decode(data).unwrap_or_default()),
                 })
                 .collect(),

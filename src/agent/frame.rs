@@ -74,4 +74,15 @@ mod tests {
         let mut input = std::io::Cursor::new(b"not json\n".to_vec());
         assert!(read::<Envelope<Request>>(&mut input).is_err());
     }
+
+    #[test]
+    fn an_oversized_message_is_refused() {
+        let mut big = vec![b'x'; MAX_LINE + 10];
+        big.push(b'\n');
+        let mut input = std::io::Cursor::new(big);
+        let err = read::<Envelope<Request>>(&mut input)
+            .unwrap_err()
+            .to_string();
+        assert!(err.contains("too large"), "{err}");
+    }
 }
