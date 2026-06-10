@@ -115,7 +115,8 @@ fn completions_for_each_shell() {
         assert!(out.status.success(), "{shell}");
         let text = String::from_utf8(out.stdout).unwrap();
         for command in [
-            "gen", "ls", "show", "get", "otp", "open", "pick", "audit", "tags",
+            "gen", "ls", "show", "get", "otp", "open", "pick", "audit", "tags", "unlock", "lock",
+            "status", "run", "import", "file", "codes", "history",
         ] {
             assert!(
                 text.contains(command),
