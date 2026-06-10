@@ -37,6 +37,12 @@ What prive protects against, and what it doesn't. This will grow as the rewrite 
 - A wrong password or key file is reported as such (exit code 5); prive never tells you which
   of the two was wrong, because the file format can't know.
 
+## Attachments and history
+
+`prive file` writes an attachment only to a new file (never over an existing one), readable
+only by you, or to a pipe; it refuses to dump binary data onto a terminal. `prive history`
+shows when earlier versions were saved; the old passwords themselves only with `--reveal`.
+
 ## Running commands
 
 `prive run` puts secrets in a child process's environment only, never on its command line
