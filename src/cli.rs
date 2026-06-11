@@ -93,6 +93,9 @@ pub enum Command {
         /// scripts that type the code somewhere slow)
         #[arg(long, value_name = "SECONDS", default_value_t = 0)]
         min_validity: u64,
+        /// The code after the current one, without waiting (for sites that ask for two)
+        #[arg(long, conflicts_with = "min_validity")]
+        next: bool,
         /// Copy to the clipboard instead of printing
         #[arg(short, long, conflicts_with = "json")]
         clip: bool,

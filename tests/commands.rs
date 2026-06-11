@@ -1022,3 +1022,14 @@ fn config_shows_what_is_in_effect() {
             "database:          /tmp/other.kdbx (--db)",
         ));
 }
+
+#[test]
+fn otp_next_is_the_following_period() {
+    let out = prive(&["otp", "Bank", "--next", "--json"])
+        .output()
+        .unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    let left = v["seconds_left"].as_u64().unwrap();
+    assert!((61..=120).contains(&left), "{left}");
+    assert_eq!(v["code"].as_str().unwrap().len(), 8);
+}

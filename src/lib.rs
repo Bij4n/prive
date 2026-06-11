@@ -99,10 +99,11 @@ fn dispatch(cli: Cli) -> Result<()> {
         Command::Otp {
             entry,
             min_validity,
+            next,
             clip,
             json,
             ..
-        } => commands::otp(g, entry, *min_validity, *clip, *json),
+        } => commands::otp(g, entry, *min_validity, *next, *clip, *json),
         Command::Pick(args) => commands::pick(g, args),
         Command::Codes { query, json } => commands::codes(g, query.as_deref(), *json),
         Command::Import {
