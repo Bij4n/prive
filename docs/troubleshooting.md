@@ -1,5 +1,8 @@
 # Troubleshooting
 
+Start with `prive config`: it shows which config file, database and key file prive is using,
+and where each setting came from.
+
 **`prive: no password given: stdin is not a terminal`** (exit 5)
 prive was run from a script or a pipe and had no way to ask. Give the password with
 `--password-stdin` or `PRIVE_PASSWORD_FILE`, or run `prive unlock` first in a terminal.
