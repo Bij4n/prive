@@ -1033,3 +1033,13 @@ fn otp_next_is_the_following_period() {
     assert!((61..=120).contains(&left), "{left}");
     assert_eq!(v["code"].as_str().unwrap().len(), 8);
 }
+
+#[test]
+fn audit_expiring_on_the_fixture() {
+    // Old VPN expired in 2025: always "expired", never "expires in".
+    prive(&["audit", "--expiring", "36500"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Old VPN\n  - expired"))
+        .stdout(predicate::str::contains("expires in").not());
+}
