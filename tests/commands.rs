@@ -987,3 +987,11 @@ fn field_references_are_resolved_wherever_a_value_is_used() {
         .assert()
         .success();
 }
+
+#[test]
+fn show_reveal_resolves_references() {
+    prive(&["show", "Old VPN", "--reveal"])
+        .assert()
+        .stdout(predicate::str::contains("BANK_PASSWORD: b4nk-P@ss-2026!"))
+        .stdout(predicate::str::contains("{REF:").not());
+}

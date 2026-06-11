@@ -1,7 +1,8 @@
 //! Password health report.
 //!
 //! Entries the user excluded from reports in KeePassXC ("Exclude from database reports") are
-//! skipped, as are entries with no password.
+//! skipped, as are entries with no password and entries whose password refers to another
+//! entry's.
 
 use std::collections::HashMap;
 
@@ -78,9 +79,12 @@ impl Default for Options {
 
 pub fn audit(entries: &[Entry], opts: &Options) -> anyhow::Result<Report> {
     let now = Utc::now().naive_utc();
+    // An entry whose password is a reference to another entry's ({REF:P@...}) is checked
+    // through that other entry, as KeePassXC does; counting it again would flag every shared
+    // password as reused.
     let checked: Vec<&Entry> = entries
         .iter()
-        .filter(|e| e.quality_check && !e.password.is_empty())
+        .filter(|e| e.quality_check && !e.password.is_empty() && !e.password.contains("{REF:"))
         .collect();
     // Compare hashes, not the passwords themselves, so no extra plaintext copies pile up.
     let mut by_password: HashMap<[u8; 32], usize> = HashMap::new();
@@ -309,5 +313,15 @@ mod tests {
             ..Options::default()
         };
         assert!(audit(&[old], &off).unwrap().is_clean());
+    }
+
+    #[test]
+    fn a_referenced_password_is_not_counted_twice() {
+        let target = entry("Bank", "vX7#qL9!mZ2$wR4^tY6&");
+        let mut shared = entry("Shared", "{REF:P@T:Bank}");
+        shared.uuid = "s".into();
+        let r = audit(&[target, shared], &Options::default()).unwrap();
+        assert_eq!((r.checked, r.skipped), (1, 1));
+        assert!(r.is_clean());
     }
 }

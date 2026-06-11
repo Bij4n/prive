@@ -226,6 +226,19 @@ pub fn search(global: &Global, query: &str, all: bool, json: bool) -> Result<()>
 pub fn show(global: &Global, entry: &str, reveal: bool, json: bool) -> Result<()> {
     let db = open(global)?;
     let e = select::select(&db.entries, entry)?;
+    // What --reveal shows is what would be used: references resolved.
+    let resolved;
+    let e = if reveal {
+        let mut copy = e.clone();
+        copy.password = crate::refs::resolve(&db.entries, &e.password);
+        for c in &mut copy.custom {
+            c.value = crate::refs::resolve(&db.entries, &c.value);
+        }
+        resolved = copy;
+        &resolved
+    } else {
+        e
+    };
     if json {
         output::print_json(&output::show_json(e, reveal))
     } else {
