@@ -124,8 +124,9 @@ fn dispatch(cli: Cli) -> Result<()> {
         Command::Audit {
             hibp,
             max_age,
+            expiring,
             json,
-        } => commands::audit(g, *hibp, *max_age, *json),
+        } => commands::audit(g, *hibp, *max_age, *expiring, *json),
         Command::Gen(args) => commands::generate(args),
         Command::Config { json } => commands::show_config(g, *json),
         Command::GitCredential { action } => commands::git_credential(g, action),

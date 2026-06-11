@@ -230,6 +230,9 @@ pub enum Command {
         /// Flag passwords not changed for more than this many days (0: don't check)
         #[arg(long, default_value_t = 365, value_name = "DAYS")]
         max_age: i64,
+        /// Also flag entries that expire within this many days
+        #[arg(long, default_value_t = 0, value_name = "DAYS")]
+        expiring: i64,
         #[arg(long)]
         json: bool,
     },

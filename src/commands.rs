@@ -547,13 +547,14 @@ pub fn pick(global: &Global, args: &PickArgs) -> Result<()> {
     }
 }
 
-pub fn audit(global: &Global, hibp: bool, max_age: i64, json: bool) -> Result<()> {
+pub fn audit(global: &Global, hibp: bool, max_age: i64, expiring: i64, json: bool) -> Result<()> {
     let db = open(global)?;
     let report = audit::audit(
         &db.entries,
         &audit::Options {
             max_age_days: max_age,
             breach_check: hibp,
+            expiring_days: expiring,
         },
     )?;
     if json {

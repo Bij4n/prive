@@ -23,6 +23,8 @@ pub enum Issue {
     Reused { with: usize },
     /// Past its expiry date.
     Expired,
+    /// Expires within the warning window: this many days from now.
+    Expiring { days: i64 },
     /// Not changed for this many days.
     Old { days: i64 },
 }
@@ -42,6 +44,9 @@ impl Issue {
             Issue::Reused { with: 1 } => "reused by 1 other entry".to_string(),
             Issue::Reused { with } => format!("reused by {with} other entries"),
             Issue::Expired => "expired".to_string(),
+            Issue::Expiring { days: 0 } => "expires today".to_string(),
+            Issue::Expiring { days: 1 } => "expires tomorrow".to_string(),
+            Issue::Expiring { days } => format!("expires in {days} days"),
             Issue::Old { days } => format!("not changed for {days} days"),
         }
     }
@@ -66,6 +71,8 @@ pub struct Options {
     /// Look each password up in Have I Been Pwned (see `hibp`). Off by default: it is the
     /// only part of prive that talks to the network.
     pub breach_check: bool,
+    /// Also flag entries that expire within this many days (0: only those already expired).
+    pub expiring_days: i64,
 }
 
 impl Default for Options {
@@ -73,6 +80,7 @@ impl Default for Options {
         Options {
             max_age_days: 365,
             breach_check: false,
+            expiring_days: 0,
         }
     }
 }
@@ -116,10 +124,13 @@ pub fn audit(entries: &[Entry], opts: &Options) -> anyhow::Result<Report> {
         if same > 1 {
             issues.push(Issue::Reused { with: same - 1 });
         }
-        if let Some(exp) = e.expires
-            && exp < now
-        {
-            issues.push(Issue::Expired);
+        if let Some(exp) = e.expires {
+            let days = (exp - now).num_days();
+            if exp < now {
+                issues.push(Issue::Expired);
+            } else if days < opts.expiring_days {
+                issues.push(Issue::Expiring { days });
+            }
         }
         if opts.max_age_days > 0
             && let Some(days) = age_days(e.modified, now)
@@ -323,5 +334,27 @@ mod tests {
         let r = audit(&[target, shared], &Options::default()).unwrap();
         assert_eq!((r.checked, r.skipped), (1, 1));
         assert!(r.is_clean());
+    }
+
+    #[test]
+    fn expiring_soon_is_flagged_only_when_asked() {
+        let mut soon = entry("soon", "kH3@pN8%sJ5*eB1(cG7)");
+        soon.expires =
+            Some(Utc::now().naive_utc() + chrono::Duration::days(10) + chrono::Duration::hours(1));
+        assert!(
+            audit(std::slice::from_ref(&soon), &Options::default())
+                .unwrap()
+                .is_clean()
+        );
+        let warn = Options {
+            expiring_days: 30,
+            ..Options::default()
+        };
+        let r = audit(&[soon], &warn).unwrap();
+        assert_eq!(r.findings[0].issues, vec![Issue::Expiring { days: 10 }]);
+        assert_eq!(
+            Issue::Expiring { days: 10 }.describe(),
+            "expires in 10 days"
+        );
     }
 }
