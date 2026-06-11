@@ -215,3 +215,87 @@ fn field_references_resolve_like_keepassxc() {
         .unwrap();
     assert_eq!(String::from_utf8_lossy(&ours.stdout).trim(), theirs);
 }
+
+/// A large database KeePassXC wrote: every command stays quick. (Generous limits, to catch
+/// anything that grows badly with the number of entries, not to benchmark.)
+#[test]
+fn five_thousand_entries() {
+    if !available() {
+        return;
+    }
+    let dir = tempfile::tempdir().unwrap();
+    let mut xml = String::from(
+        "<?xml version=\"1.0\" encoding=\"utf-8\"?><KeePassFile><Meta><Generator>t</Generator></Meta><Root><Group><UUID>AAAAAAAAAAAAAAAAAAAAAA==</UUID><Name>Root</Name>",
+    );
+    for g in 0..50 {
+        xml.push_str(&format!("<Group><Name>Group {g}</Name>"));
+        for i in 0..100 {
+            let n = g * 100 + i;
+            xml.push_str(&format!(
+                "<Entry><String><Key>Title</Key><Value>Site {n}</Value></String>\
+                 <String><Key>UserName</Key><Value>user{n}@example.invalid</Value></String>\
+                 <String><Key>Password</Key><Value ProtectInMemory=\"True\">pw-{n}-Xq7!</Value></String>\
+                 <String><Key>URL</Key><Value>https://site{n}.example.invalid</Value></String>{}</Entry>",
+                if n % 10 == 0 {
+                    "<String><Key>otp</Key><Value>otpauth://totp/x?secret=JBSWY3DPEHPK3PXP</Value></String>"
+                } else {
+                    ""
+                }
+            ));
+        }
+        xml.push_str("</Group>");
+    }
+    xml.push_str("</Group></Root></KeePassFile>");
+    let src = dir.path().join("big.xml");
+    std::fs::write(&src, xml).unwrap();
+    let db = dir.path().join("big.kdbx");
+    let mut child = Command::new("keepassxc-cli")
+        .args(["import", "-q", "-p"])
+        .arg(&src)
+        .arg(&db)
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .unwrap();
+    {
+        use std::io::Write;
+        let mut stdin = child.stdin.take().unwrap();
+        writeln!(stdin, "{PASSWORD}\n{PASSWORD}").unwrap();
+    }
+    assert!(child.wait().unwrap().success());
+
+    for args in [
+        &["ls"][..],
+        &["search", "Site 4999"],
+        &["search", "--all", "nothing-matches-this"],
+        &["get", "Group 49/Site 4999"],
+        &["codes"],
+        &["audit", "--max-age", "0"],
+        &["get", "Site 499"],
+    ] {
+        let started = std::time::Instant::now();
+        let out = assert_cmd::Command::cargo_bin("prive")
+            .unwrap()
+            .env("PRIVE_CONFIG", fixture("no-such-config.toml"))
+            .env("PRIVE_NO_AGENT", "1")
+            .arg("--db")
+            .arg(&db)
+            .arg("--password-stdin")
+            .args(args)
+            .write_stdin(format!("{PASSWORD}\n"))
+            .output()
+            .unwrap();
+        let took = started.elapsed();
+        assert!(
+            out.status.success() || out.status.code() == Some(3),
+            "{args:?}: {}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+        assert!(
+            took < std::time::Duration::from_secs(20),
+            "{args:?} took {took:?}"
+        );
+        eprintln!("{args:?}: {took:?}");
+    }
+}
