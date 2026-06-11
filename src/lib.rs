@@ -24,6 +24,7 @@ pub mod otp;
 pub mod output;
 pub mod pick;
 pub mod qr;
+pub mod refs;
 pub mod run;
 pub mod select;
 pub mod unlock;
