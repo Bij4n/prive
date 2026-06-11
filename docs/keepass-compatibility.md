@@ -25,7 +25,8 @@ binary or hashed), or both. Hardware keys (YubiKey challenge-response) are not s
 Title, username, password, URL, notes, tags, custom fields (with their "protected" flag),
 attachment names, modification and expiry times, the "exclude from reports" flag, and
 two-factor secrets in every format KeePass apps store them (see [totp.md](totp.md)).
-Entries in the recycle bin are left out.
+Entries in the recycle bin are left out. Field references (`{REF:P@I:...}`) are resolved
+when a value is used; see [references.md](references.md).
 
 ## Tested against
 

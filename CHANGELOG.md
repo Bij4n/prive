@@ -20,6 +20,8 @@ The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `l
 - `unlock --minutes N`; `gen --count N`
 - `otp --qr` (a QR code in the terminal to scan into a phone) and `otp --uri`, from any stored
   form of the code
+- KeePass field references (`{REF:P@I:...}` and friends) are resolved wherever a value is
+  used, the same way KeePassXC resolves them; `audit` counts a shared password once
 - `prive git-credential`: git's credential helper, answering HTTPS remotes from the entry
   whose URL has their host
 - `search --all` also looks in notes and unprotected fields (never in secrets)
