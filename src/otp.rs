@@ -121,6 +121,43 @@ impl Totp {
         format!("{shape} every {} s, {alg}", self.period)
     }
 
+    /// An `otpauth://totp/...` URI for this code, whichever way the entry stored it, for
+    /// authenticator apps and other password managers.
+    pub fn to_uri(&self, issuer: &str, account: &str) -> String {
+        fn enc(s: &str) -> String {
+            let mut out = String::new();
+            for b in s.bytes() {
+                match b {
+                    b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'.' | b'_' | b'~' | b'@' => {
+                        out.push(b as char)
+                    }
+                    _ => out.push_str(&format!("%{b:02X}")),
+                }
+            }
+            out
+        }
+        let secret = base32::encode(base32::Alphabet::Rfc4648 { padding: false }, &self.secret);
+        let label = if account.is_empty() {
+            enc(issuer)
+        } else {
+            format!("{}:{}", enc(issuer), enc(account))
+        };
+        let alg = match self.algorithm {
+            Algorithm::Sha1 => "SHA1",
+            Algorithm::Sha256 => "SHA256",
+            Algorithm::Sha512 => "SHA512",
+        };
+        let (digits, encoder) = match self.encoder {
+            Encoder::Digits(d) => (d, ""),
+            Encoder::Steam => (5, "&encoder=steam"),
+        };
+        format!(
+            "otpauth://totp/{label}?secret={secret}&period={}&digits={digits}&algorithm={alg}&issuer={}{encoder}",
+            self.period,
+            enc(issuer)
+        )
+    }
+
     /// The current code and how many seconds it stays valid.
     pub fn now(&self) -> (String, u64) {
         let t = unix_now();
@@ -651,5 +688,29 @@ mod tests {
         assert!(is_otp_field("totp settings"));
         assert!(is_otp_field("TimeOtp-Period"));
         assert!(!is_otp_field("API key"));
+    }
+
+    #[test]
+    fn uris_round_trip_to_the_same_codes() {
+        for t in [
+            Totp::new(
+                b"12345678901234567890".to_vec(),
+                30,
+                Encoder::Digits(6),
+                Algorithm::Sha1,
+            ),
+            Totp::new(b"abc".to_vec(), 60, Encoder::Digits(8), Algorithm::Sha256),
+            Totp::new(b"steam!".to_vec(), 30, Encoder::Steam, Algorithm::Sha1),
+        ] {
+            let t = t.unwrap();
+            let uri = t.to_uri("My Bank", "me@example.invalid");
+            let back = parse_otpauth(&uri).unwrap_or_else(|| panic!("{uri}"));
+            assert_eq!(
+                back.code_at(1_700_000_000),
+                t.code_at(1_700_000_000),
+                "{uri}"
+            );
+            assert!(uri.starts_with("otpauth://totp/My%20Bank:me@example.invalid?"));
+        }
     }
 }
