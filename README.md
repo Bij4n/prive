@@ -4,7 +4,9 @@ A fast, scriptable terminal client for **KeePass** password databases.
 
 prive opens the same `.kdbx` file as KeePassXC, KeePassDX (Android) and Strongbox (iOS), so
 your passwords live in one file you own: those apps cover the phone and the browser, prive
-covers the terminal. It prints exactly what you ask for, nothing else, so it fits in scripts.
+covers the terminal. It prints exactly what you ask for, nothing else, so it fits in scripts,
+and it is quick: a 5,000-entry database lists in a tenth of a second
+([performance](docs/performance.md)).
 
 > **Status: rewrite in progress (0.6).** Reading works (`ls`, `search`, `show`, `get`, `otp`,
 > `codes`, `open`, `file`, `history`, `pick`, `audit`, `gen`), `prive unlock` keeps the
