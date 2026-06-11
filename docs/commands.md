@@ -14,7 +14,7 @@ Global options: `--db <file>` (or `PRIVE_DB`), `--keyfile <file>` (or `PRIVE_KEY
 | `search QUERY [--all] [--json]` | Entries whose path, username, URL or tags contain QUERY; exact and prefix title matches first. `--all` also looks in notes and unprotected custom fields, never in passwords. Exit 3 if none. |
 | `show ENTRY [--reveal] [--json]` | All of an entry. Password and protected fields hidden unless `--reveal`; in JSON they are `null`. |
 | `get ENTRY [-f FIELD] [--clip]` | One field and a newline; the password by default. `-f` takes `username`, `url`, `notes`, `title` or any custom field's name. |
-| `otp ENTRY [--min-validity S] [--clip] [--json]` | The current one-time code. In a terminal, stderr says how long it stays valid. With `--min-validity S`, a code expiring in under S seconds is skipped for the next one. |
+| `otp ENTRY [--min-validity S] [--clip] [--json]` | The current one-time code. In a terminal, stderr says how long it stays valid. With `--min-validity S`, a code expiring in under S seconds is skipped for the next one. `--qr` / `--uri` show the setup instead (secret included), to move it to a phone or another app. |
 | `run [-e NAME=ENTRY[:FIELD]]... [--from ENTRY]... -- COMMAND...` | Runs COMMAND with those secrets in its environment and exits with its exit code. See [run.md](run.md). |
 | `history ENTRY [--reveal] [--json]` | When each earlier version was saved and whether the password changed after it. Old passwords only with `--reveal`. |
 | `file ENTRY [NAME] [-o PATH]` | Without NAME, the entry's attached files and their sizes (tab-separated). With NAME, that file's bytes to stdout (refused on a terminal) or to a new file at PATH, readable only by you. |

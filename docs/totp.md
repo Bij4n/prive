@@ -25,3 +25,14 @@ Codes are checked against the RFC 6238 test vectors in the test suite.
 settings prive doesn't understand (a field it can't decode, or values out of range), it says
 so and exits with 1, so a typo in the settings isn't mistaken for "no code".
 
+## Moving a code to a phone or another app
+
+```bash
+prive otp Work/GitHub --qr     # a QR code in the terminal: scan it with the authenticator app
+prive otp Work/GitHub --uri    # otpauth://totp/GitHub:demo?secret=...&period=30&digits=6&...
+```
+
+Both show the secret itself: anyone who sees the QR code or the URI can make your codes.
+They work for every stored form above, so a code saved in KeePass 2's own fields can still be
+moved to an app that only reads otpauth URIs.
+
