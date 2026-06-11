@@ -18,6 +18,8 @@ The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `l
 - `prive history ENTRY`: earlier versions, when they were saved and whether the password
   changed (old passwords with `--reveal`)
 - `unlock --minutes N`; `gen --count N`
+- `prive git-credential`: git's credential helper, answering HTTPS remotes from the entry
+  whose URL has their host
 - `search --all` also looks in notes and unprotected fields (never in secrets)
 - `prive run -e NAME=ENTRY[:FIELD] --from ENTRY -- COMMAND`: secrets in a command's
   environment, never on the command line or disk; the command's exit code is passed on

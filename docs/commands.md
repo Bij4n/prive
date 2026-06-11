@@ -25,6 +25,7 @@ Global options: `--db <file>` (or `PRIVE_DB`), `--keyfile <file>` (or `PRIVE_KEY
 | `pick [QUERY] [-f FIELD \| --otp] [--print]` | Fuzzy-find an entry, then copy its password (or the field, or the code). `--print` prints it instead. |
 | `audit [--hibp] [--max-age DAYS] [--json]` | Weak, reused, expired and old passwords, worst first. Entries excluded from reports in KeePassXC are skipped. |
 | `gen [...] [-n COUNT]` | A new password, passphrase (`--words N`) or PIN (`--pin N`), or COUNT of them. No database needed. See [generate.md](generate.md). |
+| `git-credential get` | Answers git's credential requests; see [git.md](git.md). `store` and `erase` are ignored. |
 | `completions SHELL` | Shell completions for bash, zsh, fish, elvish or PowerShell. |
 
 `--clip` copies instead of printing and clears the clipboard after `clipboard_seconds`
