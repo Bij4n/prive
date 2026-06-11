@@ -178,3 +178,28 @@ proptest! {
         prop_assert_eq!(&back.attachments[0].data[..], &file[..]);
     }
 }
+
+proptest! {
+    /// Any text, with any references in it, resolves without panicking and without looping.
+    #[test]
+    fn references_always_resolve_or_stay(
+        value in "(\\{REF:[TUPANI@:A-Za-z0-9]{0,12}\\}|[a-z {}:@]){0,12}",
+        titles in prop::collection::vec("[A-Za-z]{1,6}", 1..5),
+    ) {
+        let entries: Vec<prive::entry::Entry> = titles
+            .iter()
+            .enumerate()
+            .map(|(i, t)| prive::entry::Entry {
+                uuid: format!("{i:032x}"),
+                title: t.clone(),
+                // Each password refers to the next entry's, the last back to the first.
+                password: zeroize::Zeroizing::new(format!("{{REF:P@T:{}}}", titles[(i + 1) % titles.len()])),
+                ..prive::entry::Entry::default()
+            })
+            .collect();
+        let _ = prive::refs::resolve(&entries, &value);
+        for e in &entries {
+            let _ = prive::refs::resolve(&entries, &e.password);
+        }
+    }
+}
