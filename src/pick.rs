@@ -20,13 +20,17 @@ impl Render<Item> for Labels {
     }
 }
 
-/// What the picker shows for an entry: its path, and the username in brackets.
+/// What the picker shows for an entry: its path, the username in brackets, and the site's
+/// host, so entries that share a title can be told apart (and found by typing the site).
 pub fn label(e: &Entry) -> String {
-    if e.username.is_empty() {
-        e.path()
-    } else {
-        format!("{}  ({})", e.path(), e.username)
+    let mut out = e.path();
+    if !e.username.is_empty() {
+        out.push_str(&format!("  ({})", e.username));
     }
+    if let Some((_, host, _)) = crate::gitcred::split_url(&e.url) {
+        out.push_str(&format!("  {host}"));
+    }
+    out
 }
 
 /// Let the user choose one entry. `None` if they cancel (Esc or Ctrl-C).
@@ -67,6 +71,8 @@ mod tests {
         assert_eq!(label(&e), "Work/GitHub");
         e.username = "demo".into();
         assert_eq!(label(&e), "Work/GitHub  (demo)");
+        e.url = "https://github.com/login".into();
+        assert_eq!(label(&e), "Work/GitHub  (demo)  github.com");
     }
 
     #[test]
