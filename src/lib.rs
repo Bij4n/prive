@@ -17,6 +17,7 @@ pub mod entry;
 pub mod error;
 pub mod fsutil;
 pub mod generate;
+pub mod gitcred;
 pub mod hibp;
 pub mod import;
 pub mod otp;
