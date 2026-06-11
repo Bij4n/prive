@@ -180,3 +180,38 @@ fn prive_otp_matches_keepassxc_entry_by_entry() {
         assert!(matched, "{entry}: kept crossing a period boundary");
     }
 }
+
+/// KeePassXC resolves the fixture's field reference to the same value prive does.
+#[test]
+fn field_references_resolve_like_keepassxc() {
+    if !available() {
+        return;
+    }
+    let theirs = keepassxc(&[
+        "show",
+        "-q",
+        "-s",
+        "-a",
+        "BANK_PASSWORD",
+        &fixture("kdbx41.kdbx"),
+        "Old VPN",
+    ])
+    .unwrap();
+    let ours = assert_cmd::Command::cargo_bin("prive")
+        .unwrap()
+        .env("PRIVE_CONFIG", fixture("no-such-config.toml"))
+        .env("PRIVE_NO_AGENT", "1")
+        .args([
+            "--db",
+            &fixture("kdbx41.kdbx"),
+            "--password-stdin",
+            "get",
+            "Old VPN",
+            "-f",
+            "BANK_PASSWORD",
+        ])
+        .write_stdin(format!("{PASSWORD}\n"))
+        .output()
+        .unwrap();
+    assert_eq!(String::from_utf8_lossy(&ours.stdout).trim(), theirs);
+}
