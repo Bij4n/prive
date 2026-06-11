@@ -99,6 +99,13 @@ pub enum Command {
         /// Print {"code": ..., "seconds_left": ..., "period": ...}
         #[arg(long)]
         json: bool,
+        /// Instead of a code, show the setup as a QR code to scan into a phone's authenticator
+        /// (this shows the secret)
+        #[arg(long, conflicts_with_all = ["clip", "json", "uri"])]
+        qr: bool,
+        /// Instead of a code, print the setup as an otpauth:// URI (this shows the secret)
+        #[arg(long, conflicts_with_all = ["clip", "json"])]
+        uri: bool,
     },
 
     /// Every current one-time code, like an authenticator app's list

@@ -947,3 +947,20 @@ fn git_credential_store_and_erase_change_nothing() {
             .stdout(predicate::str::is_empty());
     }
 }
+
+#[test]
+fn otp_uri_and_qr() {
+    let out = prive(&["otp", "Personal/Legacy 2FA", "--uri"])
+        .output()
+        .unwrap();
+    let uri = String::from_utf8(out.stdout).unwrap();
+    assert!(
+        uri.starts_with("otpauth://totp/Legacy%202FA?secret=JBSWY3DPEHPK3PXP&period=30&digits=6"),
+        "{uri}"
+    );
+    let out = prive(&["otp", "Work/GitHub", "--qr"]).output().unwrap();
+    assert!(out.status.success());
+    let qr = String::from_utf8(out.stdout).unwrap();
+    assert!(qr.lines().count() > 10 && qr.contains('█'));
+    prive(&["otp", "Bank", "--qr", "--json"]).assert().code(2);
+}

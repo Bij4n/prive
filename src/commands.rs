@@ -307,6 +307,28 @@ pub fn run(global: &Global, specs: &[String], from: &[String], command: &[String
     std::process::exit(code);
 }
 
+/// The entry's one-time code setup, as a QR code to scan or as an otpauth URI.
+pub fn otp_setup(global: &Global, entry: &str, qr: bool) -> Result<()> {
+    let db = open(global)?;
+    let e = select::select(&db.entries, entry)?;
+    let totp = totp_of(e)?;
+    let issuer = if e.title.is_empty() {
+        e.path()
+    } else {
+        e.title.clone()
+    };
+    let uri = Zeroizing::new(totp.to_uri(&issuer, &e.username));
+    if qr {
+        output::print(&crate::qr::render(&uri)?)?;
+        output::notice(
+            "Scan it with the authenticator app. Anyone who sees it can make your codes.",
+        );
+        Ok(())
+    } else {
+        output::print(&format!("{}\n", uri.as_str()))
+    }
+}
+
 /// The current code of every entry that has one (or of those matching `query`).
 pub fn codes(global: &Global, query: Option<&str>, json: bool) -> Result<()> {
     let db = open(global)?;

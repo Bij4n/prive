@@ -90,10 +90,17 @@ fn dispatch(cli: Cli) -> Result<()> {
         } => commands::show(g, entry, *reveal, *json),
         Command::Get { entry, field, clip } => commands::get(g, entry, field, *clip),
         Command::Otp {
+            entry, qr: true, ..
+        } => commands::otp_setup(g, entry, true),
+        Command::Otp {
+            entry, uri: true, ..
+        } => commands::otp_setup(g, entry, false),
+        Command::Otp {
             entry,
             min_validity,
             clip,
             json,
+            ..
         } => commands::otp(g, entry, *min_validity, *clip, *json),
         Command::Pick(args) => commands::pick(g, args),
         Command::Codes { query, json } => commands::codes(g, query.as_deref(), *json),
