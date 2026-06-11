@@ -9,6 +9,7 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.4"
+zeroize = "1"
 prive = { path = ".." }
 
 # Kept out of the main workspace: fuzzing needs nightly and its own lock file.
@@ -32,6 +33,13 @@ bench = false
 [[bin]]
 name = "import"
 path = "fuzz_targets/import.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "refs"
+path = "fuzz_targets/refs.rs"
 test = false
 doc = false
 bench = false
