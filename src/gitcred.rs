@@ -83,13 +83,15 @@ pub fn matches<'a>(entries: &'a [Entry], req: &Request) -> Vec<&'a Entry> {
     fits.into_iter().map(|(e, _)| e).collect()
 }
 
-/// The answer git reads.
-pub fn answer(entry: &Entry) -> String {
-    format!(
+/// The answer git reads, with field references resolved against `all`.
+pub fn answer(entry: &Entry, all: &[Entry]) -> zeroize::Zeroizing<String> {
+    let user = crate::refs::resolve(all, &entry.username);
+    let pass = crate::refs::resolve(all, &entry.password);
+    zeroize::Zeroizing::new(format!(
         "username={}\npassword={}\n",
-        entry.username,
-        entry.password.as_str()
-    )
+        user.as_str(),
+        pass.as_str()
+    ))
 }
 
 #[cfg(test)]
@@ -147,8 +149,10 @@ mod tests {
         );
         assert!(matches(&e, &req("example.com", "")).is_empty());
         assert_eq!(
-            answer(matches(&e, &req("gitlab.com", ""))[0]),
-            "username=me\npassword=gl-pw\n"
+            answer(matches(&e, &req("gitlab.com", ""))[0], &e).as_str(),
+            "username=me
+password=gl-pw
+"
         );
     }
 

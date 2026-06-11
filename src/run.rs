@@ -43,7 +43,7 @@ pub fn parse_spec(s: &str) -> Result<EnvSpec> {
 /// may contain `:`; only if that matches nothing is the part after the last `:` a field.
 pub fn resolve(entries: &[Entry], spec: &EnvSpec) -> Result<Zeroizing<String>> {
     let not_found = match select::select(entries, &spec.target) {
-        Ok(e) => return Ok(Zeroizing::new(e.password.to_string())),
+        Ok(e) => return Ok(crate::refs::resolve(entries, &e.password)),
         Err(f @ Failure::Ambiguous { .. }) => return Err(f.into()),
         Err(f) => f,
     };
@@ -53,7 +53,7 @@ pub fn resolve(entries: &[Entry], spec: &EnvSpec) -> Result<Zeroizing<String>> {
         let value = e.field(field).ok_or_else(|| {
             Failure::NotFound(format!("{}: field '{field}' (for {})", e.path(), spec.name))
         })?;
-        return Ok(Zeroizing::new(value.to_string()));
+        return Ok(crate::refs::resolve(entries, value));
     }
     Err(not_found.into())
 }
@@ -70,12 +70,12 @@ pub fn exported_name(name: &str) -> bool {
 
 /// Every custom field of `entry` named like an environment variable, e.g. an entry holding
 /// `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` as fields.
-pub fn fields_as_env(entry: &Entry) -> Vec<(String, Zeroizing<String>)> {
+pub fn fields_as_env(entry: &Entry, all: &[Entry]) -> Vec<(String, Zeroizing<String>)> {
     entry
         .custom
         .iter()
         .filter(|c| exported_name(&c.name))
-        .map(|c| (c.name.clone(), Zeroizing::new(c.value.to_string())))
+        .map(|c| (c.name.clone(), crate::refs::resolve(all, &c.value)))
         .collect()
 }
 
@@ -169,7 +169,7 @@ mod tests {
             ],
             ..Entry::default()
         };
-        let vars = fields_as_env(&e);
+        let vars = fields_as_env(&e, &[]);
         assert_eq!(vars.len(), 1);
         assert_eq!(vars[0].0, "AWS_ACCESS_KEY_ID");
     }

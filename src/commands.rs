@@ -236,11 +236,11 @@ pub fn show(global: &Global, entry: &str, reveal: bool, json: bool) -> Result<()
 pub fn get(global: &Global, entry: &str, field: &str, clip: bool) -> Result<()> {
     let db = open(global)?;
     let e = select::select(&db.entries, entry)?;
-    let value = field_of(e, field)?;
+    let value = crate::refs::resolve(&db.entries, field_of(e, field)?);
     if clip {
-        copy_and_tell(value)
+        copy_and_tell(&value)
     } else {
-        output::print(&format!("{value}\n"))
+        output::print(&format!("{}\n", value.as_str()))
     }
 }
 
@@ -288,7 +288,7 @@ pub fn run(global: &Global, specs: &[String], from: &[String], command: &[String
     let mut vars = Vec::new();
     for name in from {
         let e = select::select(&db.entries, name)?;
-        let fields = crate::run::fields_as_env(e);
+        let fields = crate::run::fields_as_env(e, &db.entries);
         if fields.is_empty() {
             anyhow::bail!(
                 "{}: no custom fields named like environment variables",
@@ -477,7 +477,7 @@ pub fn open_url(global: &Global, entry: &str, no_copy: bool) -> Result<()> {
     browser::open(&url)?;
     output::notice(&format!("Opened {url}"));
     if !no_copy && !e.password.is_empty() {
-        copy_and_tell(&e.password)?;
+        copy_and_tell(&crate::refs::resolve(&db.entries, &e.password))?;
     }
     Ok(())
 }
@@ -520,7 +520,11 @@ pub fn pick(global: &Global, args: &PickArgs) -> Result<()> {
     let value = Zeroizing::new(if args.otp {
         totp_of(e)?.now().0
     } else {
-        field_of(e, args.field.as_deref().unwrap_or("password"))?.to_string()
+        crate::refs::resolve(
+            &db.entries,
+            field_of(e, args.field.as_deref().unwrap_or("password"))?,
+        )
+        .to_string()
     });
     if args.print {
         output::print(&format!("{}\n", value.as_str()))
@@ -613,7 +617,7 @@ pub fn git_credential(global: &Global, action: &str) -> Result<()> {
     };
     let found = crate::gitcred::matches(&db.entries, &req);
     match found.as_slice() {
-        [one] => output::print(&crate::gitcred::answer(one)),
+        [one] => output::print(&crate::gitcred::answer(one, &db.entries)),
         [] => Ok(()),
         many => {
             eprintln!(

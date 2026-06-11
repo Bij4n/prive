@@ -964,3 +964,26 @@ fn otp_uri_and_qr() {
     assert!(qr.lines().count() > 10 && qr.contains('█'));
     prive(&["otp", "Bank", "--qr", "--json"]).assert().code(2);
 }
+
+#[test]
+fn field_references_are_resolved_wherever_a_value_is_used() {
+    prive(&["get", "Old VPN", "-f", "BANK_PASSWORD"])
+        .assert()
+        .success()
+        .stdout("b4nk-P@ss-2026!\n");
+    #[cfg(unix)]
+    prive(&[
+        "run",
+        "--from",
+        "Old VPN",
+        "--",
+        "sh",
+        "-c",
+        r#"printf %s "$BANK_PASSWORD""#,
+    ])
+    .assert()
+    .stdout("b4nk-P@ss-2026!");
+    prive(&["run", "-e", "X=Old VPN:BANK_PASSWORD", "--", "true"])
+        .assert()
+        .success();
+}
