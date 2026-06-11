@@ -881,3 +881,69 @@ fn every_command_with_json_prints_valid_json() {
             .unwrap_or_else(|e| panic!("{args:?}: {e}"));
     }
 }
+
+/// The real thing: `git credential fill` with prive as the helper.
+#[test]
+fn git_gets_its_password_from_prive() {
+    if std::process::Command::new("git")
+        .arg("--version")
+        .output()
+        .is_err()
+    {
+        eprintln!("git not installed; skipping");
+        return;
+    }
+    let dir = tempfile::tempdir().unwrap();
+    let pwfile = dir.path().join("pw");
+    std::fs::write(&pwfile, "fixture-pass\n").unwrap();
+    let prive_bin = assert_cmd::cargo::cargo_bin("prive");
+    let helper = format!(
+        "!'{}' --db '{}' --no-agent git-credential",
+        prive_bin.display(),
+        fixture("kdbx41.kdbx").display()
+    );
+    let mut git = std::process::Command::new("git")
+        .args([
+            "-c",
+            "credential.helper=",
+            "-c",
+            &format!("credential.helper={helper}"),
+        ])
+        .args(["credential", "fill"])
+        .env("PRIVE_CONFIG", fixture("no-such-config.toml"))
+        .env("PRIVE_PASSWORD_FILE", &pwfile)
+        .env("GIT_TERMINAL_PROMPT", "0")
+        .env("HOME", dir.path())
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .unwrap();
+    {
+        use std::io::Write;
+        git.stdin
+            .take()
+            .unwrap()
+            .write_all(b"protocol=https\nhost=github.com\n\n")
+            .unwrap();
+    }
+    let out = git.wait_with_output().unwrap();
+    let text = String::from_utf8_lossy(&out.stdout);
+    assert!(
+        text.contains("username=demo"),
+        "{text}\n{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    assert!(text.contains("password=gh-Secret-1"), "{text}");
+}
+
+#[test]
+fn git_credential_store_and_erase_change_nothing() {
+    for action in ["store", "erase"] {
+        prive(&["git-credential", action])
+            .write_stdin("protocol=https\nhost=github.com\nusername=x\npassword=y\n\n")
+            .assert()
+            .success()
+            .stdout(predicate::str::is_empty());
+    }
+}
