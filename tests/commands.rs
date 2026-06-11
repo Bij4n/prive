@@ -1043,3 +1043,24 @@ fn audit_expiring_on_the_fixture() {
         .stdout(predicate::str::contains("Old VPN\n  - expired"))
         .stdout(predicate::str::contains("expires in").not());
 }
+
+#[test]
+fn ls_json_has_dates_and_attachment_counts() {
+    let out = prive(&["ls", "--json"]).output().unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    let gh = v
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|e| e["path"] == "Work/GitHub")
+        .unwrap();
+    assert_eq!(gh["attachments"], 1);
+    assert!(gh["modified"].as_str().unwrap().len() == 19);
+    let vpn = v
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|e| e["path"] == "Old VPN")
+        .unwrap();
+    assert_eq!(vpn["expires"], "2025-01-01T00:00:00");
+}

@@ -88,6 +88,10 @@ pub struct Summary {
     pub tags: Vec<String>,
     pub uuid: String,
     pub has_otp: bool,
+    /// `2026-05-01T14:03:00`, when the file records it.
+    pub modified: Option<String>,
+    pub expires: Option<String>,
+    pub attachments: usize,
 }
 
 /// Sort by path, ignoring case, the order listings use.
@@ -157,6 +161,13 @@ impl Entry {
             tags: self.tags.clone(),
             uuid: self.uuid.clone(),
             has_otp: crate::otp::Totp::from_entry(self).is_some(),
+            modified: self
+                .modified
+                .map(|t| t.format("%Y-%m-%dT%H:%M:%S").to_string()),
+            expires: self
+                .expires
+                .map(|t| t.format("%Y-%m-%dT%H:%M:%S").to_string()),
+            attachments: self.attachments.len(),
         }
     }
 
