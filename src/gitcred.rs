@@ -172,4 +172,22 @@ password=gl-pw
         assert_eq!(m.len(), 1);
         assert_eq!(m[0].title, "home");
     }
+
+    #[test]
+    fn urls_split_into_their_parts() {
+        assert_eq!(
+            split_url("https://user@Git.Example.invalid:8443/org/repo"),
+            Some((
+                "https".into(),
+                "git.example.invalid:8443".into(),
+                "org/repo".into()
+            ))
+        );
+        assert_eq!(
+            split_url("github.com"),
+            Some((String::new(), "github.com".into(), String::new()))
+        );
+        assert_eq!(split_url("  "), None);
+        assert_eq!(split_url("https:///nohost"), None);
+    }
 }
