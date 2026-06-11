@@ -603,6 +603,66 @@ fn one_generated(args: &GenArgs) -> Result<generate::Generated> {
     })
 }
 
+/// The settings in effect: where the config file is, which database and key file a command
+/// would open (and why), the clipboard and agent timeouts, and where the agent's socket is.
+pub fn show_config(global: &Global, json: bool) -> Result<()> {
+    let path = config::Config::path();
+    let cfg = config::Config::load()?;
+    let (db, db_from) = match (&global.db, &cfg.db) {
+        (Some(d), _) if std::env::var_os("PRIVE_DB").is_some_and(|v| v == d.as_os_str()) => {
+            (Some(d.clone()), "PRIVE_DB")
+        }
+        (Some(d), _) => (Some(d.clone()), "--db"),
+        (None, Some(_)) => (cfg.target(None, None).ok().map(|t| t.db), "config file"),
+        (None, None) => (None, "not set"),
+    };
+    let keyfile = cfg
+        .target(global.db.as_deref(), global.keyfile.as_deref())
+        .ok()
+        .and_then(|t| t.keyfile);
+    #[cfg(unix)]
+    let agent_dir = Some(crate::agent::dir::agent_dir());
+    #[cfg(not(unix))]
+    let agent_dir: Option<std::path::PathBuf> = None;
+    if json {
+        return output::print_json(&serde_json::json!({
+            "config_file": path,
+            "config_file_exists": path.as_ref().is_some_and(|p| p.exists()),
+            "database": db,
+            "database_from": db_from,
+            "keyfile": keyfile,
+            "clipboard_seconds": cfg.clipboard_seconds(),
+            "agent_minutes": cfg.agent_idle().as_secs() / 60,
+            "agent_dir": agent_dir,
+        }));
+    }
+    let show = |p: &Option<std::path::PathBuf>| {
+        p.as_ref()
+            .map(|p| p.display().to_string())
+            .unwrap_or_else(|| "-".into())
+    };
+    let exists = if path.as_ref().is_some_and(|p| p.exists()) {
+        ""
+    } else {
+        " (doesn't exist)"
+    };
+    let text = format!(
+        "config file:       {}{exists}\n\
+         database:          {} ({db_from})\n\
+         key file:          {}\n\
+         clipboard clears:  after {} s\n\
+         agent locks:       after {} min unused\n\
+         agent directory:   {}\n",
+        show(&path),
+        show(&db),
+        show(&keyfile),
+        cfg.clipboard_seconds(),
+        cfg.agent_idle().as_secs() / 60,
+        show(&agent_dir),
+    );
+    output::print(&text)
+}
+
 /// Answer git's credential request from stdin. Never an error that stops git: anything that
 /// goes wrong (locked, nothing fits, several fit) is said on stderr, and git carries on with
 /// its next helper or its own prompt.

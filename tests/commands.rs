@@ -995,3 +995,30 @@ fn show_reveal_resolves_references() {
         .stdout(predicate::str::contains("BANK_PASSWORD: b4nk-P@ss-2026!"))
         .stdout(predicate::str::contains("{REF:").not());
 }
+
+#[test]
+fn config_shows_what_is_in_effect() {
+    let dir = tempfile::tempdir().unwrap();
+    let cfg = dir.path().join("config.toml");
+    std::fs::write(&cfg, "db = \"/srv/p.kdbx\"\nclipboard_seconds = 9\n").unwrap();
+    let out = Command::cargo_bin("prive")
+        .unwrap()
+        .env("PRIVE_CONFIG", &cfg)
+        .env_remove("PRIVE_DB")
+        .args(["config", "--json"])
+        .output()
+        .unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert_eq!(v["database"], "/srv/p.kdbx");
+    assert_eq!(v["database_from"], "config file");
+    assert_eq!(v["clipboard_seconds"], 9);
+    assert_eq!(v["agent_minutes"], 15);
+    Command::cargo_bin("prive")
+        .unwrap()
+        .env("PRIVE_CONFIG", &cfg)
+        .args(["--db", "/tmp/other.kdbx", "config"])
+        .assert()
+        .stdout(predicate::str::contains(
+            "database:          /tmp/other.kdbx (--db)",
+        ));
+}

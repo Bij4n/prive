@@ -237,6 +237,12 @@ pub enum Command {
     /// Generate a password, passphrase or PIN (no database needed)
     Gen(GenArgs),
 
+    /// Show the settings in effect and where each came from
+    Config {
+        #[arg(long)]
+        json: bool,
+    },
+
     /// Git credential helper: git config --global credential.helper '!prive git-credential'
     #[command(name = "git-credential")]
     GitCredential {
