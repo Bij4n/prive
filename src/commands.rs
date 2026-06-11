@@ -564,6 +564,47 @@ fn one_generated(args: &GenArgs) -> Result<generate::Generated> {
     })
 }
 
+/// Answer git's credential request from stdin. Never an error that stops git: anything that
+/// goes wrong (locked, nothing fits, several fit) is said on stderr, and git carries on with
+/// its next helper or its own prompt.
+pub fn git_credential(global: &Global, action: &str) -> Result<()> {
+    use std::io::Read;
+    let mut input = Zeroizing::new(String::new());
+    std::io::stdin().read_to_string(&mut input)?;
+    if action != "get" {
+        return Ok(()); // store / erase: prive doesn't write the database
+    }
+    let req = crate::gitcred::parse_request(&input);
+    if req.host.is_empty() {
+        return Ok(());
+    }
+    let db = match open(global) {
+        Ok(db) => db,
+        Err(e) => {
+            if matches!(e.downcast_ref::<Failure>(), Some(Failure::NoTerminal)) {
+                eprintln!("prive: run `prive unlock` so git can use your passwords");
+            } else {
+                eprintln!("prive: {e:#}");
+            }
+            return Ok(());
+        }
+    };
+    let found = crate::gitcred::matches(&db.entries, &req);
+    match found.as_slice() {
+        [one] => output::print(&crate::gitcred::answer(one)),
+        [] => Ok(()),
+        many => {
+            eprintln!(
+                "prive: {} entries fit {}; set the username in the remote URL to choose: {}",
+                many.len(),
+                req.host,
+                many.iter().map(|e| e.path()).collect::<Vec<_>>().join(", ")
+            );
+            Ok(())
+        }
+    }
+}
+
 pub fn completions(shell: clap_complete::Shell) -> Result<()> {
     let mut cmd = <crate::cli::Cli as clap::CommandFactory>::command();
     let mut out = Vec::new();

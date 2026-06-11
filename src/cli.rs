@@ -230,6 +230,14 @@ pub enum Command {
     /// Generate a password, passphrase or PIN (no database needed)
     Gen(GenArgs),
 
+    /// Git credential helper: git config --global credential.helper '!prive git-credential'
+    #[command(name = "git-credential")]
+    GitCredential {
+        /// What git asks: get (answered), store and erase (ignored: prive never writes)
+        #[arg(value_parser = ["get", "store", "erase"])]
+        action: String,
+    },
+
     /// Print shell completions (bash, zsh, fish, elvish, powershell)
     Completions {
         #[arg(value_enum)]

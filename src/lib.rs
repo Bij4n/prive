@@ -118,6 +118,7 @@ fn dispatch(cli: Cli) -> Result<()> {
             json,
         } => commands::audit(g, *hibp, *max_age, *json),
         Command::Gen(args) => commands::generate(args),
+        Command::GitCredential { action } => commands::git_credential(g, action),
         Command::Completions { shell } => commands::completions(*shell),
     }
 }
