@@ -21,6 +21,9 @@ cargo fmt --check
 The test databases in `tests/fixtures/` are made by KeePassXC from `source.xml`; rebuild them
 with `tests/fixtures/make.sh` (needs `keepassxc-cli`). Never commit real data.
 
+Documentation lives in `docs/`, with an index in `docs/README.md`. A new page goes in the
+index; `tests/docs.rs` fails when a link between pages points at a file that does not exist.
+
 ## Ground rules
 
 - stdout is for results only; prompts, notices and errors go to stderr.
