@@ -169,6 +169,7 @@ pub fn ls(
     group: Option<&str>,
     tags: &[String],
     long: bool,
+    paths: bool,
     json: bool,
 ) -> Result<()> {
     let db = open(global)?;
@@ -183,6 +184,10 @@ pub fn ls(
     }
     if long {
         return output::print(&output::render_long_list(&shown));
+    }
+    if paths {
+        let text: String = shown.iter().map(|e| format!("{}\n", e.path())).collect();
+        return output::print(&text);
     }
     list(&shown, json)
 }

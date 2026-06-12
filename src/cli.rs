@@ -202,6 +202,9 @@ pub enum Command {
         /// Also show when each changed, and whether it has a code, files or has expired
         #[arg(short, long, conflicts_with = "json")]
         long: bool,
+        /// Only the paths, one per line (for shell completion and fzf)
+        #[arg(short = 'p', long, conflicts_with_all = ["json", "long"])]
+        paths: bool,
         #[arg(long)]
         json: bool,
     },

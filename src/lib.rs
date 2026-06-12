@@ -80,8 +80,9 @@ fn dispatch(cli: Cli) -> Result<()> {
             group,
             tags,
             long,
+            paths,
             json,
-        } => commands::ls(g, group.as_deref(), tags, *long, *json),
+        } => commands::ls(g, group.as_deref(), tags, *long, *paths, *json),
         Command::Search { query, all, json } => commands::search(g, query, *all, *json),
         Command::Tags { json } => commands::tags(g, *json),
         Command::Show {

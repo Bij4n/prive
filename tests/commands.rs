@@ -1064,3 +1064,12 @@ fn ls_json_has_dates_and_attachment_counts() {
         .unwrap();
     assert_eq!(vpn["expires"], "2025-01-01T00:00:00");
 }
+
+#[test]
+fn ls_paths_prints_only_paths() {
+    let out = prive(&["ls", "--paths", "Work"]).output().unwrap();
+    assert_eq!(
+        String::from_utf8(out.stdout).unwrap(),
+        "Work/Cloud/Steam\nWork/GitHub\n"
+    );
+}
