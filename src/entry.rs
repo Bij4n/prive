@@ -289,6 +289,24 @@ mod tests {
     }
 
     #[test]
+    fn debug_output_hides_attachment_bytes_and_old_passwords() {
+        let mut e = sample();
+        e.attachments = vec![Attachment {
+            name: "id_ed25519".into(),
+            data: Zeroizing::new(b"PRIVATE-KEY-BYTES".to_vec()),
+        }];
+        e.history = vec![Version {
+            modified: None,
+            username: "ops".into(),
+            password: Zeroizing::new("old-s3cret".into()),
+        }];
+        let shown = format!("{e:?} {:?}", e.history);
+        assert!(shown.contains("id_ed25519 (17 bytes)"));
+        assert!(!shown.contains("PRIVATE-KEY-BYTES"));
+        assert!(!shown.contains("old-s3cret"));
+    }
+
+    #[test]
     fn entries_take_part_in_reports_by_default() {
         assert!(Entry::default().quality_check);
     }
