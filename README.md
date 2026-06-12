@@ -74,7 +74,7 @@ prive run -e GITHUB_TOKEN=Work/GitHub:token -- gh repo list
 prive run --from Work/AWS -- aws s3 ls
 ```
 
-More in [`docs/`](docs/): [scripting](docs/scripting.md), [exit codes](docs/exit-codes.md),
+Everything else is in the [documentation index](docs/README.md), including [scripting](docs/scripting.md), [exit codes](docs/exit-codes.md),
 [one-time codes](docs/totp.md), [clipboard](docs/clipboard.md),
 [configuration](docs/config.md), [KeePass compatibility](docs/keepass-compatibility.md),
 [security](docs/security.md), [design](docs/design.md),
