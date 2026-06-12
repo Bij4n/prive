@@ -136,6 +136,40 @@ fn keepassxc_reads_the_fixtures_we_test_against() {
     assert!(kf.contains("Key file entry"));
 }
 
+/// `prive ls --paths` lists the same entries as `keepassxc-cli ls -R -f`, in every format,
+/// once KeePassXC's group lines and recycle bin are set aside.
+#[test]
+fn listings_match_keepassxc() {
+    if !available() {
+        return;
+    }
+    for f in ["kdbx31.kdbx", "kdbx40.kdbx", "kdbx41.kdbx"] {
+        let ours = assert_cmd::Command::cargo_bin("prive")
+            .unwrap()
+            .env("PRIVE_CONFIG", fixture("no-such-config.toml"))
+            .env("PRIVE_NO_AGENT", "1")
+            .args(["--db", &fixture(f), "--password-stdin", "ls", "--paths"])
+            .write_stdin(format!("{PASSWORD}\n"))
+            .output()
+            .unwrap();
+        assert!(ours.status.success(), "{f}");
+        let mut ours: Vec<String> = String::from_utf8_lossy(&ours.stdout)
+            .lines()
+            .map(str::to_string)
+            .collect();
+        let theirs = keepassxc(&["ls", "-q", "-R", "-f", &fixture(f)]).unwrap();
+        let mut theirs: Vec<String> = theirs
+            .lines()
+            .map(str::trim)
+            .filter(|l| !l.ends_with('/') && !l.starts_with("Recycle Bin/"))
+            .map(str::to_string)
+            .collect();
+        ours.sort();
+        theirs.sort();
+        assert_eq!(ours, theirs, "{f}");
+    }
+}
+
 /// `prive otp` and `keepassxc-cli show -t` agree on every entry with a code, read from the
 /// same file.
 #[test]
