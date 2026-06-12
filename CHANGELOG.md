@@ -23,7 +23,9 @@ The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `l
 - KeePass field references (`{REF:P@I:...}` and friends) are resolved wherever a value is
   used, the same way KeePassXC resolves them; `audit` counts a shared password once
 - `prive config`: the settings in effect and where each came from
-- `audit --expiring DAYS`; `otp --next`
+- `audit --expiring DAYS`; `otp --next`; `ls --paths`; `ls --json` has dates and attachment
+  counts; `pick` shows each entry's site
+- `docs/shell.md`: entry-name completion for bash and zsh, short functions, fzf
 - A 5,000-entry scale test on every CI run, and `docs/performance.md`
 - `prive git-credential`: git's credential helper, answering HTTPS remotes from the entry
   whose URL has their host
