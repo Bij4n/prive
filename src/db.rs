@@ -292,6 +292,35 @@ mod tests {
     }
 
     #[test]
+    fn every_fixture_format_keeps_fields_tags_files_and_history() {
+        let shape = |f: &str| -> Vec<String> {
+            let db = Db::open(&fixture(f), &creds("fixture-pass")).unwrap();
+            db.entries
+                .iter()
+                .map(|e| {
+                    let custom: Vec<String> = e
+                        .custom
+                        .iter()
+                        .map(|c| format!("{}={}:{}", c.name, *c.value, c.protected))
+                        .collect();
+                    format!(
+                        "{} {} {:?} {:?} {:?} {}",
+                        e.path(),
+                        *e.password,
+                        custom,
+                        e.tags,
+                        e.attachment_names(),
+                        e.history.len()
+                    )
+                })
+                .collect()
+        };
+        let v41 = shape("kdbx41.kdbx");
+        assert_eq!(shape("kdbx31.kdbx"), v41);
+        assert_eq!(shape("kdbx40.kdbx"), v41);
+    }
+
+    #[test]
     fn key_file_databases_need_the_key_file() {
         let with = Credentials {
             password: Some(Zeroizing::new("fixture-pass".into())),
