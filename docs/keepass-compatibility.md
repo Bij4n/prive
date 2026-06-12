@@ -23,12 +23,15 @@ binary or hashed), or both. Hardware keys (YubiKey challenge-response) are not s
 ## What prive reads
 
 Title, username, password, URL, notes, tags, custom fields (with their "protected" flag),
-attachment names, modification and expiry times, the "exclude from reports" flag, and
+attachments, earlier versions (history), modification and expiry times, the "exclude from
+reports" flag, and
 two-factor secrets in every format KeePass apps store them (see [totp.md](totp.md)).
 Entries in the recycle bin are left out. Field references (`{REF:P@I:...}`) are resolved
 when a value is used; see [references.md](references.md).
 
 ## Tested against
 
-The test suite opens databases written by KeePassXC itself (`tests/fixtures/`), and CI
-compares prive's one-time codes with `keepassxc-cli`'s for the same entries.
+The test suite opens databases written by KeePassXC itself (`tests/fixtures/`): the same
+entries saved as KDBX 3.1, 4.0 and 4.1 must read back identically, field for field, including
+tags, attachments and history. CI also compares prive's one-time codes, field references and
+listings with `keepassxc-cli`'s for the same databases, up to five thousand entries.
