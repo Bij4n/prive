@@ -27,6 +27,7 @@ pub mod qr;
 pub mod refs;
 pub mod run;
 pub mod select;
+pub mod template;
 pub mod unlock;
 
 use std::process::ExitCode;
