@@ -1073,3 +1073,40 @@ fn ls_paths_prints_only_paths() {
         "Work/Cloud/Steam\nWork/GitHub\n"
     );
 }
+
+#[test]
+fn info_describes_the_file() {
+    prive(&["info"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Format:       KDBX 4.1"))
+        .stdout(predicate::str::contains(
+            "Key:          AES-KDF, 1000000 rounds",
+        ))
+        .stdout(predicate::str::contains(
+            "Contents:     7 entries in 3 groups, 1 in the recycle bin",
+        ))
+        .stdout(predicate::str::contains("Key changed:  2026-05-26"));
+}
+
+#[test]
+fn info_json() {
+    let out = prive(&["info", "--json"]).output().unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert_eq!(v["format"], "KDBX 4.1");
+    assert_eq!(v["entries"], 7);
+    assert_eq!(v["kdf"]["algorithm"], "AES-KDF");
+    assert!(v["size"].as_u64().unwrap() > 0);
+    assert!(v["path"].as_str().unwrap().ends_with("kdbx41.kdbx"));
+}
+
+#[test]
+fn audit_reports_the_database_settings_first() {
+    let out = prive(&["audit"]).output().unwrap();
+    let text = String::from_utf8(out.stdout).unwrap();
+    assert!(text.starts_with("This database\n  - the key is derived with AES-KDF"));
+    let out = prive(&["audit", "--json"]).output().unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert_eq!(v["database"][0]["kind"], "aes_kdf");
+    assert_eq!(v["database"][0]["rounds"], 1_000_000);
+}
