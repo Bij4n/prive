@@ -51,7 +51,11 @@ pub fn resolve(entries: &[Entry], spec: &EnvSpec) -> Result<Zeroizing<String>> {
         && let Ok(e) = select::select(entries, entry)
     {
         let value = e.field(field).ok_or_else(|| {
-            Failure::NotFound(format!("{}: field '{field}' (for {})", e.path(), spec.name))
+            Failure::Missing(format!(
+                "{}: no field '{field}' (for {})",
+                e.path(),
+                spec.name
+            ))
         })?;
         return Ok(crate::refs::resolve(entries, value));
     }

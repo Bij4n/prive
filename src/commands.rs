@@ -134,8 +134,8 @@ fn copy_and_tell(secret: &str) -> Result<()> {
 
 fn field_of<'a>(e: &'a Entry, name: &str) -> Result<&'a str> {
     e.field(name).ok_or_else(|| {
-        Failure::NotFound(format!(
-            "{}: field '{name}' (it has: {})",
+        Failure::Missing(format!(
+            "{}: no field '{name}' (it has: {})",
             e.path(),
             e.field_names().join(", ")
         ))
@@ -153,7 +153,7 @@ fn totp_of(e: &Entry) -> Result<otp::Totp> {
             e.path()
         );
     }
-    Err(Failure::NotFound(format!("{}: no one-time code", e.path())).into())
+    Err(Failure::Missing(format!("{}: no one-time code", e.path())).into())
 }
 
 fn list(entries: &[&Entry], json: bool) -> Result<()> {
@@ -181,7 +181,7 @@ pub fn ls(
     if let Some(g) = group
         && shown.is_empty()
     {
-        return Err(Failure::NotFound(format!("group '{g}'")).into());
+        return Err(Failure::Missing(format!("no group '{g}'")).into());
     }
     if long {
         return output::print(&output::render_long_list(&shown));
@@ -381,7 +381,7 @@ pub fn codes(global: &Global, query: Option<&str>, json: bool) -> Result<()> {
         .map(|(path, (code, left))| (path, code, left))
         .collect();
     if rows.is_empty() {
-        return Err(Failure::NotFound("entries with one-time codes".into()).into());
+        return Err(Failure::Missing("no entries with one-time codes".into()).into());
     }
     if json {
         let list: Vec<_> = rows
@@ -478,7 +478,7 @@ pub fn file(
                 .find(|a| a.name.eq_ignore_ascii_case(name))
         })
         .ok_or_else(|| {
-            Failure::NotFound(format!(
+            Failure::Missing(format!(
                 "{}: no file '{name}' (it has: {})",
                 e.path(),
                 e.attachment_names().join(", ")

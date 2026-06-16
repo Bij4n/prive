@@ -46,8 +46,8 @@ fn value(name: &str, entry: &Entry, all: &[Entry]) -> anyhow::Result<Option<Zero
     let resolved = |v: &str| Some(crate::refs::resolve(all, v));
     if let Some(field) = name.strip_prefix("S:").or_else(|| name.strip_prefix("s:")) {
         let Some(c) = entry.custom.iter().find(|c| c.name == field) else {
-            return Err(Failure::NotFound(format!(
-                "{}: field '{field}' (it has: {})",
+            return Err(Failure::Missing(format!(
+                "{}: no field '{field}' (it has: {})",
                 entry.path(),
                 entry.field_names().join(", ")
             ))
@@ -63,9 +63,7 @@ fn value(name: &str, entry: &Entry, all: &[Entry]) -> anyhow::Result<Option<Zero
         "NOTES" => resolved(&entry.notes),
         "TOTP" => {
             let Some(t) = crate::otp::Totp::from_entry(entry) else {
-                return Err(
-                    Failure::NotFound(format!("{}: no one-time code", entry.path())).into(),
-                );
+                return Err(Failure::Missing(format!("{}: no one-time code", entry.path())).into());
             };
             Some(Zeroizing::new(t.now().0))
         }
@@ -124,7 +122,7 @@ mod tests {
         let err = render("{S:api key}", &all[0], &all).err().unwrap();
         assert!(matches!(
             err.downcast_ref::<Failure>(),
-            Some(Failure::NotFound(_))
+            Some(Failure::Missing(_))
         ));
     }
 

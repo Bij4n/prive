@@ -145,7 +145,7 @@ impl Config {
             && !d.exists()
         {
             let names: Vec<&str> = self.databases.keys().map(String::as_str).collect();
-            return Err(crate::error::Failure::NotFound(format!(
+            return Err(crate::error::Failure::Missing(format!(
                 "no database '{}': no such file, and the config file names {}",
                 d.display(),
                 names.join(", ")
@@ -329,7 +329,7 @@ mod tests {
         let err = cfg.target(Some(Path::new("wrok")), None).unwrap_err();
         assert!(matches!(
             err.downcast_ref::<crate::error::Failure>(),
-            Some(crate::error::Failure::NotFound(_))
+            Some(crate::error::Failure::Missing(_))
         ));
         assert!(err.to_string().contains("home, work"), "{err}");
         // Without named databases, a missing file is reported when it is opened, as before.

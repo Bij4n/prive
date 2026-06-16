@@ -134,7 +134,8 @@ fn get_prints_exactly_one_value() {
         .assert()
         .code(3)
         .stdout(predicate::str::is_empty())
-        .stderr(predicate::str::contains("field 'nope'"));
+        .stderr(predicate::str::contains("Work/GitHub: no field 'nope'"))
+        .stderr(predicate::str::contains("no entry matches").not());
 }
 
 #[test]

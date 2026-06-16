@@ -10,6 +10,11 @@ pub enum Failure {
     #[error("no entry matches '{0}'")]
     NotFound(String),
 
+    /// Something other than an entry isn't there: a field, a file, a code, a group. The
+    /// message says what, in full.
+    #[error("{0}")]
+    Missing(String),
+
     /// Like `NotFound`, with entry paths that look like what was meant.
     #[error("no entry matches '{query}'")]
     NoSuchEntry { query: String, close: Vec<String> },
@@ -36,7 +41,7 @@ pub enum Failure {
 impl Failure {
     pub fn exit_code(&self) -> u8 {
         match self {
-            Failure::NotFound(_) | Failure::NoSuchEntry { .. } => 3,
+            Failure::NotFound(_) | Failure::Missing(_) | Failure::NoSuchEntry { .. } => 3,
             Failure::Ambiguous { .. } => 4,
             Failure::BadCredentials | Failure::NoTerminal => 5,
             // What shells and fzf use for an interrupted command, so `$(prive pick --print)`
@@ -81,6 +86,7 @@ mod tests {
     #[test]
     fn exit_codes_are_stable() {
         assert_eq!(Failure::NotFound("x".into()).exit_code(), 3);
+        assert_eq!(Failure::Missing("x".into()).exit_code(), 3);
         let amb = Failure::Ambiguous {
             query: "x".into(),
             candidates: vec!["a".into(), "b".into()],
@@ -96,6 +102,11 @@ mod tests {
         assert_eq!(
             Failure::NotFound("Work/Gitlab".into()).to_string(),
             "no entry matches 'Work/Gitlab'"
+        );
+        // A missing field is not a missing entry: the message is said as it is.
+        assert_eq!(
+            Failure::Missing("Bank: no field 'pin' (it has: title)".into()).to_string(),
+            "Bank: no field 'pin' (it has: title)"
         );
         let amb = Failure::Ambiguous {
             query: "GitHub".into(),
