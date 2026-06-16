@@ -154,18 +154,23 @@ fn get_clip_copies_and_prints_nothing() {
 
 #[test]
 fn otp_prints_a_code_of_the_right_shape() {
-    for (entry, len, digits) in [
-        ("Work/GitHub", 6, true),
-        ("Bank", 8, true),
-        ("Work/Cloud/Steam", 5, false),
-        ("Personal/Legacy 2FA", 6, true),
+    // Steam codes come from 26 letters and digits; now and then one is all digits.
+    const STEAM: &str = "23456789BCDFGHJKMNPQRTVWXY";
+    for (entry, len, alphabet) in [
+        ("Work/GitHub", 6, "0123456789"),
+        ("Bank", 8, "0123456789"),
+        ("Work/Cloud/Steam", 5, STEAM),
+        ("Personal/Legacy 2FA", 6, "0123456789"),
     ] {
         let out = prive(&["otp", entry]).output().unwrap();
         assert!(out.status.success(), "{entry}");
         let code = String::from_utf8(out.stdout).unwrap();
         let code = code.trim_end();
         assert_eq!(code.len(), len, "{entry}");
-        assert_eq!(code.chars().all(|c| c.is_ascii_digit()), digits, "{entry}");
+        assert!(
+            code.chars().all(|c| alphabet.contains(c)),
+            "{entry}: {code}"
+        );
     }
     prive(&["otp", "Wi-Fi"])
         .assert()
