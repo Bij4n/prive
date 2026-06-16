@@ -58,17 +58,23 @@ fn same_host(a: &str, b: &str) -> bool {
     a.trim_start_matches("www.") == b.trim_start_matches("www.")
 }
 
-/// The entries that fit a request. More than one fit only when git sent a path that tells
-/// them apart (`credential.useHttpPath`).
+/// The entries that fit a request, by their URL or any of their extra ones (KeePassXC's
+/// `KP2A_URL` fields). More than one fit only when git sent a path that tells them apart
+/// (`credential.useHttpPath`).
 pub fn matches<'a>(entries: &'a [Entry], req: &Request) -> Vec<&'a Entry> {
     let fits: Vec<(&Entry, String)> = entries
         .iter()
-        .filter_map(|e| split_url(&e.url).map(|parts| (e, parts)))
-        .filter(|(_, (scheme, host, _))| {
-            same_host(host, &req.host) && (scheme.is_empty() || *scheme == req.protocol)
+        .filter(|e| req.username.is_empty() || e.username == req.username)
+        .filter_map(|e| {
+            // The first of the entry's addresses that fits, for its path.
+            e.urls()
+                .into_iter()
+                .filter_map(split_url)
+                .find(|(scheme, host, _)| {
+                    same_host(host, &req.host) && (scheme.is_empty() || *scheme == req.protocol)
+                })
+                .map(|(_, _, path)| (e, path))
         })
-        .filter(|(e, _)| req.username.is_empty() || e.username == req.username)
-        .map(|(e, (_, _, path))| (e, path))
         .collect();
     if fits.len() > 1 && !req.path.is_empty() {
         let by_path: Vec<&Entry> = fits
@@ -154,6 +160,25 @@ mod tests {
 password=gl-pw
 "
         );
+    }
+
+    #[test]
+    fn an_extra_url_fits_too() {
+        let mut gh = entry("gh", "https://github.com", "demo");
+        gh.custom = vec![crate::entry::CustomField {
+            name: "KP2A_URL_1".into(),
+            value: Zeroizing::new("https://git.example.invalid".into()),
+            protected: false,
+        }];
+        let e = vec![gh, entry("other", "https://example.invalid", "x")];
+        let r = Request {
+            protocol: "https".into(),
+            host: "git.example.invalid".into(),
+            ..Request::default()
+        };
+        let found = matches(&e, &r);
+        assert_eq!(found.len(), 1);
+        assert_eq!(found[0].title, "gh");
     }
 
     #[test]
