@@ -4,9 +4,14 @@ use std::fs::File;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
+use chrono::NaiveDateTime;
+use keepass::config::{
+    CompressionConfig, DatabaseConfig, InnerCipherConfig, KdfConfig, OuterCipherConfig,
+};
 use keepass::db::{GroupRef, fields};
 use keepass::error::{CryptographyError, DatabaseKeyError, DatabaseOpenError};
 use keepass::{Database, DatabaseKey};
+use serde::{Deserialize, Serialize};
 use zeroize::Zeroizing;
 
 use crate::entry::{CustomField, Entry};
@@ -16,6 +21,128 @@ use crate::unlock::Credentials;
 pub struct Db {
     pub path: PathBuf,
     pub entries: Vec<Entry>,
+    pub info: Info,
+}
+
+/// How a database is stored and protected, and how much is in it. Nothing here is secret.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct Info {
+    /// `KDBX 4.1`, `KDBX 3.1`, ...
+    pub format: String,
+    pub cipher: String,
+    /// How protected fields (passwords) are encrypted inside the file.
+    pub inner_cipher: String,
+    pub kdf: Kdf,
+    pub compressed: bool,
+    /// The app that last saved the file, as it names itself (`KeePassXC`, `KeePassDX`, ...).
+    pub generator: Option<String>,
+    pub name: Option<String>,
+    /// Groups below the root, leaving out the recycle bin and what is in it.
+    pub groups: usize,
+    /// Entries waiting in the recycle bin.
+    pub recycled: usize,
+    pub key_changed: Option<NaiveDateTime>,
+}
+
+/// The key derivation settings: what makes each password guess slow.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct Kdf {
+    /// `Argon2id`, `Argon2d` or `AES-KDF`.
+    pub algorithm: String,
+    /// Argon2 passes, or AES-KDF rounds.
+    pub iterations: u64,
+    /// Argon2 only.
+    pub memory_kib: Option<u64>,
+    pub parallelism: Option<u32>,
+}
+
+impl Kdf {
+    fn from_config(c: &KdfConfig) -> Kdf {
+        match c {
+            KdfConfig::Aes { rounds } => Kdf {
+                algorithm: "AES-KDF".into(),
+                iterations: *rounds,
+                ..Kdf::default()
+            },
+            KdfConfig::Argon2 {
+                iterations,
+                memory,
+                parallelism,
+                ..
+            } => Kdf {
+                algorithm: "Argon2d".into(),
+                iterations: *iterations,
+                memory_kib: Some(*memory),
+                parallelism: Some(*parallelism),
+            },
+            KdfConfig::Argon2id {
+                iterations,
+                memory,
+                parallelism,
+                ..
+            } => Kdf {
+                algorithm: "Argon2id".into(),
+                iterations: *iterations,
+                memory_kib: Some(*memory),
+                parallelism: Some(*parallelism),
+            },
+            other => Kdf {
+                algorithm: format!("{other:?}"),
+                ..Kdf::default()
+            },
+        }
+    }
+
+    /// `Argon2id, 64 MiB, 10 passes, 2 threads` or `AES-KDF, 60000 rounds`.
+    pub fn describe(&self) -> String {
+        match self.memory_kib {
+            Some(kib) => format!(
+                "{}, {} MiB, {} passes, {} threads",
+                self.algorithm,
+                kib / 1024,
+                self.iterations,
+                self.parallelism.unwrap_or(1)
+            ),
+            None => format!("{}, {} rounds", self.algorithm, self.iterations),
+        }
+    }
+}
+
+fn describe_format(c: &DatabaseConfig) -> String {
+    // keepass prints `KDBX4.1`; KeePassXC's settings say `KDBX 4.1`.
+    c.version.to_string().replacen("KDBX", "KDBX ", 1)
+}
+
+fn describe_cipher(c: &OuterCipherConfig) -> String {
+    match c {
+        OuterCipherConfig::AES256 => "AES-256".into(),
+        OuterCipherConfig::Twofish => "Twofish".into(),
+        OuterCipherConfig::ChaCha20 => "ChaCha20".into(),
+        other => format!("{other:?}"),
+    }
+}
+
+fn describe_inner(c: &InnerCipherConfig) -> String {
+    match c {
+        InnerCipherConfig::Plain => "none".into(),
+        InnerCipherConfig::Salsa20 => "Salsa20".into(),
+        InnerCipherConfig::ChaCha20 => "ChaCha20".into(),
+        other => format!("{other:?}"),
+    }
+}
+
+/// Every entry in a group and the groups below it.
+fn count_entries(group: &GroupRef<'_>) -> usize {
+    group.entries().count() + group.groups().map(|g| count_entries(&g)).sum::<usize>()
+}
+
+/// Groups below `group`, not counting `skip` or anything inside it.
+fn count_groups(group: &GroupRef<'_>, skip: Option<keepass::db::GroupId>) -> usize {
+    group
+        .groups()
+        .filter(|g| Some(g.id()) != skip)
+        .map(|g| 1 + count_groups(&g, skip))
+        .sum()
 }
 
 /// Read a database file and check it is KeePass, before anyone is asked for a password.
@@ -65,9 +192,22 @@ impl Db {
         let mut entries = Vec::new();
         walk(&db.root(), "", recycle, &mut entries);
         crate::entry::sort_by_path(&mut entries);
+        let info = Info {
+            format: describe_format(&db.config),
+            cipher: describe_cipher(&db.config.outer_cipher_config),
+            inner_cipher: describe_inner(&db.config.inner_cipher_config),
+            kdf: Kdf::from_config(&db.config.kdf_config),
+            compressed: db.config.compression_config != CompressionConfig::None,
+            generator: db.meta.generator.clone().filter(|g| !g.is_empty()),
+            name: db.meta.database_name.clone().filter(|n| !n.is_empty()),
+            groups: count_groups(&db.root(), recycle),
+            recycled: db.recycle_bin().map(|g| count_entries(&g)).unwrap_or(0),
+            key_changed: db.meta.master_key_changed,
+        };
         Ok(Db {
             path: path.to_path_buf(),
             entries,
+            info,
         })
     }
 }
@@ -318,6 +458,45 @@ mod tests {
         let v41 = shape("kdbx41.kdbx");
         assert_eq!(shape("kdbx31.kdbx"), v41);
         assert_eq!(shape("kdbx40.kdbx"), v41);
+    }
+
+    #[test]
+    fn info_describes_how_each_fixture_is_stored() {
+        let v41 = Db::open(&fixture("kdbx41.kdbx"), &creds("fixture-pass")).unwrap();
+        assert_eq!(v41.info.format, "KDBX 4.1");
+        // keepassxc-cli's import keeps AES-KDF; its app picks Argon2id for new databases.
+        assert_eq!(v41.info.kdf.algorithm, "AES-KDF");
+        assert_eq!(v41.info.kdf.iterations, 1_000_000);
+        assert_eq!(v41.info.cipher, "AES-256");
+        assert!(v41.info.compressed);
+        // The import keeps the generator named in source.xml.
+        assert_eq!(v41.info.generator.as_deref(), Some("prive fixtures"));
+        assert_eq!(v41.info.name.as_deref(), Some("Fixture"));
+        assert_eq!(v41.info.recycled, 1);
+        // Work, Work/Cloud and Personal; the recycle bin is not counted.
+        assert_eq!(v41.info.groups, 3);
+        let v31 = Db::open(&fixture("kdbx31.kdbx"), &creds("fixture-pass")).unwrap();
+        assert_eq!(v31.info.format, "KDBX 3.1");
+        assert_eq!(v31.info.kdf.algorithm, "AES-KDF");
+        assert!(v31.info.kdf.memory_kib.is_none());
+        assert_eq!(v31.info.inner_cipher, "Salsa20");
+    }
+
+    #[test]
+    fn kdf_descriptions() {
+        let argon = Kdf {
+            algorithm: "Argon2id".into(),
+            iterations: 10,
+            memory_kib: Some(65536),
+            parallelism: Some(2),
+        };
+        assert_eq!(argon.describe(), "Argon2id, 64 MiB, 10 passes, 2 threads");
+        let aes = Kdf {
+            algorithm: "AES-KDF".into(),
+            iterations: 60000,
+            ..Kdf::default()
+        };
+        assert_eq!(aes.describe(), "AES-KDF, 60000 rounds");
     }
 
     #[test]
