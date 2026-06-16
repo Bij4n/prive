@@ -54,7 +54,24 @@ prive ls --json | jq -r '.[] | select(.has_otp) | .path'
 login --user "$(prive get Work/VPN -f username)" \
       --password "$(prive get Work/VPN)" --otp "$(prive otp Work/VPN)"
 
-# Fail a CI step if any password needs attention
-prive audit --json | jq -e '.findings | length == 0'
+# Fail a CI step if the database's settings or any password need attention
+prive audit --json | jq -e '(.findings | length) + (.database | length) == 0'
 ```
+
+`get --format` fills in several fields at once, with KeePass's placeholder names. Only
+`{TITLE}`, `{USERNAME}`, `{PASSWORD}`, `{URL}`, `{NOTES}`, `{S:Field name}` and `{TOTP}` are
+replaced; any other braces are left as they are, so JSON and shell text pass through. A field
+the entry doesn't have is an error (exit 3), never an empty string.
+
+```bash
+# user:password for curl, in one call
+curl -u "$(prive get Work/API --format '{USERNAME}:{PASSWORD}')" https://api.example.com/
+
+# A JSON object for another program
+prive get Work/DB --format '{"user":"{USERNAME}","password":"{PASSWORD}","key":"{S:API key}"}'
+```
+
+Values are put in as they are: nothing is escaped for JSON, URLs or the shell. A password
+with a `"` in it breaks the JSON above; for anything a password could break, `show --json
+--reveal` and `jq` are the safe way.
 

@@ -12,6 +12,8 @@ The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `l
   saved it) and how much is in it; works through the agent too
 - `prive audit` checks the database's own settings first: AES-KDF, Argon2 below OWASP's
   smallest setting, passwords not encrypted inside the file
+- `prive get ENTRY --format TEMPLATE`: several fields in one line, with KeePass's
+  placeholders (`{USERNAME}`, `{PASSWORD}`, `{S:field}`, `{TOTP}`)
 - KeePassXC's extra URLs (`KP2A_URL` fields) count for `search` and `git-credential`, and
   are never exported by `run --from`
 - `prive import FILE --check`: reads exports from Proton Pass, Apple Passwords, Google
