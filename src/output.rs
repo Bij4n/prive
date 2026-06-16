@@ -67,6 +67,16 @@ pub fn render_list(entries: &[&Entry]) -> String {
 /// closing summary line.
 pub fn render_audit(r: &crate::audit::Report) -> String {
     let mut out = String::new();
+    if !r.database.is_empty() {
+        out.push_str("This database\n");
+        for i in &r.database {
+            out.push_str(&format!("  - {}\n", i.describe()));
+        }
+        out.push_str(
+            "  (KeePassXC: Database > Database Security > Encryption Settings; \
+             the change takes effect on the next save)\n",
+        );
+    }
     for f in &r.findings {
         out.push_str(&format!("{}\n", f.path));
         for i in &f.issues {
@@ -433,6 +443,7 @@ mod tests {
                     crate::audit::Issue::Reused { with: 1 },
                 ],
             }],
+            database: Vec::new(),
         };
         assert_eq!(
             render_audit(&r),

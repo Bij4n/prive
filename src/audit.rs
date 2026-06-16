@@ -30,10 +30,66 @@ pub enum Issue {
 }
 
 impl Report {
-    /// No entry needs attention.
+    /// Neither the database nor any entry needs attention.
     pub fn is_clean(&self) -> bool {
-        self.findings.is_empty()
+        self.findings.is_empty() && self.database.is_empty()
     }
+}
+
+/// Something about how the file is protected, rather than about one entry.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case", tag = "kind")]
+pub enum DbIssue {
+    /// AES-KDF, however many rounds: graphics cards run it far faster than Argon2.
+    AesKdf { rounds: u64 },
+    /// Argon2 with less memory and fewer passes than OWASP's smallest recommended setting.
+    WeakArgon2 { memory_mib: u64, passes: u64 },
+    /// Passwords inside the file are not encrypted a second time (KDBX inner stream).
+    NoInnerCipher,
+}
+
+impl DbIssue {
+    pub fn describe(&self) -> String {
+        match self {
+            DbIssue::AesKdf { rounds } => format!(
+                "the key is derived with AES-KDF ({rounds} rounds), which graphics cards run \
+                 quickly; Argon2id makes each password guess far costlier"
+            ),
+            DbIssue::WeakArgon2 { memory_mib, passes } => format!(
+                "Argon2 uses {memory_mib} MiB and {passes} passes, below OWASP's smallest \
+                 recommended setting (19 MiB with 2 passes)"
+            ),
+            DbIssue::NoInnerCipher => {
+                "passwords inside the file are not encrypted a second time".to_string()
+            }
+        }
+    }
+}
+
+/// OWASP's Argon2id settings trade memory for passes: 46 MiB x 1, 19 MiB x 2, 12 MiB x 3,
+/// 9 MiB x 4, 7 MiB x 5. All of them come to at least this many KiB-passes.
+const ARGON2_MIN_KIB_PASSES: u64 = 7 * 1024 * 5;
+
+/// What KeePassXC calls the database's encryption settings, checked.
+pub fn check_database(info: &crate::db::Info) -> Vec<DbIssue> {
+    let mut issues = Vec::new();
+    let kdf = &info.kdf;
+    match kdf.memory_kib {
+        None if kdf.algorithm == "AES-KDF" => issues.push(DbIssue::AesKdf {
+            rounds: kdf.iterations,
+        }),
+        Some(kib) if kib.saturating_mul(kdf.iterations) < ARGON2_MIN_KIB_PASSES => {
+            issues.push(DbIssue::WeakArgon2 {
+                memory_mib: kib / 1024,
+                passes: kdf.iterations,
+            });
+        }
+        _ => {}
+    }
+    if info.inner_cipher == "none" {
+        issues.push(DbIssue::NoInnerCipher);
+    }
+    issues
 }
 
 impl Issue {
@@ -63,6 +119,8 @@ pub struct Report {
     pub checked: usize,
     pub skipped: usize,
     pub findings: Vec<Finding>,
+    /// The file's own settings, filled in by the caller from [`check_database`].
+    pub database: Vec<DbIssue>,
 }
 
 pub struct Options {
@@ -159,6 +217,7 @@ pub fn audit(entries: &[Entry], opts: &Options) -> anyhow::Result<Report> {
         checked: checked.len(),
         skipped: entries.len() - checked.len(),
         findings,
+        database: Vec::new(),
     })
 }
 
@@ -183,6 +242,42 @@ mod tests {
             password: Zeroizing::new(pw.into()),
             ..Entry::default()
         }
+    }
+
+    fn info(algorithm: &str, iterations: u64, memory_kib: Option<u64>) -> crate::db::Info {
+        crate::db::Info {
+            inner_cipher: "ChaCha20".into(),
+            kdf: crate::db::Kdf {
+                algorithm: algorithm.into(),
+                iterations,
+                memory_kib,
+                parallelism: memory_kib.map(|_| 2),
+            },
+            ..crate::db::Info::default()
+        }
+    }
+
+    #[test]
+    fn database_settings() {
+        // KeePassXC's default for new databases, and OWASP's smallest settings, pass.
+        assert!(check_database(&info("Argon2id", 10, Some(64 * 1024))).is_empty());
+        assert!(check_database(&info("Argon2id", 2, Some(19 * 1024))).is_empty());
+        assert!(check_database(&info("Argon2d", 1, Some(46 * 1024))).is_empty());
+        // KeePass 2's default Argon2d (1 MiB, 2 passes) does not.
+        assert_eq!(
+            check_database(&info("Argon2d", 2, Some(1024))),
+            [DbIssue::WeakArgon2 {
+                memory_mib: 1,
+                passes: 2
+            }]
+        );
+        assert_eq!(
+            check_database(&info("AES-KDF", 60_000, None)),
+            [DbIssue::AesKdf { rounds: 60_000 }]
+        );
+        let mut plain = info("Argon2id", 10, Some(64 * 1024));
+        plain.inner_cipher = "none".into();
+        assert_eq!(check_database(&plain), [DbIssue::NoInnerCipher]);
     }
 
     #[test]

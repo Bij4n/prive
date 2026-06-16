@@ -566,7 +566,7 @@ pub fn pick(global: &Global, args: &PickArgs) -> Result<()> {
 
 pub fn audit(global: &Global, hibp: bool, max_age: i64, expiring: i64, json: bool) -> Result<()> {
     let db = open(global)?;
-    let report = audit::audit(
+    let mut report = audit::audit(
         &db.entries,
         &audit::Options {
             max_age_days: max_age,
@@ -574,6 +574,7 @@ pub fn audit(global: &Global, hibp: bool, max_age: i64, expiring: i64, json: boo
             expiring_days: expiring,
         },
     )?;
+    report.database = audit::check_database(&db.info);
     if json {
         output::print_json(&report)
     } else {
