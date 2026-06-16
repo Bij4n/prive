@@ -1,9 +1,17 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<!-- Source for the test databases. Invented data only. Rebuild with ./make.sh -->
+<!-- Source for the test databases. Invented data only. Rebuild with ./make.sh
+     Every time is given (2026-05-26 17:00 UTC), so a rebuild records no clock time. -->
 <KeePassFile>
   <Meta>
     <Generator>prive fixtures</Generator>
     <DatabaseName>Fixture</DatabaseName>
+    <SettingsChanged>2026-05-26T17:00:00Z</SettingsChanged>
+    <DatabaseNameChanged>2026-05-26T17:00:00Z</DatabaseNameChanged>
+    <DatabaseDescriptionChanged>2026-05-26T17:00:00Z</DatabaseDescriptionChanged>
+    <DefaultUserNameChanged>2026-05-26T17:00:00Z</DefaultUserNameChanged>
+    <MasterKeyChanged>2026-05-26T17:00:00Z</MasterKeyChanged>
+    <RecycleBinChanged>2026-05-26T17:00:00Z</RecycleBinChanged>
+    <EntryTemplatesGroupChanged>2026-05-26T17:00:00Z</EntryTemplatesGroupChanged>
     <RecycleBinEnabled>True</RecycleBinEnabled>
     <RecycleBinUUID>AAAAAAAAAAAAAAAAAAAAOQ==</RecycleBinUUID>
     <HistoryMaxItems>10</HistoryMaxItems>
@@ -14,9 +22,11 @@
   <Root>
     <Group>
       <UUID>AAAAAAAAAAAAAAAAAAAAAA==</UUID>
+      <Times><CreationTime>2026-05-26T17:00:00Z</CreationTime><LastModificationTime>2026-05-26T17:00:00Z</LastModificationTime><LastAccessTime>2026-05-26T17:00:00Z</LastAccessTime><LocationChanged>2026-05-26T17:00:00Z</LocationChanged><ExpiryTime>2026-05-26T17:00:00Z</ExpiryTime><Expires>False</Expires></Times>
       <Name>Root</Name>
       <Entry>
         <UUID>AAAAAAAAAAAAAAAAAAAAEA==</UUID>
+        <Times><CreationTime>2026-05-26T17:00:00Z</CreationTime><LastModificationTime>2026-05-26T17:00:00Z</LastModificationTime><LastAccessTime>2026-05-26T17:00:00Z</LastAccessTime><LocationChanged>2026-05-26T17:00:00Z</LocationChanged><ExpiryTime>2026-05-26T17:00:00Z</ExpiryTime><Expires>False</Expires></Times>
         <String><Key>Title</Key><Value>Bank</Value></String>
         <String><Key>UserName</Key><Value>me@example.invalid</Value></String>
         <String><Key>Password</Key><Value ProtectInMemory="True">b4nk-P@ss-2026!</Value></String>
@@ -25,13 +35,14 @@
       </Entry>
       <Entry>
         <UUID>AAAAAAAAAAAAAAAAAAAAEQ==</UUID>
+        <Times><CreationTime>2026-05-26T17:00:00Z</CreationTime><LastModificationTime>2026-05-26T17:00:00Z</LastModificationTime><LastAccessTime>2026-05-26T17:00:00Z</LastAccessTime><LocationChanged>2026-05-26T17:00:00Z</LocationChanged><ExpiryTime>2026-05-26T17:00:00Z</ExpiryTime><Expires>False</Expires></Times>
         <QualityCheck>False</QualityCheck>
         <String><Key>Title</Key><Value>Wi-Fi</Value></String>
         <String><Key>Password</Key><Value ProtectInMemory="True">guest1234</Value></String>
       </Entry>
       <Entry>
         <UUID>AAAAAAAAAAAAAAAAAAAAEg==</UUID>
-        <Times><Expires>True</Expires><ExpiryTime>2025-01-01T00:00:00Z</ExpiryTime></Times>
+        <Times><Expires>True</Expires><ExpiryTime>2025-01-01T00:00:00Z</ExpiryTime><CreationTime>2026-05-26T17:00:00Z</CreationTime><LastModificationTime>2026-05-26T17:00:00Z</LastModificationTime><LastAccessTime>2026-05-26T17:00:00Z</LastAccessTime><LocationChanged>2026-05-26T17:00:00Z</LocationChanged></Times>
         <String><Key>Title</Key><Value>Old VPN</Value></String>
         <String><Key>UserName</Key><Value>vpnuser</Value></String>
         <String><Key>Password</Key><Value ProtectInMemory="True">kH3@pN8%sJ5*eB1(cG7)</Value></String>
@@ -41,9 +52,11 @@
       </Entry>
       <Group>
         <UUID>AAAAAAAAAAAAAAAAAAAAAQ==</UUID>
+        <Times><CreationTime>2026-05-26T17:00:00Z</CreationTime><LastModificationTime>2026-05-26T17:00:00Z</LastModificationTime><LastAccessTime>2026-05-26T17:00:00Z</LastAccessTime><LocationChanged>2026-05-26T17:00:00Z</LocationChanged><ExpiryTime>2026-05-26T17:00:00Z</ExpiryTime><Expires>False</Expires></Times>
         <Name>Work</Name>
         <Entry>
           <UUID>AAAAAAAAAAAAAAAAAAAAIA==</UUID>
+          <Times><CreationTime>2026-05-26T17:00:00Z</CreationTime><LastModificationTime>2026-05-26T17:00:00Z</LastModificationTime><LastAccessTime>2026-05-26T17:00:00Z</LastAccessTime><LocationChanged>2026-05-26T17:00:00Z</LocationChanged><ExpiryTime>2026-05-26T17:00:00Z</ExpiryTime><Expires>False</Expires></Times>
           <Tags>dev;cloud</Tags>
           <String><Key>Title</Key><Value>GitHub</Value></String>
           <String><Key>UserName</Key><Value>demo</Value></String>
@@ -58,6 +71,7 @@ Line two – ünïcödé</Value></String>
           <History>
             <Entry>
               <UUID>AAAAAAAAAAAAAAAAAAAAIA==</UUID>
+              <Times><CreationTime>2026-05-26T17:00:00Z</CreationTime><LastModificationTime>2026-05-01T09:00:00Z</LastModificationTime><LastAccessTime>2026-05-26T17:00:00Z</LastAccessTime><LocationChanged>2026-05-26T17:00:00Z</LocationChanged><ExpiryTime>2026-05-26T17:00:00Z</ExpiryTime><Expires>False</Expires></Times>
               <String><Key>Title</Key><Value>GitHub</Value></String>
               <String><Key>Password</Key><Value ProtectInMemory="True">old-password</Value></String>
             </Entry>
@@ -65,9 +79,11 @@ Line two – ünïcödé</Value></String>
         </Entry>
         <Group>
           <UUID>AAAAAAAAAAAAAAAAAAAAAg==</UUID>
+          <Times><CreationTime>2026-05-26T17:00:00Z</CreationTime><LastModificationTime>2026-05-26T17:00:00Z</LastModificationTime><LastAccessTime>2026-05-26T17:00:00Z</LastAccessTime><LocationChanged>2026-05-26T17:00:00Z</LocationChanged><ExpiryTime>2026-05-26T17:00:00Z</ExpiryTime><Expires>False</Expires></Times>
           <Name>Cloud</Name>
           <Entry>
             <UUID>AAAAAAAAAAAAAAAAAAAAIQ==</UUID>
+            <Times><CreationTime>2026-05-26T17:00:00Z</CreationTime><LastModificationTime>2026-05-26T17:00:00Z</LastModificationTime><LastAccessTime>2026-05-26T17:00:00Z</LastAccessTime><LocationChanged>2026-05-26T17:00:00Z</LocationChanged><ExpiryTime>2026-05-26T17:00:00Z</ExpiryTime><Expires>False</Expires></Times>
             <String><Key>Title</Key><Value>Steam</Value></String>
             <String><Key>UserName</Key><Value>gamer</Value></String>
             <String><Key>Password</Key><Value ProtectInMemory="True">vX7#qL9!mZ2$wR4^tY6&amp;</Value></String>
@@ -77,15 +93,18 @@ Line two – ünïcödé</Value></String>
       </Group>
       <Group>
         <UUID>AAAAAAAAAAAAAAAAAAAAAw==</UUID>
+        <Times><CreationTime>2026-05-26T17:00:00Z</CreationTime><LastModificationTime>2026-05-26T17:00:00Z</LastModificationTime><LastAccessTime>2026-05-26T17:00:00Z</LastAccessTime><LocationChanged>2026-05-26T17:00:00Z</LocationChanged><ExpiryTime>2026-05-26T17:00:00Z</ExpiryTime><Expires>False</Expires></Times>
         <Name>Personal</Name>
         <Entry>
           <UUID>AAAAAAAAAAAAAAAAAAAAMA==</UUID>
+          <Times><CreationTime>2026-05-26T17:00:00Z</CreationTime><LastModificationTime>2026-05-26T17:00:00Z</LastModificationTime><LastAccessTime>2026-05-26T17:00:00Z</LastAccessTime><LocationChanged>2026-05-26T17:00:00Z</LocationChanged><ExpiryTime>2026-05-26T17:00:00Z</ExpiryTime><Expires>False</Expires></Times>
           <String><Key>Title</Key><Value>GitHub</Value></String>
           <String><Key>UserName</Key><Value>me-personal</Value></String>
           <String><Key>Password</Key><Value ProtectInMemory="True">password1</Value></String>
         </Entry>
         <Entry>
           <UUID>AAAAAAAAAAAAAAAAAAAAMQ==</UUID>
+          <Times><CreationTime>2026-05-26T17:00:00Z</CreationTime><LastModificationTime>2026-05-26T17:00:00Z</LastModificationTime><LastAccessTime>2026-05-26T17:00:00Z</LastAccessTime><LocationChanged>2026-05-26T17:00:00Z</LocationChanged><ExpiryTime>2026-05-26T17:00:00Z</ExpiryTime><Expires>False</Expires></Times>
           <String><Key>Title</Key><Value>Legacy 2FA</Value></String>
           <String><Key>Password</Key><Value ProtectInMemory="True">password1</Value></String>
           <String><Key>TOTP Seed</Key><Value ProtectInMemory="True">JBSWY3DPEHPK3PXP</Value></String>
@@ -94,9 +113,11 @@ Line two – ünïcödé</Value></String>
       </Group>
       <Group>
         <UUID>AAAAAAAAAAAAAAAAAAAAOQ==</UUID>
+        <Times><CreationTime>2026-05-26T17:00:00Z</CreationTime><LastModificationTime>2026-05-26T17:00:00Z</LastModificationTime><LastAccessTime>2026-05-26T17:00:00Z</LastAccessTime><LocationChanged>2026-05-26T17:00:00Z</LocationChanged><ExpiryTime>2026-05-26T17:00:00Z</ExpiryTime><Expires>False</Expires></Times>
         <Name>Recycle Bin</Name>
         <Entry>
           <UUID>AAAAAAAAAAAAAAAAAAAAQA==</UUID>
+          <Times><CreationTime>2026-05-26T17:00:00Z</CreationTime><LastModificationTime>2026-05-26T17:00:00Z</LastModificationTime><LastAccessTime>2026-05-26T17:00:00Z</LastAccessTime><LocationChanged>2026-05-26T17:00:00Z</LocationChanged><ExpiryTime>2026-05-26T17:00:00Z</ExpiryTime><Expires>False</Expires></Times>
           <String><Key>Title</Key><Value>Deleted thing</Value></String>
           <String><Key>Password</Key><Value ProtectInMemory="True">gone</Value></String>
         </Entry>

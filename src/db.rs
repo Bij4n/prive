@@ -482,6 +482,39 @@ mod tests {
         assert_eq!(v31.info.inner_cipher, "Salsa20");
     }
 
+    /// make.sh gives every time explicitly, so a rebuilt fixture never records when it was
+    /// built: entry and key dates are always the ones in source.xml.
+    #[test]
+    fn fixtures_record_only_the_times_in_their_source() {
+        let when = chrono::NaiveDate::from_ymd_opt(2026, 5, 26)
+            .unwrap()
+            .and_hms_opt(17, 0, 0)
+            .unwrap();
+        let keyfile = Credentials {
+            password: Some(Zeroizing::new("fixture-pass".into())),
+            keyfile: Some(fixture("keyfile.keyx")),
+        };
+        let keyonly = Credentials {
+            password: None,
+            keyfile: Some(fixture("keyonly.keyx")),
+        };
+        let mut dbs: Vec<Db> = ["kdbx31.kdbx", "kdbx40.kdbx", "kdbx41.kdbx"]
+            .iter()
+            .map(|f| Db::open(&fixture(f), &creds("fixture-pass")).unwrap())
+            .collect();
+        dbs.push(Db::open(&fixture("keyfile.kdbx"), &keyfile).unwrap());
+        dbs.push(Db::open(&fixture("keyonly.kdbx"), &keyonly).unwrap());
+        for db in &dbs {
+            assert_eq!(db.info.key_changed, Some(when), "{}", db.path.display());
+            for e in &db.entries {
+                assert_eq!(e.modified, Some(when), "{}", e.path());
+                for v in &e.history {
+                    assert!(v.modified < Some(when), "{}", e.path());
+                }
+            }
+        }
+    }
+
     #[test]
     fn kdf_descriptions() {
         let argon = Kdf {

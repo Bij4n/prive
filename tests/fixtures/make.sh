@@ -14,6 +14,8 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 pw=fixture-pass
+# The one time every fixture records, the same as in source.xml.
+when=2026-05-26T17:00:00Z
 command -v keepassxc-cli >/dev/null || { echo "keepassxc-cli not found" >&2; exit 1; }
 rm -f kdbx31.kdbx kdbx40.kdbx kdbx41.kdbx keyfile.kdbx keyfile.keyx keyonly.kdbx keyonly.keyx
 tmp="$(mktemp -d)"
@@ -30,12 +32,47 @@ import "$tmp/40.xml" kdbx40.kdbx
 
 import source.xml kdbx41.kdbx
 
-printf '%s\n%s\n' "$pw" "$pw" | keepassxc-cli db-create -q -p --set-key-file keyfile.keyx keyfile.kdbx 2>/dev/null
-printf '%s\n' "$pw" | keepassxc-cli add -q -k keyfile.keyx -u kfuser --url https://example.invalid \
-  keyfile.kdbx "Key file entry" 2>/dev/null
+# The key file databases hold one entry each. They are imported too (db-create and add
+# would stamp the clock time on them), and keepassxc-cli writes the new key file.
+single() { # title username url
+  local t="<Times><CreationTime>$when</CreationTime><LastModificationTime>$when</LastModificationTime><LastAccessTime>$when</LastAccessTime><LocationChanged>$when</LocationChanged><ExpiryTime>$when</ExpiryTime><Expires>False</Expires></Times>"
+  cat <<EOF
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<KeePassFile>
+  <Meta>
+    <Generator>prive fixtures</Generator>
+    <SettingsChanged>$when</SettingsChanged>
+    <DatabaseNameChanged>$when</DatabaseNameChanged>
+    <DatabaseDescriptionChanged>$when</DatabaseDescriptionChanged>
+    <DefaultUserNameChanged>$when</DefaultUserNameChanged>
+    <MasterKeyChanged>$when</MasterKeyChanged>
+    <RecycleBinChanged>$when</RecycleBinChanged>
+    <EntryTemplatesGroupChanged>$when</EntryTemplatesGroupChanged>
+  </Meta>
+  <Root>
+    <Group>
+      <UUID>AAAAAAAAAAAAAAAAAAAAAA==</UUID>
+      $t
+      <Name>Root</Name>
+      <Entry>
+        <UUID>AAAAAAAAAAAAAAAAAAAAQA==</UUID>
+        $t
+        <String><Key>Title</Key><Value>$1</Value></String>
+        <String><Key>UserName</Key><Value>$2</Value></String>
+        <String><Key>URL</Key><Value>$3</Value></String>
+      </Entry>
+    </Group>
+  </Root>
+</KeePassFile>
+EOF
+}
 
-keepassxc-cli db-create -q --set-key-file keyonly.keyx keyonly.kdbx 2>/dev/null
-keepassxc-cli add -q --no-password -k keyonly.keyx -u keyonly keyonly.kdbx "Key only entry" 2>/dev/null
+single "Key file entry" kfuser https://example.invalid > "$tmp/keyfile.xml"
+printf '%s\n%s\n' "$pw" "$pw" | keepassxc-cli import -q -p --set-key-file keyfile.keyx \
+  "$tmp/keyfile.xml" keyfile.kdbx 2>/dev/null
+
+single "Key only entry" keyonly "" > "$tmp/keyonly.xml"
+keepassxc-cli import -q --set-key-file keyonly.keyx "$tmp/keyonly.xml" keyonly.kdbx 2>/dev/null
 
 for f in kdbx31.kdbx kdbx40.kdbx kdbx41.kdbx keyfile.kdbx keyonly.kdbx; do
   v="$(head -c 12 "$f" | od -An -tx1 | tr -d ' \n')"
