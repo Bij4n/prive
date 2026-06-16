@@ -1,8 +1,10 @@
-//! Small TOML config: which database to open by default, and clipboard behaviour.
+//! Small TOML config: which database to open by default, other databases by name, and
+//! clipboard and agent behaviour.
 //!
 //! Location: `$PRIVE_CONFIG` if set, otherwise `<config dir>/prive/config.toml`
 //! (`~/.config/prive/config.toml` on Linux).
 
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
@@ -30,6 +32,25 @@ pub struct Config {
     /// Minutes the agent keeps a database unlocked after its last use (1 to 1440).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub agent_minutes: Option<u64>,
+    /// Other databases, by name: `--db work` opens `[databases.work]`.
+    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+    pub databases: BTreeMap<String, Named>,
+}
+
+/// A database with a name of its own in the config file.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct Named {
+    pub path: PathBuf,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub keyfile: Option<PathBuf>,
+}
+
+/// A name for `[databases.NAME]`: something `--db` can't mistake for a path.
+fn valid_name(name: &str) -> bool {
+    !name.is_empty()
+        && name
+            .chars()
+            .all(|c| c.is_alphanumeric() || c == '-' || c == '_')
 }
 
 impl Config {
@@ -56,6 +77,13 @@ impl Config {
             anyhow::ensure!(
                 (1..=1440).contains(&m),
                 "agent_minutes in {} must be between 1 and 1440",
+                path.display()
+            );
+        }
+        for name in cfg.databases.keys() {
+            anyhow::ensure!(
+                valid_name(name),
+                "[databases.{name}] in {}: a name is letters, digits, - and _ only",
                 path.display()
             );
         }
@@ -98,9 +126,18 @@ pub struct Target {
 }
 
 impl Config {
-    /// `--db` (or `PRIVE_DB`) wins over the config file. A key file from the config file only
-    /// goes with the config file's database, never with one named on the command line.
+    /// `--db` (or `PRIVE_DB`) wins over the config file, and may be one of its
+    /// `[databases.NAME]`. A key file from the config file only goes with the database it is
+    /// written next to, never with one named on the command line.
     pub fn target(&self, db: Option<&Path>, keyfile: Option<&Path>) -> Result<Target> {
+        if let Some(named) = db.and_then(|d| self.named(d)) {
+            return Ok(Target {
+                db: expand_home(&named.path),
+                keyfile: keyfile
+                    .map(Path::to_path_buf)
+                    .or_else(|| named.keyfile.as_deref().map(expand_home)),
+            });
+        }
         match db {
             Some(d) => Ok(Target {
                 db: d.to_path_buf(),
@@ -118,6 +155,17 @@ impl Config {
                 })
             }
         }
+    }
+}
+
+impl Config {
+    /// The `[databases.NAME]` entry `arg` names, if it is a name rather than a path.
+    pub fn named(&self, arg: &Path) -> Option<&Named> {
+        let name = arg.to_str()?;
+        if !valid_name(name) {
+            return None;
+        }
+        self.databases.get(name)
     }
 }
 
@@ -226,6 +274,48 @@ mod tests {
             ..Config::default()
         };
         assert_eq!(abs.target(None, None).unwrap().db, Path::new("/srv/p.kdbx"));
+    }
+
+    #[test]
+    fn databases_by_name() {
+        let cfg: Config = toml::from_str(
+            "db = \"/home/me/main.kdbx\"\n\
+             [databases.work]\npath = \"/home/me/work.kdbx\"\nkeyfile = \"/home/me/work.keyx\"\n\
+             [databases.home-2]\npath = \"~/home.kdbx\"\n",
+        )
+        .unwrap();
+        let work = cfg.target(Some(Path::new("work")), None).unwrap();
+        assert_eq!(work.db, Path::new("/home/me/work.kdbx"));
+        assert_eq!(
+            work.keyfile.as_deref(),
+            Some(Path::new("/home/me/work.keyx"))
+        );
+        let home = cfg.target(Some(Path::new("home-2")), None).unwrap();
+        assert_eq!(home.db, dirs::home_dir().unwrap().join("home.kdbx"));
+        assert_eq!(home.keyfile, None);
+        // A key file on the command line still wins.
+        let k = cfg
+            .target(Some(Path::new("work")), Some(Path::new("/media/k.keyx")))
+            .unwrap();
+        assert_eq!(k.keyfile.as_deref(), Some(Path::new("/media/k.keyx")));
+        // Anything else is a path, even next to a name.
+        let path = cfg.target(Some(Path::new("./work")), None).unwrap();
+        assert_eq!(path.db, Path::new("./work"));
+        assert_eq!(path.keyfile, None);
+        let other = cfg.target(Some(Path::new("other.kdbx")), None).unwrap();
+        assert_eq!(other.db, Path::new("other.kdbx"));
+    }
+
+    #[test]
+    fn database_names_are_checked() {
+        let dir = tempfile::tempdir().unwrap();
+        let p = dir.path().join("c.toml");
+        std::fs::write(&p, "[databases.\"my.db\"]\npath = \"/x.kdbx\"\n").unwrap();
+        assert!(Config::load_from(&p).is_err());
+        std::fs::write(&p, "[databases.work]\n").unwrap();
+        assert!(Config::load_from(&p).is_err(), "a path is needed");
+        std::fs::write(&p, "[databases.work]\npath = \"/x.kdbx\"\n").unwrap();
+        assert_eq!(Config::load_from(&p).unwrap().databases.len(), 1);
     }
 
     #[test]
