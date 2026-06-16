@@ -138,6 +138,20 @@ impl Config {
                     .or_else(|| named.keyfile.as_deref().map(expand_home)),
             });
         }
+        // A mistyped name would otherwise come back as "no such file", which hides the names.
+        if let Some(d) = db
+            && !self.databases.is_empty()
+            && d.to_str().is_some_and(valid_name)
+            && !d.exists()
+        {
+            let names: Vec<&str> = self.databases.keys().map(String::as_str).collect();
+            return Err(crate::error::Failure::NotFound(format!(
+                "no database '{}': no such file, and the config file names {}",
+                d.display(),
+                names.join(", ")
+            ))
+            .into());
+        }
         match db {
             Some(d) => Ok(Target {
                 db: d.to_path_buf(),
@@ -304,6 +318,26 @@ mod tests {
         assert_eq!(path.keyfile, None);
         let other = cfg.target(Some(Path::new("other.kdbx")), None).unwrap();
         assert_eq!(other.db, Path::new("other.kdbx"));
+    }
+
+    #[test]
+    fn a_mistyped_name_lists_the_names() {
+        let cfg: Config = toml::from_str(
+            "[databases.work]\npath = \"/w.kdbx\"\n[databases.home]\npath = \"/h.kdbx\"\n",
+        )
+        .unwrap();
+        let err = cfg.target(Some(Path::new("wrok")), None).unwrap_err();
+        assert!(matches!(
+            err.downcast_ref::<crate::error::Failure>(),
+            Some(crate::error::Failure::NotFound(_))
+        ));
+        assert!(err.to_string().contains("home, work"), "{err}");
+        // Without named databases, a missing file is reported when it is opened, as before.
+        assert!(
+            Config::default()
+                .target(Some(Path::new("wrok")), None)
+                .is_ok()
+        );
     }
 
     #[test]
