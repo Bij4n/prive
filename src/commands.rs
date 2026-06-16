@@ -623,6 +623,19 @@ fn one_generated(args: &GenArgs) -> Result<generate::Generated> {
 
 /// The settings in effect: where the config file is, which database and key file a command
 /// would open (and why), the clipboard and agent timeouts, and where the agent's socket is.
+pub fn info(global: &Global, json: bool) -> Result<()> {
+    let db = open(global)?;
+    let size = std::fs::metadata(&db.path).map(|m| m.len()).unwrap_or(0);
+    if json {
+        let mut v = serde_json::to_value(&db.info)?;
+        v["path"] = serde_json::json!(db.path);
+        v["size"] = serde_json::json!(size);
+        v["entries"] = serde_json::json!(db.entries.len());
+        return output::print_json(&v);
+    }
+    output::print(&output::render_info(&db, size))
+}
+
 pub fn show_config(global: &Global, json: bool) -> Result<()> {
     let path = config::Config::path();
     let cfg = config::Config::load()?;

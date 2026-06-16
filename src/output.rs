@@ -182,6 +182,55 @@ pub fn show_json(e: &Entry, reveal: bool) -> ShowJson {
 }
 
 /// The `show` view of one entry. Passwords and protected fields stay hidden unless `reveal`.
+/// `prive info`: where the database is, how it is protected and what is in it.
+pub fn render_info(db: &crate::db::Db, size: u64) -> String {
+    let i = &db.info;
+    let mut out = String::new();
+    let mut line = |label: &str, value: &str| {
+        if !value.is_empty() {
+            out.push_str(&format!("{label:<13} {value}\n"));
+        }
+    };
+    line(
+        "File:",
+        &format!(
+            "{} ({})",
+            db.path.display(),
+            human_size(usize::try_from(size).unwrap_or(usize::MAX))
+        ),
+    );
+    line("Name:", i.name.as_deref().unwrap_or(""));
+    line("Format:", &i.format);
+    let inner = if i.inner_cipher == "none" {
+        "passwords inside are not encrypted again".to_string()
+    } else {
+        format!("passwords inside also {}", i.inner_cipher)
+    };
+    line("Encryption:", &format!("{}, {inner}", i.cipher));
+    line("Key:", &i.kdf.describe());
+    line("Compressed:", if i.compressed { "yes" } else { "no" });
+    line("Saved by:", i.generator.as_deref().unwrap_or(""));
+    let mut contents = format!(
+        "{} {} in {} {}",
+        db.entries.len(),
+        if db.entries.len() == 1 {
+            "entry"
+        } else {
+            "entries"
+        },
+        i.groups,
+        if i.groups == 1 { "group" } else { "groups" }
+    );
+    if i.recycled > 0 {
+        contents.push_str(&format!(", {} in the recycle bin", i.recycled));
+    }
+    line("Contents:", &contents);
+    if let Some(t) = i.key_changed {
+        line("Key changed:", &t.format("%Y-%m-%d").to_string());
+    }
+    out
+}
+
 pub fn render_show(e: &Entry, reveal: bool) -> String {
     let mut out = String::new();
     let mut line = |label: &str, value: &str| {

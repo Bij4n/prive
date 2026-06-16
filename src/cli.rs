@@ -246,6 +246,12 @@ pub enum Command {
     /// Generate a password, passphrase or PIN (no database needed)
     Gen(GenArgs),
 
+    /// Show how the database is stored: format, encryption, key settings, counts
+    Info {
+        #[arg(long)]
+        json: bool,
+    },
+
     /// Show the settings in effect and where each came from
     Config {
         #[arg(long)]
