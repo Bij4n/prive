@@ -22,18 +22,24 @@ binary or hashed), or both. Hardware keys (YubiKey challenge-response) are not s
 
 ## What prive reads
 
-Title, username, password, URL, notes, tags, custom fields (with their "protected" flag),
-attachments, earlier versions (history), modification and expiry times, the "exclude from
-reports" flag, and
-two-factor secrets in every format KeePass apps store them (see [totp.md](totp.md)).
-Extra addresses saved in KeePassXC's browser settings
-(the `KP2A_URL`, `KP2A_URL_1`, ... fields KeePassXC and Keepass2Android share) count as the
-entry's URLs for `search` and `git-credential`. Entries in the recycle bin are left out. Field references (`{REF:P@I:...}`) are resolved
-when a value is used; see [references.md](references.md).
+- Title, username, password, URL, notes and tags.
+- Custom fields, with their "protected" flag (protected ones stay hidden in `show`).
+- Extra addresses from KeePassXC's browser settings: the `KP2A_URL`, `KP2A_URL_1`, ... fields
+  KeePassXC and Keepass2Android share. They count as the entry's URLs for `search` and
+  `git-credential`.
+- Attachments and earlier versions (history).
+- Modification and expiry times, and the "exclude from reports" flag.
+- Two-factor secrets in every format KeePass apps store them (see [totp.md](totp.md)).
+- Field references (`{REF:P@I:...}`), resolved when a value is used; see
+  [references.md](references.md).
+- The file's own settings (format, encryption, key derivation), shown by `prive info`.
+
+Entries in the recycle bin are left out.
 
 ## Tested against
 
 The test suite opens databases written by KeePassXC itself (`tests/fixtures/`): the same
 entries saved as KDBX 3.1, 4.0 and 4.1 must read back identically, field for field, including
-tags, attachments and history. CI also compares prive's one-time codes, field references and
-listings with `keepassxc-cli`'s for the same databases, up to five thousand entries.
+tags, attachments and history. CI also compares prive's one-time codes, field references,
+listings and `info` with `keepassxc-cli`'s for the same databases, up to five thousand
+entries.
