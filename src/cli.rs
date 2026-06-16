@@ -81,6 +81,10 @@ pub enum Command {
         /// password, username, url, notes, title, or a custom field's name
         #[arg(short, long, default_value = "password")]
         field: String,
+        /// Fill in a template instead of printing one field, with KeePass's placeholders:
+        /// '{USERNAME}:{PASSWORD}', '{S:API key}', '{TOTP}'
+        #[arg(long, value_name = "TEMPLATE", conflicts_with = "field")]
+        format: Option<String>,
         /// Copy to the clipboard instead of printing; cleared after a timeout
         #[arg(short, long)]
         clip: bool,

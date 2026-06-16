@@ -91,7 +91,12 @@ fn dispatch(cli: Cli) -> Result<()> {
             reveal,
             json,
         } => commands::show(g, entry, *reveal, *json),
-        Command::Get { entry, field, clip } => commands::get(g, entry, field, *clip),
+        Command::Get {
+            entry,
+            field,
+            format,
+            clip,
+        } => commands::get(g, entry, field, format.as_deref(), *clip),
         Command::Otp {
             entry, qr: true, ..
         } => commands::otp_setup(g, entry, true),

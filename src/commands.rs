@@ -252,10 +252,19 @@ pub fn show(global: &Global, entry: &str, reveal: bool, json: bool) -> Result<()
     }
 }
 
-pub fn get(global: &Global, entry: &str, field: &str, clip: bool) -> Result<()> {
+pub fn get(
+    global: &Global,
+    entry: &str,
+    field: &str,
+    format: Option<&str>,
+    clip: bool,
+) -> Result<()> {
     let db = open(global)?;
     let e = select::select(&db.entries, entry)?;
-    let value = crate::refs::resolve(&db.entries, field_of(e, field)?);
+    let value = match format {
+        Some(template) => crate::template::render(template, e, &db.entries)?,
+        None => crate::refs::resolve(&db.entries, field_of(e, field)?),
+    };
     if clip {
         copy_and_tell(&value)
     } else {
