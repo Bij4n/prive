@@ -58,6 +58,10 @@ pub enum Response {
     Unlocked,
     Entries {
         entries: Vec<WireEntry>,
+        /// How the file is stored, for `prive info`. Absent from agents started by an
+        /// earlier build, which is the same protocol, so it defaults.
+        #[serde(default)]
+        info: Box<crate::db::Info>,
     },
     /// Nothing open, a different database, or it changed on disk.
     Locked {
@@ -194,9 +198,10 @@ mod tests {
         };
         let line = serde_json::to_string(&Response::Entries {
             entries: vec![WireEntry::from(&e)],
+            info: Box::default(),
         })
         .unwrap();
-        let Response::Entries { entries } = serde_json::from_str(&line).unwrap() else {
+        let Response::Entries { entries, .. } = serde_json::from_str(&line).unwrap() else {
             panic!("wrong response");
         };
         let back = Entry::from(entries.into_iter().next().unwrap());
@@ -204,6 +209,16 @@ mod tests {
         assert_eq!(*back.password, "pw");
         assert!(back.custom[0].protected);
         assert!(back.quality_check);
+    }
+
+    #[test]
+    fn entries_without_info_still_parse() {
+        let line = r#"{"op":"entries","entries":[]}"#;
+        let Response::Entries { entries, info } = serde_json::from_str(line).unwrap() else {
+            panic!("wrong response");
+        };
+        assert!(entries.is_empty());
+        assert_eq!(*info, crate::db::Info::default());
     }
 
     #[test]

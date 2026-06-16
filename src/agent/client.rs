@@ -17,7 +17,7 @@ pub const AGENT_ARG: &str = "__agent";
 
 /// What the agent said about a database.
 pub enum Answer {
-    Entries(Vec<Entry>),
+    Entries(Vec<Entry>, Box<crate::db::Info>),
     /// Running, but not holding that database (or it changed on disk).
     Locked(String),
     NotRunning,
@@ -63,8 +63,8 @@ pub fn entries(db: &Path) -> Result<Answer> {
             db: db.to_path_buf(),
         })? {
             None => Answer::NotRunning,
-            Some(Response::Entries { entries }) => {
-                Answer::Entries(entries.into_iter().map(Entry::from).collect())
+            Some(Response::Entries { entries, info }) => {
+                Answer::Entries(entries.into_iter().map(Entry::from).collect(), info)
             }
             Some(Response::Locked { reason }) => Answer::Locked(reason),
             Some(Response::Error { message }) => bail!("agent: {message}"),
