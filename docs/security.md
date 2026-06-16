@@ -27,6 +27,25 @@ What prive protects against, and what it doesn't. This will grow as the rewrite 
 - The only network access is the optional Have I Been Pwned check (`audit --hibp`), which
   sends 5 hex characters of each password's SHA-1 hash and nothing else.
 
+## Key derivation
+
+What makes guessing a master password slow is the key derivation function, set per database
+(KeePassXC: Database > Database Security > Encryption Settings). `prive info` shows it, and
+`prive audit` warns when it is weak:
+
+- **AES-KDF**, at any number of rounds. It costs an attacker with graphics cards much less than
+  it costs you. Argon2id, KeePassXC's choice for new databases, needs memory for every guess,
+  which graphics cards are short of. KDBX 3.1 files can only use AES-KDF; switching to Argon2
+  saves the file as KDBX 4.
+- **Argon2 set below OWASP's smallest recommendation**: 46 MiB with 1 pass, 19 MiB with 2,
+  12 MiB with 3, 9 MiB with 4 or 7 MiB with 5. KeePass 2's default Argon2d (1 MiB, 2 passes)
+  is below it; KeePassXC's default (64 MiB, passes tuned to about a second) is well above.
+- **No inner encryption**: the passwords inside the decrypted file are not encrypted a second
+  time. Only very old or unusual files are written this way.
+
+A strong master password matters more than any of these, but they decide how much each guess
+costs.
+
 ## Reading a database
 
 - The file is checked to be a KeePass database before you are asked for its password, so a
