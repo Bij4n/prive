@@ -194,7 +194,8 @@ pub fn search_everywhere<'a>(entries: &'a [Entry], query: &str) -> Vec<&'a Entry
     hits
 }
 
-/// Case-insensitive substring search over the path (group and title), username, URL and tags.
+/// Case-insensitive substring search over the path (group and title), username, URLs
+/// (including KeePassXC's extra ones) and tags.
 /// Titles that match exactly come first, then titles that start with the query, then the rest;
 /// within each, the original order is kept.
 pub fn search<'a>(entries: &'a [Entry], query: &str) -> Vec<&'a Entry> {
@@ -204,7 +205,7 @@ pub fn search<'a>(entries: &'a [Entry], query: &str) -> Vec<&'a Entry> {
         .filter(|e| {
             e.path().to_lowercase().contains(&q)
                 || e.username.to_lowercase().contains(&q)
-                || e.url.to_lowercase().contains(&q)
+                || e.urls().iter().any(|u| u.to_lowercase().contains(&q))
                 || e.tags.iter().any(|t| t.to_lowercase().contains(&q))
         })
         .collect();
@@ -273,6 +274,12 @@ mod tests {
         assert_eq!(search(&e, "example").len(), 1);
         assert_eq!(search(&e, "cloud").len(), 1);
         assert!(search(&e, "zzz").is_empty());
+        e[1].custom = vec![crate::entry::CustomField {
+            name: "KP2A_URL".into(),
+            value: zeroize::Zeroizing::new("https://login.second.example".into()),
+            protected: false,
+        }];
+        assert_eq!(search(&e, "second.example").len(), 1);
     }
 
     #[test]
