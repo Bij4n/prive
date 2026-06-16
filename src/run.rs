@@ -59,13 +59,15 @@ pub fn resolve(entries: &[Entry], spec: &EnvSpec) -> Result<Zeroizing<String>> {
 }
 
 /// Names `--from` exports: upper case, digits and `_`, the way environment variables are
-/// written (`AWS_ACCESS_KEY_ID`). Fields like `plan` or `otp` stay put.
+/// written (`AWS_ACCESS_KEY_ID`). Fields like `plan` or `otp` stay put, and so do KeePassXC's
+/// extra addresses (`KP2A_URL_1`), which look like variables but belong to the browser.
 pub fn exported_name(name: &str) -> bool {
     valid_name(name)
         && name
             .chars()
             .all(|c| c.is_ascii_uppercase() || c.is_ascii_digit() || c == '_')
         && !crate::otp::is_otp_field(name)
+        && !crate::entry::is_extra_url_field(name)
 }
 
 /// Every custom field of `entry` named like an environment variable, e.g. an entry holding
@@ -185,5 +187,7 @@ mod tests {
             "one-time code settings are never exported"
         );
         assert!(!exported_name("1ABC"));
+        assert!(!exported_name("KP2A_URL"));
+        assert!(!exported_name("KP2A_URL_3"));
     }
 }

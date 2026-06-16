@@ -19,7 +19,7 @@ prive run --from Work/AWS -e AWS_REGION=Work/AWS:region-eu -- terraform plan
   (`username`, `url`, `notes`, or a custom field's name). An entry title that itself contains
   `:` still works: the whole value is tried as an entry name first.
 - `--from ENTRY` exports every custom field whose name is written like an environment
-  variable: upper-case letters, digits and `_`. One-time code settings are never exported.
+  variable: upper-case letters, digits and `_`. One-time code settings and KeePassXC's extra addresses (`KP2A_URL`, `KP2A_URL_1`, ...) are never exported.
 - The command's exit code becomes prive's, so `prive run ... -- make deploy` works in scripts
   and CI. On Linux and macOS prive replaces itself with the command (signals reach it
   directly); on Windows it waits for it.
