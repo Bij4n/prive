@@ -649,18 +649,27 @@ pub fn info(global: &Global, json: bool) -> Result<()> {
 pub fn show_config(global: &Global, json: bool) -> Result<()> {
     let path = config::Config::path();
     let cfg = config::Config::load()?;
-    let (db, db_from) = match (&global.db, &cfg.db) {
-        (Some(d), _) if std::env::var_os("PRIVE_DB").is_some_and(|v| v == d.as_os_str()) => {
-            (Some(d.clone()), "PRIVE_DB")
-        }
-        (Some(d), _) => (Some(d.clone()), "--db"),
-        (None, Some(_)) => (cfg.target(None, None).ok().map(|t| t.db), "config file"),
-        (None, None) => (None, "not set"),
-    };
-    let keyfile = cfg
+    let target = cfg
         .target(global.db.as_deref(), global.keyfile.as_deref())
-        .ok()
-        .and_then(|t| t.keyfile);
+        .ok();
+    let source = match (&global.db, &cfg.db) {
+        (Some(d), _) if std::env::var_os("PRIVE_DB").is_some_and(|v| v == d.as_os_str()) => {
+            "PRIVE_DB"
+        }
+        (Some(_), _) => "--db",
+        (None, Some(_)) => "config file",
+        (None, None) => "not set",
+    };
+    // `--db work` is reported as the file it stands for, and where the name came from.
+    let db_from = match global.db.as_deref().filter(|d| cfg.named(d).is_some()) {
+        Some(name) => format!("{source}, [databases.{}]", name.display()),
+        None => source.to_string(),
+    };
+    let db = target
+        .as_ref()
+        .map(|t| t.db.clone())
+        .or_else(|| global.db.clone());
+    let keyfile = target.and_then(|t| t.keyfile);
     #[cfg(unix)]
     let agent_dir = Some(crate::agent::dir::agent_dir());
     #[cfg(not(unix))]
@@ -675,6 +684,7 @@ pub fn show_config(global: &Global, json: bool) -> Result<()> {
             "clipboard_seconds": cfg.clipboard_seconds(),
             "agent_minutes": cfg.agent_idle().as_secs() / 60,
             "agent_dir": agent_dir,
+            "databases": cfg.databases,
         }));
     }
     let show = |p: &Option<std::path::PathBuf>| {
@@ -687,7 +697,7 @@ pub fn show_config(global: &Global, json: bool) -> Result<()> {
     } else {
         " (doesn't exist)"
     };
-    let text = format!(
+    let mut text = format!(
         "config file:       {}{exists}\n\
          database:          {} ({db_from})\n\
          key file:          {}\n\
@@ -701,6 +711,15 @@ pub fn show_config(global: &Global, json: bool) -> Result<()> {
         cfg.agent_idle().as_secs() / 60,
         show(&agent_dir),
     );
+    let width = cfg.databases.keys().map(|n| n.chars().count()).max();
+    for (i, (name, d)) in cfg.databases.iter().enumerate() {
+        let label = if i == 0 { "named databases:" } else { "" };
+        text.push_str(&format!(
+            "{label:<18} {name:<w$}  {}\n",
+            d.path.display(),
+            w = width.unwrap_or(0)
+        ));
+    }
     output::print(&text)
 }
 
