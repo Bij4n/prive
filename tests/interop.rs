@@ -170,6 +170,53 @@ fn listings_match_keepassxc() {
     }
 }
 
+/// `prive info` and `keepassxc-cli db-info` describe each fixture the same way.
+#[test]
+fn info_matches_keepassxc() {
+    if !available() {
+        return;
+    }
+    for f in ["kdbx31.kdbx", "kdbx40.kdbx", "kdbx41.kdbx"] {
+        let ours = assert_cmd::Command::cargo_bin("prive")
+            .unwrap()
+            .env("PRIVE_CONFIG", fixture("no-such-config.toml"))
+            .env("PRIVE_NO_AGENT", "1")
+            .args(["--db", &fixture(f), "--password-stdin", "info", "--json"])
+            .write_stdin(format!("{PASSWORD}\n"))
+            .output()
+            .unwrap();
+        let ours: serde_json::Value = serde_json::from_slice(&ours.stdout).unwrap();
+        let theirs = keepassxc(&["db-info", "-q", &fixture(f)]).unwrap();
+        let value = |label: &str| -> String {
+            theirs
+                .lines()
+                .find_map(|l| l.strip_prefix(label))
+                .unwrap_or_default()
+                .trim()
+                .to_string()
+        };
+        assert_eq!(value("Name:"), ours["name"], "{f}");
+        assert_eq!(
+            value("Number of entries:"),
+            ours["entries"].to_string(),
+            "{f}"
+        );
+        // KeePassXC counts the root group and the recycle bin; prive counts neither.
+        assert_eq!(
+            value("Number of groups:"),
+            (ours["groups"].as_u64().unwrap() + 2).to_string(),
+            "{f}"
+        );
+        assert_eq!(
+            value("KDF:"),
+            format!("AES ({} rounds)", ours["kdf"]["iterations"]),
+            "{f}"
+        );
+        assert_eq!(value("Cipher:"), "AES 256-bit", "{f}");
+        assert_eq!(ours["cipher"], "AES-256", "{f}");
+    }
+}
+
 /// `prive otp` and `keepassxc-cli show -t` agree on every entry with a code, read from the
 /// same file.
 #[test]
