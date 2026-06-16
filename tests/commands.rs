@@ -1151,3 +1151,69 @@ fn get_format_with_a_missing_field_exits_3() {
         .code(3)
         .stdout(predicate::str::is_empty());
 }
+
+/// A config file naming the fixtures, for `--db NAME`.
+fn named_config(dir: &std::path::Path) -> PathBuf {
+    let p = dir.join("config.toml");
+    std::fs::write(
+        &p,
+        format!(
+            "[databases.main]\npath = {:?}\n[databases.keys]\npath = {:?}\nkeyfile = {:?}\n",
+            fixture("kdbx41.kdbx"),
+            fixture("keyfile.kdbx"),
+            fixture("keyfile.keyx"),
+        ),
+    )
+    .unwrap();
+    p
+}
+
+fn prive_named(config: &std::path::Path, db: &str, args: &[&str]) -> Command {
+    let mut cmd = Command::cargo_bin("prive").unwrap();
+    cmd.env("PRIVE_CONFIG", config)
+        .env("PRIVE_NO_AGENT", "1")
+        .env_remove("PRIVE_DB")
+        .env_remove("PRIVE_KEYFILE")
+        .env_remove("PRIVE_PASSWORD_FILE")
+        .args(["--db", db, "--password-stdin"])
+        .args(args)
+        .write_stdin("fixture-pass\n");
+    cmd
+}
+
+#[test]
+fn databases_by_name_with_their_key_files() {
+    let dir = tempfile::tempdir().unwrap();
+    let cfg = named_config(dir.path());
+    prive_named(&cfg, "main", &["get", "Bank", "-f", "username"])
+        .assert()
+        .success()
+        .stdout("me@example.invalid\n");
+    // The key file comes from [databases.keys], not the command line.
+    prive_named(&cfg, "keys", &["ls", "--paths"])
+        .assert()
+        .success()
+        .stdout("Key file entry\n");
+    prive_named(&cfg, "mian", &["ls"])
+        .assert()
+        .code(3)
+        .stderr(predicate::str::contains("the config file names keys, main"));
+}
+
+#[test]
+fn config_shows_the_named_databases() {
+    let dir = tempfile::tempdir().unwrap();
+    let cfg = named_config(dir.path());
+    prive_named(&cfg, "keys", &["config"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("(--db, [databases.keys])"))
+        .stdout(predicate::str::contains("keyfile.keyx"))
+        .stdout(predicate::str::contains("named databases:   keys"));
+    let out = prive_named(&cfg, "main", &["config", "--json"])
+        .output()
+        .unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert!(v["database"].as_str().unwrap().ends_with("kdbx41.kdbx"));
+    assert!(v["databases"]["keys"]["keyfile"].is_string());
+}
