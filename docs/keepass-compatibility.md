@@ -26,7 +26,9 @@ Title, username, password, URL, notes, tags, custom fields (with their "protecte
 attachments, earlier versions (history), modification and expiry times, the "exclude from
 reports" flag, and
 two-factor secrets in every format KeePass apps store them (see [totp.md](totp.md)).
-Entries in the recycle bin are left out. Field references (`{REF:P@I:...}`) are resolved
+Extra addresses saved in KeePassXC's browser settings
+(the `KP2A_URL`, `KP2A_URL_1`, ... fields KeePassXC and Keepass2Android share) count as the
+entry's URLs for `search` and `git-credential`. Entries in the recycle bin are left out. Field references (`{REF:P@I:...}`) are resolved
 when a value is used; see [references.md](references.md).
 
 ## Tested against

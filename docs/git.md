@@ -11,7 +11,9 @@ git push                  # the password for github.com comes from the entry who
 
 How the entry is chosen:
 
-- its URL's host is the remote's host (`www.` doesn't matter, a port does);
+- its URL's host is the remote's host (`www.` doesn't matter, a port does); an extra
+  address from KeePassXC's browser settings (`KP2A_URL` fields) counts as well, so one entry
+  can serve `github.com` and `gist.github.com`;
 - if the URL has a scheme, it is the remote's (`https://...`); a bare `github.com` fits any;
 - if the remote URL names a user (`https://demo@github.com/...`), the entry's username is
   that user.
