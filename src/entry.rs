@@ -70,7 +70,31 @@ impl std::fmt::Debug for Attachment {
     }
 }
 
+/// Custom fields KeePassXC and Keepass2Android keep more addresses of the same login in:
+/// `KP2A_URL`, `KP2A_URL_1`, `KP2A_URL_2`, ...
+pub fn is_extra_url_field(name: &str) -> bool {
+    name == "KP2A_URL"
+        || name
+            .strip_prefix("KP2A_URL_")
+            .is_some_and(|n| !n.is_empty() && n.chars().all(|c| c.is_ascii_digit()))
+}
+
 impl Entry {
+    /// The entry's URL, then its extra ones (see [`is_extra_url_field`]), leaving out empty
+    /// ones.
+    pub fn urls(&self) -> Vec<&str> {
+        std::iter::once(self.url.as_str())
+            .chain(
+                self.custom
+                    .iter()
+                    .filter(|c| is_extra_url_field(&c.name))
+                    .map(|c| c.value.as_str()),
+            )
+            .map(str::trim)
+            .filter(|u| !u.is_empty())
+            .collect()
+    }
+
     /// The names of the attached files, in order.
     pub fn attachment_names(&self) -> Vec<String> {
         self.attachments.iter().map(|a| a.name.clone()).collect()
@@ -304,6 +328,33 @@ mod tests {
         assert!(shown.contains("id_ed25519 (17 bytes)"));
         assert!(!shown.contains("PRIVATE-KEY-BYTES"));
         assert!(!shown.contains("old-s3cret"));
+    }
+
+    #[test]
+    fn extra_urls_follow_the_main_one() {
+        let mut e = sample();
+        e.url = "https://github.com".into();
+        let field = |name: &str, value: &str| CustomField {
+            name: name.into(),
+            value: Zeroizing::new(value.into()),
+            protected: false,
+        };
+        e.custom = vec![
+            field("KP2A_URL", "https://gist.github.com"),
+            field("KP2A_URL_1", "https://api.github.com"),
+            field("KP2A_URL_2", " "),
+            field("KP2A_URL_X", "https://not.an.extra.url"),
+            field("plan", "team"),
+        ];
+        assert_eq!(
+            e.urls(),
+            [
+                "https://github.com",
+                "https://gist.github.com",
+                "https://api.github.com"
+            ]
+        );
+        assert!(Entry::default().urls().is_empty());
     }
 
     #[test]
