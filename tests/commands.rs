@@ -1115,3 +1115,38 @@ fn audit_reports_the_database_settings_first() {
     assert_eq!(v["database"][0]["kind"], "aes_kdf");
     assert_eq!(v["database"][0]["rounds"], 1_000_000);
 }
+
+#[test]
+fn get_format_fills_a_template() {
+    prive(&[
+        "get",
+        "Work/GitHub",
+        "--format",
+        "{USERNAME}:{PASSWORD} {S:plan}",
+    ])
+    .assert()
+    .success()
+    .stdout("demo:gh-Secret-1 team\n");
+    // Old VPN's BANK_PASSWORD refers to Bank's password.
+    prive(&[
+        "get",
+        "Old VPN",
+        "--format",
+        r#"{"pw":"{S:BANK_PASSWORD}"}"#,
+    ])
+    .assert()
+    .success()
+    .stdout("{\"pw\":\"b4nk-P@ss-2026!\"}\n");
+    prive(&["get", "Bank", "--format", "{TOTP}"])
+        .assert()
+        .success()
+        .stdout(predicate::str::is_match(r"^\d{8}\n$").unwrap());
+}
+
+#[test]
+fn get_format_with_a_missing_field_exits_3() {
+    prive(&["get", "Bank", "--format", "{S:nope}"])
+        .assert()
+        .code(3)
+        .stdout(predicate::str::is_empty());
+}
