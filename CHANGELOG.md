@@ -14,6 +14,8 @@ The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `l
   smallest setting, passwords not encrypted inside the file
 - `prive get ENTRY --format TEMPLATE`: several fields in one line, with KeePass's
   placeholders (`{USERNAME}`, `{PASSWORD}`, `{S:field}`, `{TOTP}`)
+- Databases by name: `[databases.work]` in the config file, opened with `--db work`, with
+  its own key file; `prive config` lists them
 - KeePassXC's extra URLs (`KP2A_URL` fields) count for `search` and `git-credential`, and
   are never exported by `run --from`
 - `prive import FILE --check`: reads exports from Proton Pass, Apple Passwords, Google
@@ -86,6 +88,8 @@ The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `l
   source policy checked in CI
 
 ### Fixed
+- A missing field, attachment, one-time code or group was reported as "no entry matches";
+  the message now says what is missing (still exit code 3)
 - Notices printed their `{...}` placeholders instead of the values ("clears in {seconds} s")
 - Windows: `--clip` no longer keeps a caller waiting (a script's `$(...)`) until the
   clipboard is cleared; the helper used to inherit the caller's output pipes
