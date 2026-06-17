@@ -18,11 +18,16 @@ command fails, so `$(prive get ...)` is empty on failure rather than holding an 
 ## Examples
 
 ```bash
-if ! pw=$(prive get "Work/GitHub"); then
-  case $? in
-    3) echo "no such entry" ;;
-    4) echo "be more specific" ;;
-    5) echo "wrong password" ;;
-  esac
-fi
+pw=$(prive get "Work/GitHub")
+status=$?
+case $status in
+  0) ;;
+  3) echo "no such entry" ;;
+  4) echo "be more specific" ;;
+  5) echo "wrong password" ;;
+  *) echo "prive failed ($status)" ;;
+esac
 ```
+
+Read `$?` straight after the command. Inside `if ! pw=$(...)` it is already the negated
+status, always 0, so a `case $?` there never matches.
