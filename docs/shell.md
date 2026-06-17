@@ -29,6 +29,15 @@ _prive_entry_names() { compadd -- ${(f)"$(prive ls --paths 2>/dev/null </dev/nul
 compdef '_arguments "1: :(get show otp open file history)" "2: :_prive_entry_names"' prive
 ```
 
+Database names from the config file (`--db work`) can be completed the same way, from
+`prive config --json`, which needs no password:
+
+```bash
+_prive_db_names() { prive config --json 2>/dev/null | jq -r '.databases | keys[]'; }
+# in _prive_entries, before the case on the command:
+#   [[ ${COMP_WORDS[COMP_CWORD-1]} == --db ]] && { COMPREPLY=($(compgen -W "$(_prive_db_names)" -- "$cur")); return; }
+```
+
 ## Short functions
 
 ```bash
