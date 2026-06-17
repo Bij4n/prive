@@ -29,9 +29,18 @@ running as the same user can read a process's environment.
 ## Choosing the database
 
 `--db <file>` or `PRIVE_DB`, otherwise the database recorded in the config file
-(`~/.config/prive/config.toml` on Linux, or `$PRIVE_CONFIG`). A key file is given with
-`--keyfile` or `PRIVE_KEYFILE`; a `keyfile` in the config file only goes with the config's
-own database.
+(`~/.config/prive/config.toml` on Linux, or `$PRIVE_CONFIG`). `--db` also takes a name from
+the config's `[databases.NAME]` tables (see [config.md](config.md#several-databases)), so a
+script can say `--db work` and leave the path to each machine's config. A key file is given
+with `--keyfile` or `PRIVE_KEYFILE`; a `keyfile` in the config file only goes with the
+database it is written next to.
+
+`prive config --json` says which file and key file a command would use, without opening
+anything:
+
+```bash
+prive --db work config --json | jq -r .database
+```
 
 ## Recipes
 
