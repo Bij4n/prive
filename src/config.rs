@@ -181,6 +181,16 @@ impl Config {
         }
         self.databases.get(name)
     }
+
+    /// The name the config file gives the database at `path`, if any (paths compared after
+    /// resolving `~/`, symlinks and relative parts).
+    pub fn name_of(&self, path: &Path) -> Option<&str> {
+        let want = std::fs::canonicalize(path).ok()?;
+        self.databases
+            .iter()
+            .find(|(_, d)| std::fs::canonicalize(expand_home(&d.path)).ok().as_ref() == Some(&want))
+            .map(|(name, _)| name.as_str())
+    }
 }
 
 /// A leading `~/` in a config file path means the home directory, as people write it.

@@ -67,11 +67,15 @@ pub fn unlock(global: &Global, minutes: Option<u64>) -> Result<()> {
             creds.keyfile.clone(),
             creds.password.as_ref().map(|p| p.as_str()),
         )?;
-        let name = target
+        let file = target
             .db
             .file_name()
             .map(|n| n.to_string_lossy().into_owned())
             .unwrap_or_default();
+        let name = match cfg.name_of(&target.db) {
+            Some(n) => format!("{n} ({file})"),
+            None => file,
+        };
         output::notice(&format!(
             "Unlocked {name}. It locks after {} minutes unused, or with `prive lock`.",
             idle.as_secs() / 60
@@ -98,6 +102,7 @@ pub fn lock() -> Result<()> {
 }
 
 pub fn status(json: bool) -> Result<()> {
+    let cfg = config::Config::load().unwrap_or_default();
     #[cfg(unix)]
     let state = crate::agent::client::status()?;
     #[cfg(not(unix))]
@@ -110,12 +115,16 @@ pub fn status(json: bool) -> Result<()> {
         return output::print_json(&serde_json::json!({
             "unlocked": db.is_some(),
             "db": db,
+            "name": db.as_deref().and_then(|d| cfg.name_of(d)),
             "seconds_left": left,
         }));
     }
     match db {
         Some(db) => output::print(&format!(
-            "unlocked: {} (locks in {} min {} s if unused)\n",
+            "unlocked: {}{} (locks in {} min {} s if unused)\n",
+            cfg.name_of(&db)
+                .map(|n| format!("{n}, "))
+                .unwrap_or_default(),
             db.display(),
             left / 60,
             left % 60
