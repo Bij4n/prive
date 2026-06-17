@@ -331,6 +331,34 @@ mod tests {
     }
 
     #[test]
+    fn a_path_finds_its_name() {
+        let dir = tempfile::tempdir().unwrap();
+        let db = dir.path().join("work.kdbx");
+        std::fs::write(&db, b"x").unwrap();
+        let mut cfg = Config::default();
+        cfg.databases.insert(
+            "work".into(),
+            Named {
+                path: db.clone(),
+                keyfile: None,
+            },
+        );
+        assert_eq!(cfg.name_of(&db), Some("work"));
+        // The same file by another route is still the same database.
+        assert_eq!(
+            cfg.name_of(&dir.path().join(".").join("work.kdbx")),
+            Some("work")
+        );
+        #[cfg(unix)]
+        {
+            let link = dir.path().join("link.kdbx");
+            std::os::unix::fs::symlink(&db, &link).unwrap();
+            assert_eq!(cfg.name_of(&link), Some("work"));
+        }
+        assert_eq!(cfg.name_of(&dir.path().join("other.kdbx")), None);
+    }
+
+    #[test]
     fn a_mistyped_name_lists_the_names() {
         let cfg: Config = toml::from_str(
             "[databases.work]\npath = \"/w.kdbx\"\n[databases.home]\npath = \"/h.kdbx\"\n",
