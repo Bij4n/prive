@@ -242,3 +242,31 @@ fn an_old_protocol_version_is_turned_away() {
     BufReader::new(&stream).read_line(&mut reply).unwrap();
     assert!(reply.contains("not supported"), "{reply}");
 }
+
+#[test]
+fn a_named_database_is_unlocked_and_shown_by_name() {
+    let s = Sandbox::new();
+    std::fs::write(
+        s.dir.path().join("config.toml"),
+        format!("agent_minutes = 1\n[databases.home]\npath = {:?}\n", s.db),
+    )
+    .unwrap();
+    let mut cmd = Command::cargo_bin("prive").unwrap();
+    cmd.env("PRIVE_CONFIG", s.dir.path().join("config.toml"))
+        .env("PRIVE_AGENT_DIR", s.agent_dir())
+        .env_remove("PRIVE_NO_AGENT")
+        .env_remove("PRIVE_PASSWORD_FILE")
+        .args(["--db", "home", "--password-stdin", "unlock"])
+        .write_stdin("fixture-pass\n")
+        .timeout(std::time::Duration::from_secs(30))
+        .assert()
+        .success()
+        .stderr(predicate::str::contains("Unlocked home (db.kdbx)"));
+    s.prive(&["status"])
+        .assert()
+        .success()
+        .stdout(predicate::str::starts_with("unlocked: home, "));
+    let out = s.prive(&["status", "--json"]).output().unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert_eq!(v["name"], "home");
+}
