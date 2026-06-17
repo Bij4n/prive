@@ -11,6 +11,15 @@ prive was run from a script or a pipe and had no way to ask. Give the password w
 Check both: a database made with a key file needs `--keyfile` (or `keyfile` in the config)
 every time. A database with only a key file needs `--no-password` too.
 
+**`no database 'wrok': no such file, and the config file names home, work`** (exit 3)
+`--db` (or `PRIVE_DB`) was neither a file nor one of the `[databases.NAME]` in the config
+file. Check the spelling, or write a file in the current directory as `./name`.
+
+**`Work/GitHub: no field 'pin' (it has: title, username, ...)`** (exit 3)
+The entry is there, the field isn't. Custom field names are matched exactly first, then
+ignoring case; the list shows the names the entry has. In `--format` templates, `{S:name}`
+needs the exact name.
+
 **`... is not a KeePass database`**
 The path points at something else (an export, a backup in another format, a KeePass 1
 `.kdb` file). Open it in KeePassXC to see what it is.
