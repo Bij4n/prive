@@ -21,6 +21,11 @@ forgets the database and exits:
 `--no-agent` (or `PRIVE_NO_AGENT=1`) makes a command read the file and ask, even when the
 database is unlocked.
 
+The agent holds one database at a time. Unlocking another (`prive --db work unlock`)
+replaces the first; commands for a database it doesn't hold read the file and ask as usual.
+When the unlocked file has a name in the config file, `unlock` and `status` use it:
+`unlocked: work, /home/me/Work/Work.kdbx`.
+
 ## How it is protected
 
 - The agent listens on a Unix socket in a private directory: `$PRIVE_AGENT_DIR`, else
