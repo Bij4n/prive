@@ -46,12 +46,15 @@ prive show Work/GitHub --reveal
 prive get Work/GitHub            # just the password, for scripts
 prive get Work/GitHub --clip     # copy it; cleared after 20 seconds
 prive get Work/GitHub -f username
+prive get Work/GitHub --format '{USERNAME}:{PASSWORD}'   # several fields in one line
 prive otp Work/GitHub            # current one-time code
 prive open Work/GitHub           # the site in the browser, password on the clipboard
 prive file Work/Deploy id_ed25519 -o ~/.ssh/id_deploy   # an attached file, owner-only
 prive pick                       # fuzzy finder; Enter copies the password
-prive audit                      # weak, reused, old and expired passwords
+prive audit                      # weak key settings; weak, reused, old and expired passwords
 prive audit --hibp               # also check Have I Been Pwned (k-anonymity)
+prive info                       # format, encryption and key settings of the file
+prive --db work ls               # another database, by its name in the config file
 prive gen --words 6              # a passphrase, no database needed
 prive lock                       # forget the unlocked database now
 ```
