@@ -7,7 +7,7 @@ prive's exit codes are part of its interface: scripts can rely on them.
 | 0 | Success |
 | 1 | Any other error (unreadable file, bad option value, network failure, ...) |
 | 2 | Usage error: unknown command or option, missing argument |
-| 3 | No entry matches the name given |
+| 3 | Not there: no entry matches the name given, or the entry has no such field, attachment or one-time code, or there is no such group or named database |
 | 4 | The name matches more than one entry; the candidates are listed on stderr |
 | 5 | Wrong password or key file, or a password was needed but stdin is not a terminal |
 | 130 | You cancelled an interactive choice (Esc or Ctrl-C in `pick`), as with fzf |
