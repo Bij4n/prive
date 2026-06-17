@@ -270,3 +270,15 @@ fn a_named_database_is_unlocked_and_shown_by_name() {
     let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
     assert_eq!(v["name"], "home");
 }
+
+#[test]
+fn info_comes_from_the_agent_without_a_password() {
+    let s = Sandbox::new();
+    s.unlock();
+    // No password source at all: only the agent can answer.
+    s.prive(&["info", "--json"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("\"format\": \"KDBX 4.1\""))
+        .stdout(predicate::str::contains("\"entries\": 7"));
+}
