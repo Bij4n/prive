@@ -57,10 +57,21 @@ pub fn config_file() -> (Check, Option<Config>) {
         );
     }
     match Config::load_from(&path) {
-        Ok(cfg) => (
-            check("config file", Status::Ok, path.display().to_string()),
-            Some(cfg),
-        ),
+        Ok(cfg) => {
+            let c = match loose_mode(&path, 0o022) {
+                // Whoever can change the file can change password_command to anything.
+                Some(mode) => check(
+                    "config file",
+                    Status::Warn,
+                    format!(
+                        "{} is mode {mode:o}: others can change it (chmod 600 it)",
+                        path.display()
+                    ),
+                ),
+                None => check("config file", Status::Ok, path.display().to_string()),
+            };
+            (c, Some(cfg))
+        }
         Err(e) => (check("config file", Status::Fail, format!("{e:#}")), None),
     }
 }
@@ -112,6 +123,21 @@ pub fn conflicts(db: &Path) -> Check {
     }
 }
 
+/// The file's permission bits, if any of `bits` are set in them (Unix; elsewhere never).
+fn loose_mode(path: &Path, bits: u32) -> Option<u32> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mode = std::fs::metadata(path).ok()?.permissions().mode() & 0o777;
+        (mode & bits != 0).then_some(mode)
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = (path, bits);
+        None
+    }
+}
+
 /// Whether `program` can be run: a path that exists, or a name found on `PATH`.
 fn findable(program: &str) -> bool {
     let p = Path::new(program);
@@ -139,17 +165,26 @@ fn findable(program: &str) -> bool {
 pub fn password(command: Option<&[String]>) -> Check {
     if let Some(file) = std::env::var_os("PRIVE_PASSWORD_FILE") {
         let p = Path::new(&file);
-        return if p.is_file() {
-            check(
-                "password",
-                Status::Ok,
-                format!("from PRIVE_PASSWORD_FILE {}", p.display()),
-            )
-        } else {
+        return if !p.is_file() {
             check(
                 "password",
                 Status::Fail,
                 format!("PRIVE_PASSWORD_FILE {} is not a file", p.display()),
+            )
+        } else if let Some(mode) = loose_mode(p, 0o077) {
+            check(
+                "password",
+                Status::Warn,
+                format!(
+                    "PRIVE_PASSWORD_FILE {} is mode {mode:o}: others can read it (chmod 600 it)",
+                    p.display()
+                ),
+            )
+        } else {
+            check(
+                "password",
+                Status::Ok,
+                format!("from PRIVE_PASSWORD_FILE {}", p.display()),
             )
         };
     }
@@ -298,6 +333,26 @@ mod tests {
         let c = conflicts(&db);
         assert_eq!(c.status, Status::Warn);
         assert!(c.detail.contains("prive diff"), "{}", c.detail);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn loose_permissions_are_found() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = tempfile::tempdir().unwrap();
+        let f = dir.path().join("f");
+        std::fs::write(&f, b"x").unwrap();
+        std::fs::set_permissions(&f, std::fs::Permissions::from_mode(0o600)).unwrap();
+        assert_eq!(loose_mode(&f, 0o077), None);
+        std::fs::set_permissions(&f, std::fs::Permissions::from_mode(0o644)).unwrap();
+        assert_eq!(loose_mode(&f, 0o077), Some(0o644));
+        assert_eq!(
+            loose_mode(&f, 0o022),
+            None,
+            "readable by others is fine for a config"
+        );
+        std::fs::set_permissions(&f, std::fs::Permissions::from_mode(0o664)).unwrap();
+        assert_eq!(loose_mode(&f, 0o022), Some(0o664));
     }
 
     #[cfg(unix)]
