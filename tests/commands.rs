@@ -1383,3 +1383,37 @@ fn doctor_points_at_conflict_copies() {
         .stdout(predicate::str::contains("prive diff '"))
         .stdout(predicate::str::contains("Passwords.sync-conflict-20260612"));
 }
+
+#[cfg(unix)]
+#[test]
+fn a_password_command_in_the_config_file() {
+    let dir = tempfile::tempdir().unwrap();
+    let cfg = dir.path().join("config.toml");
+    std::fs::write(
+        &cfg,
+        format!(
+            "db = {:?}\npassword_command = [\"printf\", \"%s\\\\n\", \"fixture-pass\"]\n",
+            fixture("kdbx41.kdbx")
+        ),
+    )
+    .unwrap();
+    let run = |env_file: Option<&std::path::Path>| {
+        let mut c = Command::cargo_bin("prive").unwrap();
+        c.env("PRIVE_CONFIG", &cfg)
+            .env("PRIVE_NO_AGENT", "1")
+            .env_remove("PRIVE_DB")
+            .env_remove("PRIVE_PASSWORD_FILE")
+            .args(["get", "Bank", "-f", "username"])
+            .write_stdin("");
+        if let Some(f) = env_file {
+            c.env("PRIVE_PASSWORD_FILE", f);
+        }
+        c
+    };
+    // No stdin, no terminal: the command gives the password.
+    run(None).assert().success().stdout("me@example.invalid\n");
+    // PRIVE_PASSWORD_FILE comes first.
+    let wrong = dir.path().join("wrong");
+    std::fs::write(&wrong, "not-it\n").unwrap();
+    run(Some(&wrong)).assert().code(5);
+}
