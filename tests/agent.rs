@@ -297,3 +297,52 @@ fn diff_takes_the_database_from_the_agent_and_asks_only_for_the_other_copy() {
         .success()
         .stdout(predicate::str::starts_with("Only in conflict.kdbx:"));
 }
+
+#[test]
+fn two_databases_unlocked_together() {
+    let s = Sandbox::new();
+    let second = s.dir.path().join("second.kdbx");
+    std::fs::copy(fixture("conflict.kdbx"), &second).unwrap();
+    let cmd = |db: Option<&std::path::Path>, args: &[&str]| {
+        let mut c = Command::cargo_bin("prive").unwrap();
+        c.env("PRIVE_CONFIG", s.dir.path().join("config.toml"))
+            .env("PRIVE_AGENT_DIR", s.agent_dir())
+            .env_remove("PRIVE_NO_AGENT")
+            .env_remove("PRIVE_PASSWORD_FILE")
+            .env_remove("PRIVE_DB")
+            .timeout(std::time::Duration::from_secs(30));
+        if let Some(db) = db {
+            c.arg("--db").arg(db);
+        }
+        c.args(args).write_stdin("");
+        c
+    };
+    s.unlock();
+    cmd(Some(&second), &["--password-stdin", "unlock"])
+        .write_stdin("fixture-pass\n")
+        .assert()
+        .success();
+    // Both answer without a password.
+    cmd(Some(&s.db), &["get", "Bank"])
+        .assert()
+        .success()
+        .stdout("b4nk-P@ss-2026!\n");
+    cmd(Some(&second), &["get", "Bank"])
+        .assert()
+        .success()
+        .stdout("b4nk-P@ss-2026-new!\n");
+    let out = cmd(None, &["status", "--json"]).output().unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert_eq!(v["databases"].as_array().unwrap().len(), 2);
+    assert!(v["db"].as_str().unwrap().ends_with("second.kdbx"));
+    // --db locks one; the other stays.
+    cmd(Some(&s.db), &["lock"]).assert().success();
+    cmd(Some(&s.db), &["get", "Bank"]).assert().code(5);
+    cmd(Some(&second), &["get", "Bank"]).assert().success();
+    // Plain `prive lock` forgets everything.
+    cmd(None, &["lock"])
+        .assert()
+        .success()
+        .stderr(predicate::str::contains("Locked."));
+    cmd(Some(&second), &["get", "Bank"]).assert().code(5);
+}
