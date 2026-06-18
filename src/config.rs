@@ -26,6 +26,10 @@ pub struct Config {
     /// Key file used with the default database.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub keyfile: Option<PathBuf>,
+    /// A program whose first line of output is the default database's password, run without
+    /// a shell: `["secret-tool", "lookup", "prive", "main"]`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub password_command: Option<Vec<String>>,
     /// Seconds before a copied secret is cleared from the clipboard.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub clipboard_seconds: Option<u64>,
@@ -43,6 +47,8 @@ pub struct Named {
     pub path: PathBuf,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub keyfile: Option<PathBuf>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub password_command: Option<Vec<String>>,
 }
 
 /// A name for `[databases.NAME]`: something `--db` can't mistake for a path.
@@ -80,13 +86,26 @@ impl Config {
                 path.display()
             );
         }
-        for name in cfg.databases.keys() {
+        for (name, named) in &cfg.databases {
             anyhow::ensure!(
                 valid_name(name),
                 "[databases.{name}] in {}: a name is letters, digits, - and _ only",
                 path.display()
             );
+            anyhow::ensure!(
+                named
+                    .password_command
+                    .as_ref()
+                    .is_none_or(|c| !c.is_empty()),
+                "[databases.{name}] in {}: password_command needs a program to run",
+                path.display()
+            );
         }
+        anyhow::ensure!(
+            cfg.password_command.as_ref().is_none_or(|c| !c.is_empty()),
+            "password_command in {} needs a program to run",
+            path.display()
+        );
         if let Some(n) = cfg.clipboard_seconds {
             anyhow::ensure!(
                 CLIPBOARD_SECONDS_RANGE.contains(&n),
@@ -118,17 +137,18 @@ impl Config {
     }
 }
 
-/// The database a command opens, and its key file.
+/// The database a command opens, its key file, and the program that gives its password.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Target {
     pub db: PathBuf,
     pub keyfile: Option<PathBuf>,
+    pub password_command: Option<Vec<String>>,
 }
 
 impl Config {
     /// `--db` (or `PRIVE_DB`) wins over the config file, and may be one of its
-    /// `[databases.NAME]`. A key file from the config file only goes with the database it is
-    /// written next to, never with one named on the command line.
+    /// `[databases.NAME]`. A key file or password command from the config file only goes with
+    /// the database it is written next to, never with one named on the command line.
     pub fn target(&self, db: Option<&Path>, keyfile: Option<&Path>) -> Result<Target> {
         if let Some(named) = db.and_then(|d| self.named(d)) {
             return Ok(Target {
@@ -136,6 +156,7 @@ impl Config {
                 keyfile: keyfile
                     .map(Path::to_path_buf)
                     .or_else(|| named.keyfile.as_deref().map(expand_home)),
+                password_command: named.password_command.clone(),
             });
         }
         // A mistyped name would otherwise come back as "no such file", which hides the names.
@@ -156,6 +177,7 @@ impl Config {
             Some(d) => Ok(Target {
                 db: d.to_path_buf(),
                 keyfile: keyfile.map(Path::to_path_buf),
+                password_command: None,
             }),
             None => {
                 let db = self.db.as_deref().map(expand_home).context(
@@ -166,6 +188,7 @@ impl Config {
                     keyfile: keyfile
                         .map(Path::to_path_buf)
                         .or_else(|| self.keyfile.as_deref().map(expand_home)),
+                    password_command: self.password_command.clone(),
                 })
             }
         }
@@ -341,6 +364,7 @@ mod tests {
             Named {
                 path: db.clone(),
                 keyfile: None,
+                password_command: None,
             },
         );
         assert_eq!(cfg.name_of(&db), Some("work"));
@@ -376,6 +400,29 @@ mod tests {
                 .target(Some(Path::new("wrok")), None)
                 .is_ok()
         );
+    }
+
+    #[test]
+    fn password_commands_go_with_their_database() {
+        let cfg: Config = toml::from_str(
+            "db = \"/main.kdbx\"\npassword_command = [\"secret-tool\", \"lookup\", \"prive\", \"main\"]\n\
+             [databases.work]\npath = \"/work.kdbx\"\npassword_command = [\"pass\", \"show\", \"kdbx/work\"]\n",
+        )
+        .unwrap();
+        let main = cfg.target(None, None).unwrap();
+        assert_eq!(main.password_command.unwrap()[0], "secret-tool");
+        let work = cfg.target(Some(Path::new("work")), None).unwrap();
+        assert_eq!(
+            work.password_command.unwrap(),
+            ["pass", "show", "kdbx/work"]
+        );
+        // Never with a database named on the command line.
+        let other = cfg.target(Some(Path::new("/other.kdbx")), None).unwrap();
+        assert!(other.password_command.is_none());
+        let dir = tempfile::tempdir().unwrap();
+        let p = dir.path().join("c.toml");
+        std::fs::write(&p, "password_command = []\n").unwrap();
+        assert!(Config::load_from(&p).is_err());
     }
 
     #[test]
