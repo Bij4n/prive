@@ -4,6 +4,8 @@
 //! Entries are paired by UUID, which KeePass keeps when an entry is renamed or moved. Only the
 //! names of the fields that differ are reported, never their values.
 
+use std::collections::{HashMap, HashSet};
+
 use serde::Serialize;
 
 use crate::entry::Entry;
@@ -107,9 +109,12 @@ fn custom<'a>(e: &'a Entry, name: &str) -> Option<&'a str> {
 /// Every difference between `here` and `there`: entries only in one, then changed ones, each
 /// group in path order.
 pub fn compare(here: &[Entry], there: &[Entry]) -> Vec<Difference> {
+    // Paired through maps: a scan of the other copy per entry took seconds at 5,000 entries.
+    let there_by_key: HashMap<String, &Entry> = there.iter().map(|b| (key(&b.uuid), b)).collect();
+    let here_keys: HashSet<String> = here.iter().map(|a| key(&a.uuid)).collect();
     let mut out = Vec::new();
     for a in here {
-        match there.iter().find(|b| key(&b.uuid) == key(&a.uuid)) {
+        match there_by_key.get(&key(&a.uuid)) {
             None => out.push(Difference {
                 kind: Kind::OnlyHere,
                 path: a.path(),
@@ -142,7 +147,7 @@ pub fn compare(here: &[Entry], there: &[Entry]) -> Vec<Difference> {
         }
     }
     for b in there {
-        if !here.iter().any(|a| key(&a.uuid) == key(&b.uuid)) {
+        if !here_keys.contains(&key(&b.uuid)) {
             out.push(Difference {
                 kind: Kind::OnlyThere,
                 path: b.path(),
@@ -164,11 +169,12 @@ pub fn compare(here: &[Entry], there: &[Entry]) -> Vec<Difference> {
 
 /// Mark the entries found in one copy only that the other copy holds in its recycle bin.
 pub fn note_recycled(diffs: &mut [Difference], here_bin: &[String], there_bin: &[String]) {
-    let has = |bin: &[String], uuid: &str| bin.iter().any(|u| key(u) == key(uuid));
+    let set = |bin: &[String]| bin.iter().map(|u| key(u)).collect::<HashSet<String>>();
+    let (here_bin, there_bin) = (set(here_bin), set(there_bin));
     for d in diffs {
         d.recycled_in_other = match d.kind {
-            Kind::OnlyHere => has(there_bin, &d.uuid),
-            Kind::OnlyThere => has(here_bin, &d.uuid),
+            Kind::OnlyHere => there_bin.contains(&key(&d.uuid)),
+            Kind::OnlyThere => here_bin.contains(&key(&d.uuid)),
             Kind::Changed => false,
         };
     }
@@ -271,6 +277,22 @@ mod tests {
             .map(|x| (x.path.as_str(), x.recycled_in_other))
             .collect();
         assert_eq!(marks, [("Old", true), ("New", false)]);
+    }
+
+    #[test]
+    fn five_thousand_entries_compare_quickly() {
+        let mk = |n: usize| -> Vec<Entry> {
+            (0..n)
+                .map(|i| entry(&format!("{i:032x}"), "", &format!("Site {i}"), "pw"))
+                .collect()
+        };
+        let (a, mut b) = (mk(5000), mk(5000));
+        b[10].password = Zeroizing::new("changed".into());
+        let started = std::time::Instant::now();
+        assert_eq!(compare(&a, &b).len(), 1);
+        // Generous for a debug build on a slow machine; the scan this replaced took 4 s
+        // even in release.
+        assert!(started.elapsed() < std::time::Duration::from_secs(2));
     }
 
     #[test]
