@@ -41,6 +41,11 @@ pub struct Difference {
     pub fields: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub newer: Option<Newer>,
+    pub uuid: String,
+    /// For an entry in one copy only: the other copy has it in its recycle bin, so it was
+    /// deleted there rather than added here.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub recycled_in_other: bool,
 }
 
 fn key(uuid: &str) -> String {
@@ -111,6 +116,8 @@ pub fn compare(here: &[Entry], there: &[Entry]) -> Vec<Difference> {
                 other_path: None,
                 fields: Vec::new(),
                 newer: None,
+                uuid: a.uuid.clone(),
+                recycled_in_other: false,
             }),
             Some(b) => {
                 let fields = changed_fields(a, b);
@@ -128,6 +135,8 @@ pub fn compare(here: &[Entry], there: &[Entry]) -> Vec<Difference> {
                     other_path: (a.path() != b.path()).then(|| b.path()),
                     fields,
                     newer: Some(newer),
+                    uuid: a.uuid.clone(),
+                    recycled_in_other: false,
                 });
             }
         }
@@ -140,6 +149,8 @@ pub fn compare(here: &[Entry], there: &[Entry]) -> Vec<Difference> {
                 other_path: None,
                 fields: Vec::new(),
                 newer: None,
+                uuid: b.uuid.clone(),
+                recycled_in_other: false,
             });
         }
     }
@@ -149,6 +160,18 @@ pub fn compare(here: &[Entry], there: &[Entry]) -> Vec<Difference> {
             .then_with(|| x.path.to_lowercase().cmp(&y.path.to_lowercase()))
     });
     out
+}
+
+/// Mark the entries found in one copy only that the other copy holds in its recycle bin.
+pub fn note_recycled(diffs: &mut [Difference], here_bin: &[String], there_bin: &[String]) {
+    let has = |bin: &[String], uuid: &str| bin.iter().any(|u| key(u) == key(uuid));
+    for d in diffs {
+        d.recycled_in_other = match d.kind {
+            Kind::OnlyHere => has(there_bin, &d.uuid),
+            Kind::OnlyThere => has(here_bin, &d.uuid),
+            Kind::Changed => false,
+        };
+    }
 }
 
 #[cfg(test)]
@@ -234,6 +257,20 @@ mod tests {
         let a = vec![entry("00000000-0000-0000-0000-0000000000AB", "", "x", "p")];
         let b = vec![entry("000000000000000000000000000000ab", "", "x", "p")];
         assert!(compare(&a, &b).is_empty());
+    }
+
+    #[test]
+    fn deleted_on_one_side_is_told_apart_from_added() {
+        let here = vec![entry("1", "", "Bank", "x"), entry("2", "", "Old", "y")];
+        let there = vec![entry("1", "", "Bank", "x"), entry("3", "", "New", "z")];
+        let mut d = compare(&here, &there);
+        // "Old" sits in the other copy's recycle bin; "New" is simply new there.
+        note_recycled(&mut d, &[], &["2".into()]);
+        let marks: Vec<(&str, bool)> = d
+            .iter()
+            .map(|x| (x.path.as_str(), x.recycled_in_other))
+            .collect();
+        assert_eq!(marks, [("Old", true), ("New", false)]);
     }
 
     #[test]

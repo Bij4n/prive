@@ -700,7 +700,8 @@ pub fn diff(
             }
         }
     };
-    let differences = crate::diff::compare(&here.entries, &there.entries);
+    let mut differences = crate::diff::compare(&here.entries, &there.entries);
+    crate::diff::note_recycled(&mut differences, &here.recycled, &there.recycled);
     if json {
         return output::print_json(&serde_json::json!({
             "here": here.path,

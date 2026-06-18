@@ -225,6 +225,10 @@ pub fn render_diff(
             if let Some(o) = &d.other_path {
                 line.push_str(&format!(" -> {o}"));
             }
+            if d.recycled_in_other {
+                let bin = if kind == Kind::OnlyHere { &b } else { &a };
+                line.push_str(&format!(" (in the recycle bin of {bin})"));
+            }
             if !d.fields.is_empty() {
                 line.push_str(&format!(": {}", d.fields.join(", ")));
             }
