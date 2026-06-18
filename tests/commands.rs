@@ -1332,7 +1332,14 @@ fn doctor_json() {
         .collect();
     assert_eq!(
         names,
-        ["config file", "database", "key file", "agent", "clipboard"]
+        [
+            "config file",
+            "database",
+            "key file",
+            "sync",
+            "agent",
+            "clipboard"
+        ]
     );
     assert_eq!(v[1]["status"], "ok");
 }

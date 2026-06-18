@@ -87,6 +87,31 @@ pub fn database(path: &Path) -> Check {
     check("database", Status::Ok, detail)
 }
 
+/// Conflict copies a sync tool left next to the database.
+pub fn conflicts(db: &Path) -> Check {
+    let found = crate::sync::conflict_copies(db);
+    match found.as_slice() {
+        [] => check("sync", Status::Ok, "no conflict copies next to it"),
+        [one] => check(
+            "sync",
+            Status::Warn,
+            format!(
+                "a conflict copy next to it: prive diff '{}' shows what is in it",
+                one.display()
+            ),
+        ),
+        [first, ..] => check(
+            "sync",
+            Status::Warn,
+            format!(
+                "{} conflict copies next to it; start with prive diff '{}'",
+                found.len(),
+                first.display()
+            ),
+        ),
+    }
+}
+
 pub fn keyfile(path: Option<&Path>) -> Check {
     match path {
         None => check("key file", Status::Skip, "none"),
@@ -154,8 +179,13 @@ pub fn run(db: Option<&Path>, keyfile_arg: Option<&Path>) -> Vec<Check> {
     let mut checks = vec![cfg_check];
     match cfg.map(|c| c.target(db, keyfile_arg)) {
         Some(Ok(target)) => {
-            checks.push(database(&target.db));
+            let db_check = database(&target.db);
+            let found = db_check.status != Status::Fail;
+            checks.push(db_check);
             checks.push(keyfile(target.keyfile.as_deref()));
+            if found {
+                checks.push(conflicts(&target.db));
+            }
         }
         Some(Err(e)) => checks.push(check("database", Status::Fail, format!("{e:#}"))),
         None => checks.push(check(
@@ -194,6 +224,23 @@ mod tests {
         let not_keepass = database(&fixture("source.xml"));
         assert_eq!(not_keepass.status, Status::Fail);
         assert!(not_keepass.detail.contains("not a KeePass database"));
+    }
+
+    #[test]
+    fn conflict_copies_are_a_warning() {
+        let dir = tempfile::tempdir().unwrap();
+        let db = dir.path().join("Passwords.kdbx");
+        std::fs::write(&db, b"x").unwrap();
+        assert_eq!(conflicts(&db).status, Status::Ok);
+        std::fs::write(
+            dir.path()
+                .join("Passwords.sync-conflict-20260612-101500-ABCDEFG.kdbx"),
+            b"x",
+        )
+        .unwrap();
+        let c = conflicts(&db);
+        assert_eq!(c.status, Status::Warn);
+        assert!(c.detail.contains("prive diff"), "{}", c.detail);
     }
 
     #[test]
