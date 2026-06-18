@@ -1364,3 +1364,22 @@ fn doctor_with_a_broken_config_file() {
             "--    database     the config file needs fixing first",
         ));
 }
+
+#[test]
+fn doctor_points_at_conflict_copies() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = dir.path().join("Passwords.kdbx");
+    std::fs::copy(fixture("kdbx41.kdbx"), &db).unwrap();
+    std::fs::copy(
+        fixture("conflict.kdbx"),
+        dir.path()
+            .join("Passwords.sync-conflict-20260612-101500-ABCDEFG.kdbx"),
+    )
+    .unwrap();
+    doctor(&db, &[])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("warn  sync"))
+        .stdout(predicate::str::contains("prive diff '"))
+        .stdout(predicate::str::contains("Passwords.sync-conflict-20260612"));
+}
