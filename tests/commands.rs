@@ -1432,3 +1432,27 @@ fn otp_watch_needs_a_terminal_and_asks_nothing_without_one() {
         .assert()
         .code(2);
 }
+
+#[cfg(unix)]
+#[test]
+fn doctor_warns_about_a_password_file_others_can_read() {
+    use std::os::unix::fs::PermissionsExt;
+    let dir = tempfile::tempdir().unwrap();
+    let pw = dir.path().join("pw");
+    std::fs::write(&pw, "fixture-pass\n").unwrap();
+    std::fs::set_permissions(&pw, std::fs::Permissions::from_mode(0o644)).unwrap();
+    doctor(&fixture("kdbx41.kdbx"), &[])
+        .env("PRIVE_PASSWORD_FILE", &pw)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("warn  password"))
+        .stdout(predicate::str::contains("mode 644"));
+    std::fs::set_permissions(&pw, std::fs::Permissions::from_mode(0o600)).unwrap();
+    doctor(&fixture("kdbx41.kdbx"), &[])
+        .env("PRIVE_PASSWORD_FILE", &pw)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(
+            "ok    password     from PRIVE_PASSWORD_FILE",
+        ));
+}
