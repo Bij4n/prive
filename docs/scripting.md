@@ -20,6 +20,11 @@ non-interactively, use one of:
 - `PRIVE_PASSWORD_FILE=<path>`: the first line of that file is the password. Keep the file
   readable by you only.
 
+- `password_command` in the config file: a program that prints the password, such as your
+  desktop's keyring, `pass`, or 1Password's `op` (see [config.md](config.md#password-command)).
+  It is used for the database it is written next to, after `--password-stdin` and
+  `PRIVE_PASSWORD_FILE`.
+
 A database protected by a key file alone takes `--no-password` (with `--keyfile`), and
 prive won't ask for a password at all.
 

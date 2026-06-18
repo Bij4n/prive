@@ -15,7 +15,10 @@ What prive protects against, and what it doesn't. This will grow as the rewrite 
 - Never prints a password unless asked: `show` hides passwords and protected fields unless
   `--reveal`; `ls` and `search` never include them, not even in `--json`.
 - Never puts the master password on the command line or in an environment variable. It comes
-  from a hidden prompt, from stdin (`--password-stdin`) or from a file you name.
+  from a hidden prompt, from stdin (`--password-stdin`), from a file you name, or from a
+  `password_command` you set in the config file, which runs without a shell and whose output
+  is wiped from memory once read. That command is trusted as much as the config file itself:
+  keep both writable by you only.
 - Never waits on a prompt nobody can answer: without a terminal it fails with exit code 5.
 - Clears copied secrets from the clipboard after a timeout, unless you have copied something
   else since, and asks the clipboard not to keep them in its history.

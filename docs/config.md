@@ -23,6 +23,30 @@ agent_minutes = 15
 clipboard_seconds = 20
 ```
 
+## Password command
+
+Instead of typing the master password, let another program hand it over: the system keyring,
+`pass`, a password manager's CLI. prive runs it without a shell and reads the first line it
+prints; its input and error output stay on your terminal, so it can ask for a PIN or touch.
+
+```toml
+db = "~/Passwords.kdbx"
+password_command = ["secret-tool", "lookup", "prive", "Passwords"]   # GNOME Keyring, KWallet
+
+[databases.work]
+path = "~/Work/Work.kdbx"
+password_command = ["pass", "show", "kdbx/work"]
+```
+
+Other examples: `["security", "find-generic-password", "-s", "prive", "-w"]` (macOS Keychain),
+`["op", "read", "op://Private/KeePass/password"]` (1Password). Store the password there
+first, e.g. `secret-tool store --label prive prive Passwords`.
+
+A command is only used with the database it is written next to, never with a file given as
+`--db path`. `--password-stdin` and `PRIVE_PASSWORD_FILE` come first. If the command fails
+or prints nothing, prive says so and stops. `prive doctor` checks that the program is there
+without running it.
+
 ## Several databases
 
 Give other databases a name, and open them with `--db NAME` (or `PRIVE_DB=NAME`):

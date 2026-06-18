@@ -10,6 +10,8 @@ The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `l
 ### Added
 - `prive diff OTHER`: what differs between the database and a conflict copy or backup,
   entries paired by UUID, field names only
+- `password_command` in the config file, per database: the master password from the system
+  keyring, `pass`, `op` or any program that prints it; run without a shell
 - The agent keeps several databases unlocked at once; `prive --db work lock` forgets one,
   `prive lock` all of them; `status` lists them
 - `prive doctor`: checks the config, database file, key file, agent and clipboard without a
