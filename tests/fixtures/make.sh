@@ -7,6 +7,7 @@
 #   kdbx31.kdbx   KDBX 3.1: source without QualityCheck (a 4.1-only field)
 #   kdbx40.kdbx   KDBX 4.0: same, plus entry custom data (needs format 4)
 #   kdbx41.kdbx   KDBX 4.1: the full source, including an entry excluded from reports
+#   conflict.kdbx KDBX 4.1: kdbx41 with three changes, as a sync conflict copy (prive diff)
 #   keyfile.kdbx  KDBX 3.1, password + key file (keyfile.keyx), one entry
 #   keyonly.kdbx  KDBX 3.1, key file only (keyonly.keyx), no password, one entry
 #
@@ -17,7 +18,7 @@ pw=fixture-pass
 # The one time every fixture records, the same as in source.xml.
 when=2026-05-26T17:00:00Z
 command -v keepassxc-cli >/dev/null || { echo "keepassxc-cli not found" >&2; exit 1; }
-rm -f kdbx31.kdbx kdbx40.kdbx kdbx41.kdbx keyfile.kdbx keyfile.keyx keyonly.kdbx keyonly.keyx
+rm -f kdbx31.kdbx kdbx40.kdbx kdbx41.kdbx conflict.kdbx keyfile.kdbx keyfile.keyx keyonly.kdbx keyonly.keyx
 tmp="$(mktemp -d)"
 trap 'rm -rf "${tmp:?}"' EXIT
 
@@ -31,6 +32,16 @@ sed 's#<Tags>dev;cloud</Tags>#<Tags>dev;cloud</Tags><CustomData><Item><Key>fixtu
 import "$tmp/40.xml" kdbx40.kdbx
 
 import source.xml kdbx41.kdbx
+
+# conflict.kdbx: kdbx41 as a sync tool's conflict copy might have it, for `prive diff`. Bank
+# has a new password, saved a day later; Legacy 2FA was renamed; one entry was added.
+add_entry='<Entry><UUID>AAAAAAAAAAAAAAAAAAAAUA==</UUID><Times><CreationTime>2026-05-27T09:00:00Z</CreationTime><LastModificationTime>2026-05-27T09:00:00Z</LastModificationTime><LastAccessTime>2026-05-27T09:00:00Z</LastAccessTime><LocationChanged>2026-05-27T09:00:00Z</LocationChanged><ExpiryTime>2026-05-27T09:00:00Z</ExpiryTime><Expires>False</Expires></Times><String><Key>Title</Key><Value>Conference Wi-Fi</Value></String><String><Key>Password</Key><Value ProtectInMemory="True">guest-2026</Value></String></Entry>'
+sed -e 's#b4nk-P@ss-2026!#b4nk-P@ss-2026-new!#' \
+    -e '/<UUID>AAAAAAAAAAAAAAAAAAAAEA==<\/UUID>/{n;s#<LastModificationTime>[^<]*#<LastModificationTime>2026-05-27T09:00:00Z#;}' \
+    -e 's#<Value>Legacy 2FA</Value>#<Value>Legacy 2FA (old)</Value>#' \
+    -e "s#<Name>Root</Name>#<Name>Root</Name>$add_entry#" \
+    source.xml > "$tmp/conflict.xml"
+import "$tmp/conflict.xml" conflict.kdbx
 
 # The key file databases hold one entry each. They are imported too (db-create and add
 # would stamp the clock time on them), and keepassxc-cli writes the new key file.
@@ -74,7 +85,7 @@ printf '%s\n%s\n' "$pw" "$pw" | keepassxc-cli import -q -p --set-key-file keyfil
 single "Key only entry" keyonly "" > "$tmp/keyonly.xml"
 keepassxc-cli import -q --set-key-file keyonly.keyx "$tmp/keyonly.xml" keyonly.kdbx 2>/dev/null
 
-for f in kdbx31.kdbx kdbx40.kdbx kdbx41.kdbx keyfile.kdbx keyonly.kdbx; do
+for f in kdbx31.kdbx kdbx40.kdbx kdbx41.kdbx conflict.kdbx keyfile.kdbx keyonly.kdbx; do
   v="$(head -c 12 "$f" | od -An -tx1 | tr -d ' \n')"
   printf '%-13s version %s.%s\n' "$f" "$((16#${v:22:2}${v:20:2}))" "$((16#${v:18:2}${v:16:2}))"
 done
