@@ -145,6 +145,7 @@ fn dispatch(cli: Cli) -> Result<()> {
             json,
         } => commands::diff(g, other, other_keyfile.as_deref(), *json),
         Command::Config { json } => commands::show_config(g, *json),
+        Command::Doctor { json } => commands::doctor(g, *json),
         Command::GitCredential { action } => commands::git_credential(g, action),
         Command::Completions { shell } => commands::completions(*shell),
     }

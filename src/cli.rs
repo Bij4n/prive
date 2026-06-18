@@ -267,6 +267,12 @@ pub enum Command {
         json: bool,
     },
 
+    /// Check the config, database, key file, agent and clipboard, without a password
+    Doctor {
+        #[arg(long)]
+        json: bool,
+    },
+
     /// Show the settings in effect and where each came from
     Config {
         #[arg(long)]

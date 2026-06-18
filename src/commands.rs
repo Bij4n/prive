@@ -725,6 +725,27 @@ pub fn info(global: &Global, json: bool) -> Result<()> {
     output::print(&output::render_info(&db, size))
 }
 
+/// Run every check and print what each found. Exit 1 when any check fails.
+pub fn doctor(global: &Global, json: bool) -> Result<()> {
+    let checks = crate::doctor::run(global.db.as_deref(), global.keyfile.as_deref());
+    if json {
+        output::print_json(&checks)?;
+    } else {
+        output::print(&output::render_checks(&checks))?;
+    }
+    let failed = checks
+        .iter()
+        .filter(|c| c.status == crate::doctor::Status::Fail)
+        .count();
+    if failed > 0 {
+        anyhow::bail!(
+            "{failed} {} failed",
+            if failed == 1 { "check" } else { "checks" }
+        );
+    }
+    Ok(())
+}
+
 pub fn show_config(global: &Global, json: bool) -> Result<()> {
     let path = config::Config::path();
     let cfg = config::Config::load()?;

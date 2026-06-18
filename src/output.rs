@@ -192,6 +192,23 @@ pub fn show_json(e: &Entry, reveal: bool) -> ShowJson {
 }
 
 /// The `show` view of one entry. Passwords and protected fields stay hidden unless `reveal`.
+/// `prive doctor`: one line per check, `ok`, `warn`, `FAIL` or `--` first.
+pub fn render_checks(checks: &[crate::doctor::Check]) -> String {
+    use crate::doctor::Status;
+    let width = checks.iter().map(|c| c.name.len()).max().unwrap_or(0);
+    let mut out = String::new();
+    for c in checks {
+        let status = match c.status {
+            Status::Ok => "ok",
+            Status::Warn => "warn",
+            Status::Fail => "FAIL",
+            Status::Skip => "--",
+        };
+        out.push_str(&format!("{status:<5} {:<width$}  {}\n", c.name, c.detail));
+    }
+    out
+}
+
 /// `prive diff`: entries only in one copy, then changed ones with what changed.
 pub fn render_diff(
     here: &std::path::Path,
