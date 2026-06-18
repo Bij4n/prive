@@ -346,6 +346,7 @@ fn five_thousand_entries() {
     }
     assert!(child.wait().unwrap().success());
 
+    let itself = db.to_str().unwrap().to_string();
     for args in [
         &["ls"][..],
         &["search", "Site 4999"],
@@ -354,6 +355,8 @@ fn five_thousand_entries() {
         &["codes"],
         &["audit", "--max-age", "0"],
         &["get", "Site 499"],
+        &["info"],
+        &["diff", itself.as_str()],
     ] {
         let started = std::time::Instant::now();
         let out = assert_cmd::Command::cargo_bin("prive")
