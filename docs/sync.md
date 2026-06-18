@@ -21,6 +21,12 @@ name one of them a conflict copy:
 | Nextcloud | `Passwords (conflicted copy 2026-06-12 101500).kdbx` |
 | Dropbox | `Passwords (Laptop's conflicted copy 2026-06-12).kdbx` |
 
+`prive doctor` looks for them next to the database and says so:
+
+```
+warn  sync         a conflict copy next to it: prive diff '/home/me/Sync/Passwords.sync-conflict-20260612-101500-ABCDEFG.kdbx' shows what is in it
+```
+
 Find out what is in one copy and not the other:
 
 ```bash

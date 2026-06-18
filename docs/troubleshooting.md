@@ -7,6 +7,7 @@ agent and the clipboard without asking for a password, and says what it found:
 ok    config file  /home/me/.config/prive/config.toml
 ok    database     /home/me/Passwords.kdbx (KDBX 4.1, 48.2 KB)
 --    key file     none
+ok    sync         no conflict copies next to it
 ok    agent        running, /home/me/Passwords.kdbx unlocked (12 min left)
 warn  clipboard    no clipboard available: --clip and pick won't work here; print instead
 ```
