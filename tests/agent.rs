@@ -282,3 +282,17 @@ fn info_comes_from_the_agent_without_a_password() {
         .stdout(predicate::str::contains("\"format\": \"KDBX 4.1\""))
         .stdout(predicate::str::contains("\"entries\": 7"));
 }
+
+#[test]
+fn diff_takes_the_database_from_the_agent_and_asks_only_for_the_other_copy() {
+    let s = Sandbox::new();
+    s.unlock();
+    let other = fixture("conflict.kdbx");
+    // No password anywhere: the agent can't vouch for the other file.
+    s.prive(&["diff", other.to_str().unwrap()]).assert().code(5);
+    s.prive(&["--password-stdin", "diff", other.to_str().unwrap()])
+        .write_stdin("fixture-pass\n")
+        .assert()
+        .success()
+        .stdout(predicate::str::starts_with("Only in conflict.kdbx:"));
+}
