@@ -29,6 +29,7 @@ pub mod qr;
 pub mod refs;
 pub mod run;
 pub mod select;
+pub mod sync;
 pub mod template;
 pub mod unlock;
 
