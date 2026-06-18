@@ -1419,3 +1419,16 @@ fn a_password_command_in_the_config_file() {
     std::fs::write(&wrong, "not-it\n").unwrap();
     run(Some(&wrong)).assert().code(5);
 }
+
+#[test]
+fn otp_watch_needs_a_terminal_and_asks_nothing_without_one() {
+    // Refused before the database is opened: the password on stdin is never read.
+    prive(&["otp", "Bank", "--watch"])
+        .assert()
+        .code(1)
+        .stdout(predicate::str::is_empty())
+        .stderr(predicate::str::contains("--watch needs a terminal"));
+    prive(&["otp", "Bank", "--watch", "--clip"])
+        .assert()
+        .code(2);
+}
