@@ -41,6 +41,7 @@ struct Open {
     fingerprint: Fingerprint,
     entries: Vec<Entry>,
     info: db::Info,
+    recycled: Vec<String>,
 }
 
 #[derive(Default)]
@@ -100,6 +101,7 @@ impl State {
                     fingerprint: Fingerprint::of_bytes(&bytes),
                     entries: opened.entries,
                     info: opened.info,
+                    recycled: opened.recycled,
                 });
                 Response::Unlocked
             }
@@ -134,6 +136,7 @@ impl State {
         Response::Entries {
             entries: open.entries.iter().map(WireEntry::from).collect(),
             info: Box::new(open.info.clone()),
+            recycled: open.recycled.clone(),
         }
     }
 }
@@ -169,13 +172,19 @@ mod tests {
             unlock(&mut s, &fixture("kdbx41.kdbx"), "fixture-pass"),
             Response::Unlocked
         ));
-        let Response::Entries { entries, info } = s.handle(Request::Entries {
+        let Response::Entries {
+            entries,
+            info,
+            recycled,
+        } = s.handle(Request::Entries {
             db: fixture("kdbx41.kdbx"),
-        }) else {
+        })
+        else {
             panic!("expected entries");
         };
         assert_eq!(entries.len(), 7);
         assert_eq!(info.format, "KDBX 4.1");
+        assert_eq!(recycled.len(), 1);
         // Another database is not served from this one.
         assert!(matches!(
             s.handle(Request::Entries {

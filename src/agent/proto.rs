@@ -62,6 +62,9 @@ pub enum Response {
         /// earlier build, which is the same protocol, so it defaults.
         #[serde(default)]
         info: Box<crate::db::Info>,
+        /// UUIDs of the entries in the recycle bin (defaults the same way).
+        #[serde(default)]
+        recycled: Vec<String>,
     },
     /// Nothing open, a different database, or it changed on disk.
     Locked {
@@ -199,6 +202,7 @@ mod tests {
         let line = serde_json::to_string(&Response::Entries {
             entries: vec![WireEntry::from(&e)],
             info: Box::default(),
+            recycled: Vec::new(),
         })
         .unwrap();
         let Response::Entries { entries, .. } = serde_json::from_str(&line).unwrap() else {
@@ -214,10 +218,15 @@ mod tests {
     #[test]
     fn entries_without_info_still_parse() {
         let line = r#"{"op":"entries","entries":[]}"#;
-        let Response::Entries { entries, info } = serde_json::from_str(line).unwrap() else {
+        let Response::Entries {
+            entries,
+            info,
+            recycled,
+        } = serde_json::from_str(line).unwrap()
+        else {
             panic!("wrong response");
         };
-        assert!(entries.is_empty());
+        assert!(entries.is_empty() && recycled.is_empty());
         assert_eq!(*info, crate::db::Info::default());
     }
 
