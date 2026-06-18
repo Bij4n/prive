@@ -250,6 +250,17 @@ pub enum Command {
     /// Generate a password, passphrase or PIN (no database needed)
     Gen(GenArgs),
 
+    /// Compare the database with another copy of it: a sync tool's conflict copy, a backup
+    Diff {
+        /// The other copy
+        other: PathBuf,
+        /// Key file for the other copy, when it isn't the same as the database's
+        #[arg(long, value_name = "FILE")]
+        other_keyfile: Option<PathBuf>,
+        #[arg(long)]
+        json: bool,
+    },
+
     /// Show how the database is stored: format, encryption, key settings, counts
     Info {
         #[arg(long)]

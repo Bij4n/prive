@@ -138,6 +138,11 @@ fn dispatch(cli: Cli) -> Result<()> {
         } => commands::audit(g, *hibp, *max_age, *expiring, *json),
         Command::Gen(args) => commands::generate(args),
         Command::Info { json } => commands::info(g, *json),
+        Command::Diff {
+            other,
+            other_keyfile,
+            json,
+        } => commands::diff(g, other, other_keyfile.as_deref(), *json),
         Command::Config { json } => commands::show_config(g, *json),
         Command::GitCredential { action } => commands::git_credential(g, action),
         Command::Completions { shell } => commands::completions(*shell),

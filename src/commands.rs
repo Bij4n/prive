@@ -642,6 +642,79 @@ fn one_generated(args: &GenArgs) -> Result<generate::Generated> {
 
 /// The settings in effect: where the config file is, which database and key file a command
 /// would open (and why), the clipboard and agent timeouts, and where the agent's socket is.
+/// Compare the database with `other`. The other copy is tried with the same password (and
+/// key file, unless `--other-keyfile`) first, as a conflict copy normally has them; only if
+/// that fails, and there is a terminal to ask on, is its own password asked for.
+pub fn diff(
+    global: &Global,
+    other: &std::path::Path,
+    other_keyfile: Option<&std::path::Path>,
+    json: bool,
+) -> Result<()> {
+    let cfg = config::Config::load()?;
+    let target = cfg.target(global.db.as_deref(), global.keyfile.as_deref())?;
+    #[cfg(unix)]
+    let unlocked = if global.no_agent {
+        None
+    } else {
+        from_agent(&target.db)
+    };
+    #[cfg(not(unix))]
+    let unlocked: Option<db::Db> = None;
+    let there_bytes = db::read_file(other)?;
+    let (here, creds) = match unlocked {
+        Some(d) => (d, None),
+        None => {
+            let bytes = db::read_file(&target.db)?;
+            let c = unlock::KeySource::for_target(global, &target)?;
+            (db::Db::from_bytes(&target.db, &bytes, &c)?, Some(c))
+        }
+    };
+    let keyfile = other_keyfile
+        .map(std::path::Path::to_path_buf)
+        .or_else(|| target.keyfile.clone());
+    let ask = |password_stdin: bool| -> Result<db::Db> {
+        let c = unlock::KeySource {
+            password_stdin,
+            no_password: global.no_password,
+            keyfile: keyfile.clone(),
+        }
+        .credentials(other)?;
+        db::Db::from_bytes(other, &there_bytes, &c)
+    };
+    let there = match creds {
+        // The agent had the database, so no password was read yet.
+        None => ask(global.password_stdin)?,
+        Some(c) => {
+            let same = unlock::Credentials {
+                password: c.password.clone(),
+                keyfile: keyfile.clone(),
+            };
+            match db::Db::from_bytes(other, &there_bytes, &same) {
+                Ok(d) => d,
+                Err(e)
+                    if matches!(e.downcast_ref::<Failure>(), Some(Failure::BadCredentials))
+                        && !global.password_stdin
+                        && std::io::stdin().is_terminal() =>
+                {
+                    output::notice("The other copy has a different password or key file.");
+                    ask(false)?
+                }
+                Err(e) => return Err(e),
+            }
+        }
+    };
+    let differences = crate::diff::compare(&here.entries, &there.entries);
+    if json {
+        return output::print_json(&serde_json::json!({
+            "here": here.path,
+            "there": there.path,
+            "differences": differences,
+        }));
+    }
+    output::print(&output::render_diff(&here.path, &there.path, &differences))
+}
+
 pub fn info(global: &Global, json: bool) -> Result<()> {
     let db = open(global)?;
     let size = std::fs::metadata(&db.path).map(|m| m.len()).unwrap_or(0);

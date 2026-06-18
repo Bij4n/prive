@@ -192,6 +192,54 @@ pub fn show_json(e: &Entry, reveal: bool) -> ShowJson {
 }
 
 /// The `show` view of one entry. Passwords and protected fields stay hidden unless `reveal`.
+/// `prive diff`: entries only in one copy, then changed ones with what changed.
+pub fn render_diff(
+    here: &std::path::Path,
+    there: &std::path::Path,
+    diffs: &[crate::diff::Difference],
+) -> String {
+    use crate::diff::{Kind, Newer};
+    let name = |p: &std::path::Path| {
+        p.file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_else(|| p.display().to_string())
+    };
+    let (a, b) = (name(here), name(there));
+    if diffs.is_empty() {
+        return format!("{a} and {b} hold the same entries\n");
+    }
+    let mut out = String::new();
+    for (kind, heading) in [
+        (Kind::OnlyHere, format!("Only in {a}:")),
+        (Kind::OnlyThere, format!("Only in {b}:")),
+        (Kind::Changed, "Changed:".to_string()),
+    ] {
+        let rows: Vec<&crate::diff::Difference> = diffs.iter().filter(|d| d.kind == kind).collect();
+        if rows.is_empty() {
+            continue;
+        }
+        out.push_str(&heading);
+        out.push('\n');
+        for d in rows {
+            let mut line = format!("  {}", d.path);
+            if let Some(o) = &d.other_path {
+                line.push_str(&format!(" -> {o}"));
+            }
+            if !d.fields.is_empty() {
+                line.push_str(&format!(": {}", d.fields.join(", ")));
+            }
+            match d.newer {
+                Some(Newer::Here) => line.push_str(&format!(" (newer in {a})")),
+                Some(Newer::There) => line.push_str(&format!(" (newer in {b})")),
+                _ => {}
+            }
+            out.push_str(&line);
+            out.push('\n');
+        }
+    }
+    out
+}
+
 /// `prive info`: where the database is, how it is protected and what is in it.
 pub fn render_info(db: &crate::db::Db, size: u64) -> String {
     let i = &db.info;
