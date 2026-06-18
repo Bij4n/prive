@@ -3,7 +3,10 @@
 //! Password sources, first match wins:
 //! 1. `--password-stdin`: the first line of stdin.
 //! 2. `PRIVE_PASSWORD_FILE`: the first line of that file.
-//! 3. A hidden prompt, only when stdin is a terminal. Otherwise we fail at once instead of
+//! 3. The database's `password_command` from the config file: the first line it prints. It is
+//!    run without a shell, with this terminal for its input and errors (so `pass` or a
+//!    pinentry can still ask), and only its output is read.
+//! 4. A hidden prompt, only when stdin is a terminal. Otherwise we fail at once instead of
 //!    blocking on a prompt nobody can answer.
 //!
 //! There is deliberately no `PRIVE_PASSWORD` variable: environment variables are readable by
@@ -23,6 +26,8 @@ pub struct KeySource {
     /// Key-file-only database: don't ask for a password at all.
     pub no_password: bool,
     pub keyfile: Option<PathBuf>,
+    /// The config file's `password_command` for this database.
+    pub password_command: Option<Vec<String>>,
 }
 
 pub struct Credentials {
@@ -57,13 +62,17 @@ impl KeySource {
             password_stdin: global.password_stdin,
             no_password: global.no_password,
             keyfile: target.keyfile.clone(),
+            password_command: target.password_command.clone(),
         }
         .credentials(&target.db)
     }
 
     /// Ask for a new password twice (or read it once from a non-interactive source).
     pub fn new_password(&self) -> Result<Zeroizing<String>> {
-        if self.password_stdin || std::env::var_os("PRIVE_PASSWORD_FILE").is_some() {
+        if self.password_stdin
+            || std::env::var_os("PRIVE_PASSWORD_FILE").is_some()
+            || self.password_command.is_some()
+        {
             return self.password("");
         }
         let first = self.password("New database password: ")?;
@@ -88,12 +97,43 @@ impl KeySource {
             );
             return Ok(first_line(&text));
         }
+        if let Some(cmd) = &self.password_command {
+            return run_password_command(cmd);
+        }
         if !std::io::stdin().is_terminal() {
             return Err(Failure::NoTerminal.into());
         }
         let pw = rpassword::prompt_password(prompt).context("reading the password")?;
         Ok(Zeroizing::new(pw))
     }
+}
+
+/// Run `password_command` and take the first line it prints. Its output is held in memory
+/// that is wiped when freed; it never passes through a shell.
+fn run_password_command(cmd: &[String]) -> Result<Zeroizing<String>> {
+    let (program, args) = cmd
+        .split_first()
+        .context("password_command needs a program to run")?;
+    let out = std::process::Command::new(program)
+        .args(args)
+        .stdin(std::process::Stdio::inherit())
+        .stderr(std::process::Stdio::inherit())
+        .output()
+        .with_context(|| format!("running password_command {program}"))?;
+    let bytes = Zeroizing::new(out.stdout);
+    anyhow::ensure!(
+        out.status.success(),
+        "password_command {program} failed ({})",
+        out.status
+    );
+    let text =
+        std::str::from_utf8(&bytes).context("password_command printed something not UTF-8")?;
+    let line = first_line(text);
+    anyhow::ensure!(
+        !line.is_empty(),
+        "password_command {program} printed no password"
+    );
+    Ok(line)
 }
 
 /// The first line of a password file, without its line ending. Later lines are ignored, so
@@ -133,10 +173,40 @@ mod tests {
             password_stdin: false,
             no_password: true,
             keyfile: Some(PathBuf::from("db.keyx")),
+            password_command: None,
         };
         // No terminal in tests: if this tried to prompt it would fail with NoTerminal.
         let creds = src.credentials(Path::new("db.kdbx")).unwrap();
         assert!(creds.password.is_none());
         assert_eq!(creds.keyfile.as_deref(), Some(Path::new("db.keyx")));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_password_command_gives_its_first_line() {
+        let cmd = |args: &[&str]| KeySource {
+            password_command: Some(args.iter().map(|a| a.to_string()).collect()),
+            ..KeySource::default()
+        };
+        if std::env::var_os("PRIVE_PASSWORD_FILE").is_some() {
+            return; // that one would win
+        }
+        let creds = cmd(&["printf", "%s\\n%s\\n", "from-command", "second line"])
+            .credentials(Path::new("db.kdbx"))
+            .unwrap();
+        assert_eq!(
+            creds.password.as_deref().map(String::as_str),
+            Some("from-command")
+        );
+        assert!(cmd(&["false"]).credentials(Path::new("db.kdbx")).is_err());
+        assert!(
+            cmd(&["true"]).credentials(Path::new("db.kdbx")).is_err(),
+            "no output"
+        );
+        let missing = cmd(&["prive-no-such-program"])
+            .credentials(Path::new("db.kdbx"))
+            .err()
+            .unwrap();
+        assert!(format!("{missing:#}").contains("prive-no-such-program"));
     }
 }

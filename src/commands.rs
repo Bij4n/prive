@@ -705,6 +705,7 @@ pub fn diff(
             password_stdin,
             no_password: global.no_password,
             keyfile: keyfile.clone(),
+            password_command: None,
         }
         .credentials(other)?;
         db::Db::from_bytes(other, &there_bytes, &c)
