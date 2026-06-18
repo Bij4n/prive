@@ -1217,3 +1217,59 @@ fn config_shows_the_named_databases() {
     assert!(v["database"].as_str().unwrap().ends_with("kdbx41.kdbx"));
     assert!(v["databases"]["keys"]["keyfile"].is_string());
 }
+
+#[test]
+fn diff_against_a_conflict_copy() {
+    let conflict = fixture("conflict.kdbx");
+    prive(&["diff", conflict.to_str().unwrap()])
+        .assert()
+        .success()
+        .stdout(
+            "Only in conflict.kdbx:\n  Conference Wi-Fi\n\
+             Changed:\n  Bank: password (newer in conflict.kdbx)\n  \
+             Personal/Legacy 2FA -> Personal/Legacy 2FA (old): title\n",
+        )
+        // Names of fields only: no password, old or new, is ever shown.
+        .stdout(predicate::str::contains("b4nk").not());
+}
+
+#[test]
+fn diff_json_and_the_same_file() {
+    let conflict = fixture("conflict.kdbx");
+    let out = prive(&["diff", conflict.to_str().unwrap(), "--json"])
+        .output()
+        .unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    let d = v["differences"].as_array().unwrap();
+    assert_eq!(d.len(), 3);
+    assert_eq!(d[0]["kind"], "only_there");
+    assert_eq!(d[1]["fields"][0], "password");
+    assert_eq!(d[1]["newer"], "there");
+    let same = fixture("kdbx41.kdbx");
+    prive(&["diff", same.to_str().unwrap()])
+        .assert()
+        .success()
+        .stdout("kdbx41.kdbx and kdbx41.kdbx hold the same entries\n");
+}
+
+#[test]
+fn diff_with_another_password_and_no_terminal_exits_5() {
+    // keyfile.kdbx needs a key file the main database doesn't use.
+    let other = fixture("keyfile.kdbx");
+    prive(&["diff", other.to_str().unwrap()])
+        .assert()
+        .code(5)
+        .stdout(predicate::str::is_empty());
+    let key = fixture("keyfile.keyx");
+    prive(&[
+        "diff",
+        other.to_str().unwrap(),
+        "--other-keyfile",
+        key.to_str().unwrap(),
+    ])
+    .assert()
+    .success()
+    .stdout(predicate::str::contains(
+        "Only in keyfile.kdbx:\n  Key file entry\n",
+    ));
+}
