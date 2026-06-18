@@ -19,6 +19,25 @@ back to the database.
 
 Codes are checked against the RFC 6238 test vectors in the test suite.
 
+## Getting a code
+
+```bash
+prive otp Work/GitHub                    # the current code
+prive otp Work/GitHub --clip             # copied, cleared after the clipboard timeout
+prive otp Work/GitHub --min-validity 10  # never one about to expire: waits for the next
+prive otp Work/GitHub --next             # the one after, for sites that ask for two
+prive otp Work/GitHub --watch            # keeps showing it, like an authenticator app
+prive codes                              # every entry's current code at once
+```
+
+`--watch` redraws one line until Ctrl-C, with a bar of the time left:
+
+```
+123456  [##########----------]  15 s
+```
+
+It needs a terminal, and says so before asking for any password.
+
 ## When prive can't read a code
 
 `prive otp` exits with 3 when an entry has no one-time code at all. When the entry has code
