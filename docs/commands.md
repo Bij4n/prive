@@ -27,6 +27,7 @@ Global options: `--db <file>` (or `PRIVE_DB`), `--keyfile <file>` (or `PRIVE_KEY
 | `diff OTHER [--other-keyfile FILE] [--json]` | What differs between the database and another copy of it (a sync conflict copy, a backup): entries only in one, and the names of changed fields, never their values. See [sync.md](sync.md). |
 | `info [--json]` | How the file is stored: format, encryption, key derivation settings, the app that last saved it, how many entries and groups it holds and how many entries wait in the recycle bin. No secrets. |
 | `gen [...] [-n COUNT]` | A new password, passphrase (`--words N`) or PIN (`--pin N`), or COUNT of them. No database needed. See [generate.md](generate.md). |
+| `doctor [--json]` | Checks the config file, the database file (found, a KeePass file, which format), the key file, the agent and the clipboard, without asking for a password. One line each: `ok`, `warn`, `FAIL` or `--` (not used). Exit 1 if anything fails. |
 | `config [--json]` | The config file, database and key file a command would use and where each came from, the clipboard and agent timeouts, and the agent's directory. |
 | `git-credential get` | Answers git's credential requests; see [git.md](git.md). `store` and `erase` are ignored. |
 | `completions SHELL` | Shell completions for bash, zsh, fish, elvish or PowerShell. |

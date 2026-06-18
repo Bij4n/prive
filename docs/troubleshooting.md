@@ -1,7 +1,18 @@
 # Troubleshooting
 
-Start with `prive config`: it shows which config file, database and key file prive is using,
-and where each setting came from.
+Start with `prive doctor`. It checks the config file, the database file, the key file, the
+agent and the clipboard without asking for a password, and says what it found:
+
+```
+ok    config file  /home/me/.config/prive/config.toml
+ok    database     /home/me/Passwords.kdbx (KDBX 4.1, 48.2 KB)
+--    key file     none
+ok    agent        running, /home/me/Passwords.kdbx unlocked (12 min left)
+warn  clipboard    no clipboard available: --clip and pick won't work here; print instead
+```
+
+`prive config` shows which config file, database and key file prive is using, and where each
+setting came from.
 
 **`prive: no password given: stdin is not a terminal`** (exit 5)
 prive was run from a script or a pipe and had no way to ask. Give the password with
