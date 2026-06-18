@@ -39,6 +39,7 @@ fn from_agent(path: &std::path::Path) -> Option<db::Db> {
             path: path.to_path_buf(),
             entries,
             info: *info,
+            recycled: Vec::new(),
         }),
         Ok(Answer::Locked(reason)) if reason.contains("changed on disk") => {
             output::notice("The database changed on disk since `prive unlock`; asking again.");

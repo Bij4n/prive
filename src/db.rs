@@ -22,6 +22,9 @@ pub struct Db {
     pub path: PathBuf,
     pub entries: Vec<Entry>,
     pub info: Info,
+    /// UUIDs of the entries in the recycle bin, which `entries` leaves out: enough for
+    /// `prive diff` to tell "deleted here" from "added there".
+    pub recycled: Vec<String>,
 }
 
 /// How a database is stored and protected, and how much is in it. Nothing here is secret.
@@ -136,6 +139,14 @@ fn count_entries(group: &GroupRef<'_>) -> usize {
     group.entries().count() + group.groups().map(|g| count_entries(&g)).sum::<usize>()
 }
 
+/// UUIDs of every entry in a group and the groups below it.
+fn uuids_in(group: &GroupRef<'_>, out: &mut Vec<String>) {
+    out.extend(group.entries().map(|e| e.id().uuid().to_string()));
+    for g in group.groups() {
+        uuids_in(&g, out);
+    }
+}
+
 /// Groups below `group`, not counting `skip` or anything inside it.
 fn count_groups(group: &GroupRef<'_>, skip: Option<keepass::db::GroupId>) -> usize {
     group
@@ -204,10 +215,15 @@ impl Db {
             recycled: db.recycle_bin().map(|g| count_entries(&g)).unwrap_or(0),
             key_changed: db.meta.master_key_changed,
         };
+        let mut recycled = Vec::new();
+        if let Some(bin) = db.recycle_bin() {
+            uuids_in(&bin, &mut recycled);
+        }
         Ok(Db {
             path: path.to_path_buf(),
             entries,
             info,
+            recycled,
         })
     }
 }
@@ -385,6 +401,8 @@ mod tests {
     #[test]
     fn the_recycle_bin_is_left_out() {
         let db = Db::open(&fixture("kdbx41.kdbx"), &creds("fixture-pass")).unwrap();
+        // ... but what is in it is remembered by UUID.
+        assert_eq!(db.recycled, ["00000000-0000-0000-0000-000000000040"]);
         assert!(db.entries.iter().all(|e| e.title != "Deleted thing"));
         assert!(
             db.entries
