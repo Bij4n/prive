@@ -203,3 +203,49 @@ proptest! {
         }
     }
 }
+
+/// Entries with distinct UUIDs and arbitrary titles and passwords, for diff.
+fn diff_side(
+    keys: &std::collections::BTreeSet<u16>,
+    seed: &[(String, String)],
+) -> Vec<prive::entry::Entry> {
+    keys.iter()
+        .zip(seed.iter().cycle())
+        .map(|(k, (title, pw))| prive::entry::Entry {
+            uuid: format!("{k:032x}"),
+            title: title.clone(),
+            password: zeroize::Zeroizing::new(pw.clone()),
+            ..Default::default()
+        })
+        .collect()
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(200))]
+    #[test]
+    fn a_copy_has_no_differences_with_itself(
+        keys in prop::collection::btree_set(any::<u16>(), 0..30),
+        seed in prop::collection::vec((".{0,8}", ".{0,8}"), 1..5),
+    ) {
+        let a = diff_side(&keys, &seed);
+        prop_assert!(prive::diff::compare(&a, &a.clone()).is_empty());
+    }
+
+    #[test]
+    fn swapping_the_copies_swaps_the_sides(
+        here in prop::collection::btree_set(any::<u16>(), 0..30),
+        there in prop::collection::btree_set(any::<u16>(), 0..30),
+        seed in prop::collection::vec((".{0,8}", ".{0,8}"), 1..5),
+        other in prop::collection::vec((".{0,8}", ".{0,8}"), 1..5),
+    ) {
+        use prive::diff::Kind;
+        let (a, b) = (diff_side(&here, &seed), diff_side(&there, &other));
+        let count = |d: &[prive::diff::Difference], k: Kind| d.iter().filter(|x| x.kind == k).count();
+        let ab = prive::diff::compare(&a, &b);
+        let ba = prive::diff::compare(&b, &a);
+        prop_assert_eq!(count(&ab, Kind::OnlyHere), count(&ba, Kind::OnlyThere));
+        prop_assert_eq!(count(&ab, Kind::OnlyThere), count(&ba, Kind::OnlyHere));
+        prop_assert_eq!(count(&ab, Kind::Changed), count(&ba, Kind::Changed));
+        prop_assert_eq!(count(&ab, Kind::OnlyHere), here.difference(&there).count());
+    }
+}
