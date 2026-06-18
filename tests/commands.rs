@@ -1336,3 +1336,24 @@ fn doctor_json() {
     );
     assert_eq!(v[1]["status"], "ok");
 }
+
+#[test]
+fn doctor_with_a_broken_config_file() {
+    let dir = tempfile::tempdir().unwrap();
+    let cfg = dir.path().join("config.toml");
+    std::fs::write(&cfg, "agent_minutes = 0\n").unwrap();
+    Command::cargo_bin("prive")
+        .unwrap()
+        .env("PRIVE_CONFIG", &cfg)
+        .env("PRIVE_NO_AGENT", "1")
+        .env("PRIVE_CLIPBOARD_FILE", dir.path().join("clip"))
+        .env_remove("PRIVE_DB")
+        .arg("doctor")
+        .assert()
+        .code(1)
+        .stdout(predicate::str::contains("FAIL  config file"))
+        .stdout(predicate::str::contains("agent_minutes"))
+        .stdout(predicate::str::contains(
+            "--    database     the config file needs fixing first",
+        ));
+}
