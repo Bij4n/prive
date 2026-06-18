@@ -36,7 +36,9 @@ Changed:
 ```
 
 Entries are paired by their UUID, so a renamed or moved entry shows as changed, not as one
-removed and one added. Only the names of what changed are shown, never the values.
+removed and one added. An entry that is in one copy only but sits in the other copy's
+recycle bin is marked `(in the recycle bin of ...)`: it was deleted there, not added here.
+Only the names of what changed are shown, never the values.
 `--json` gives the same for scripts. The other copy is opened with the same password and
 key file; give `--other-keyfile` if it uses another key file, and prive asks for its
 password when it has a different one.
