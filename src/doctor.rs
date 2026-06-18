@@ -112,16 +112,21 @@ pub fn agent() -> Check {
         return check("agent", Status::Fail, format!("{e:#}"));
     }
     match crate::agent::client::status() {
-        Ok(Some((Some(db), left))) => check(
+        Ok(Some((open, _))) if open.is_empty() => {
+            check("agent", Status::Ok, "running, nothing unlocked")
+        }
+        Ok(Some((open, left))) => check(
             "agent",
             Status::Ok,
             format!(
                 "running, {} unlocked ({} min left)",
-                db.display(),
+                open.iter()
+                    .map(|p| p.display().to_string())
+                    .collect::<Vec<_>>()
+                    .join(", "),
                 left.div_ceil(60)
             ),
         ),
-        Ok(Some((None, _))) => check("agent", Status::Ok, "running, nothing unlocked"),
         Ok(None) => check("agent", Status::Ok, "not running (prive unlock starts it)"),
         Err(e) => check("agent", Status::Warn, format!("{e:#}")),
     }

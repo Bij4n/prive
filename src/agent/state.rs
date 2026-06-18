@@ -1,9 +1,10 @@
 //! What the agent holds and how it answers, apart from sockets (so it can be tested alone).
 //!
-//! It keeps one opened database. The password is used to open it and then dropped; what stays
-//! in memory is the decrypted entries and a fingerprint of the file. If the file changes on
-//! disk (KeePassXC saved it, Syncthing brought a new copy), the agent forgets everything and
-//! asks to be unlocked again, rather than serve stale passwords.
+//! It keeps the databases it was asked to unlock, each by its path. A password is used to open
+//! its database and then dropped; what stays in memory is the decrypted entries and a
+//! fingerprint of the file. If a file changes on disk (KeePassXC saved it, Syncthing brought a
+//! new copy), the agent forgets that database and asks to be unlocked again, rather than
+//! serve stale passwords.
 
 use std::path::{Path, PathBuf};
 
@@ -46,7 +47,8 @@ struct Open {
 
 #[derive(Default)]
 pub struct State {
-    open: Option<Open>,
+    /// The most recently unlocked first.
+    open: Vec<Open>,
 }
 
 /// Paths are compared after resolving `..`, symlinks and relative parts.
@@ -55,8 +57,14 @@ fn canonical(p: &Path) -> PathBuf {
 }
 
 impl State {
+    /// The database unlocked last.
     pub fn database(&self) -> Option<&Path> {
-        self.open.as_ref().map(|o| o.db.as_path())
+        self.open.first().map(|o| o.db.as_path())
+    }
+
+    /// Every unlocked database, the most recent first.
+    pub fn databases(&self) -> Vec<PathBuf> {
+        self.open.iter().map(|o| o.db.clone()).collect()
     }
 
     pub fn handle(&mut self, req: Request) -> Response {
@@ -70,10 +78,25 @@ impl State {
             Request::Status => Response::Status {
                 db: self.database().map(Path::to_path_buf),
                 idle_seconds_left: 0,
+                open: self.databases(),
             },
-            Request::Lock => {
-                self.open = None;
+            Request::Lock { db: None } => {
+                self.open.clear();
                 Response::Bye
+            }
+            Request::Lock { db: Some(db) } => {
+                let db = canonical(&db);
+                let before = self.open.len();
+                self.open.retain(|o| o.db != db);
+                if self.open.is_empty() {
+                    Response::Bye
+                } else if self.open.len() < before {
+                    Response::Forgot
+                } else {
+                    Response::Locked {
+                        reason: format!("{} is not unlocked", db.display()),
+                    }
+                }
             }
         }
     }
@@ -96,13 +119,18 @@ impl State {
         let creds = Credentials { password, keyfile };
         match Db::from_bytes(&path, &bytes, &creds) {
             Ok(opened) => {
-                self.open = Some(Open {
-                    db: path,
-                    fingerprint: Fingerprint::of_bytes(&bytes),
-                    entries: opened.entries,
-                    info: opened.info,
-                    recycled: opened.recycled,
-                });
+                // Unlocking a database again replaces its copy; it moves to the front.
+                self.open.retain(|o| o.db != path);
+                self.open.insert(
+                    0,
+                    Open {
+                        db: path,
+                        fingerprint: Fingerprint::of_bytes(&bytes),
+                        entries: opened.entries,
+                        info: opened.info,
+                        recycled: opened.recycled,
+                    },
+                );
                 Response::Unlocked
             }
             Err(e) => {
@@ -117,22 +145,23 @@ impl State {
 
     fn entries(&mut self, path: &Path) -> Response {
         let path = canonical(path);
-        let Some(open) = &self.open else {
+        if self.open.is_empty() {
             return Response::Locked {
                 reason: "no database is unlocked".into(),
             };
-        };
-        if open.db != path {
-            return Response::Locked {
-                reason: format!("{} is not the unlocked database", path.display()),
-            };
         }
-        if Fingerprint::of_file(&path).as_ref() != Some(&open.fingerprint) {
-            self.open = None;
+        let Some(i) = self.open.iter().position(|o| o.db == path) else {
+            return Response::Locked {
+                reason: format!("{} is not unlocked", path.display()),
+            };
+        };
+        if Fingerprint::of_file(&path).as_ref() != Some(&self.open[i].fingerprint) {
+            self.open.remove(i);
             return Response::Locked {
                 reason: "the database changed on disk".into(),
             };
         }
+        let open = &self.open[i];
         Response::Entries {
             entries: open.entries.iter().map(WireEntry::from).collect(),
             info: Box::new(open.info.clone()),
@@ -195,6 +224,45 @@ mod tests {
     }
 
     #[test]
+    fn several_databases_at_once() {
+        let mut s = State::default();
+        unlock(&mut s, &fixture("kdbx41.kdbx"), "fixture-pass");
+        unlock(&mut s, &fixture("conflict.kdbx"), "fixture-pass");
+        let paths = s.databases();
+        assert_eq!(paths.len(), 2);
+        assert!(paths[0].ends_with("conflict.kdbx"), "the latest first");
+        for f in ["kdbx41.kdbx", "conflict.kdbx"] {
+            assert!(matches!(
+                s.handle(Request::Entries { db: fixture(f) }),
+                Response::Entries { .. }
+            ));
+        }
+        // Unlocking one again doesn't add a second copy.
+        unlock(&mut s, &fixture("kdbx41.kdbx"), "fixture-pass");
+        assert_eq!(s.databases().len(), 2);
+        assert!(s.databases()[0].ends_with("kdbx41.kdbx"));
+        // Locking one keeps the other.
+        assert!(matches!(
+            s.handle(Request::Lock {
+                db: Some(fixture("kdbx41.kdbx"))
+            }),
+            Response::Forgot
+        ));
+        assert!(matches!(
+            s.handle(Request::Lock {
+                db: Some(fixture("kdbx31.kdbx"))
+            }),
+            Response::Locked { .. }
+        ));
+        assert!(matches!(
+            s.handle(Request::Lock {
+                db: Some(fixture("conflict.kdbx"))
+            }),
+            Response::Bye
+        ));
+    }
+
+    #[test]
     fn a_wrong_password_keeps_it_locked() {
         let mut s = State::default();
         let Response::Error { message } = unlock(&mut s, &fixture("kdbx41.kdbx"), "nope") else {
@@ -223,7 +291,10 @@ mod tests {
     fn lock_forgets() {
         let mut s = State::default();
         unlock(&mut s, &fixture("kdbx41.kdbx"), "fixture-pass");
-        assert!(matches!(s.handle(Request::Lock), Response::Bye));
+        assert!(matches!(
+            s.handle(Request::Lock { db: None }),
+            Response::Bye
+        ));
         assert!(s.database().is_none());
     }
 }

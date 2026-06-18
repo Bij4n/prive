@@ -72,10 +72,11 @@ fn unlock_once_then_no_password_until_locked() {
         .success()
         .stdout("b4nk-P@ss-2026!\n");
     s.prive(&["otp", "Work/GitHub"]).assert().success();
+    // With --db, lock names the database it forgot.
     s.prive(&["lock"])
         .assert()
         .success()
-        .stderr(predicate::str::contains("Locked."));
+        .stderr(predicate::str::contains("Locked ").and(predicate::str::contains("db.kdbx.")));
     s.prive(&["get", "Bank"]).assert().code(5);
 }
 

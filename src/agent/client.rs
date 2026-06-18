@@ -127,18 +127,38 @@ pub fn unlock(db: &Path, keyfile: Option<PathBuf>, password: Option<&str>) -> Re
     }
 }
 
-/// Tell the agent to forget the database and exit. False if none was running.
-pub fn lock() -> Result<bool> {
-    Ok(request(Request::Lock)?.is_some())
+/// Tell the agent to forget `db`, or every database. False if there was nothing to forget:
+/// no agent running, or not that database.
+pub fn lock(db: Option<&Path>) -> Result<bool> {
+    Ok(
+        match request(Request::Lock {
+            db: db.map(Path::to_path_buf),
+        })? {
+            Some(Response::Bye | Response::Forgot) => true,
+            Some(Response::Locked { .. }) | None => false,
+            Some(Response::Error { message }) => bail!("agent: {message}"),
+            Some(_) => bail!("agent: unexpected answer"),
+        },
+    )
 }
 
-/// The unlocked database and seconds until the agent locks itself, if it runs.
-pub fn status() -> Result<Option<(Option<PathBuf>, u64)>> {
+/// The unlocked databases (the most recent first) and seconds until the agent locks
+/// itself, if it runs.
+pub fn status() -> Result<Option<(Vec<PathBuf>, u64)>> {
     Ok(match request(Request::Status)? {
         Some(Response::Status {
             db,
             idle_seconds_left,
-        }) => Some((db, idle_seconds_left)),
+            open,
+        }) => {
+            // An agent from an earlier build only says `db`.
+            let open = if open.is_empty() {
+                db.into_iter().collect()
+            } else {
+                open
+            };
+            Some((open, idle_seconds_left))
+        }
         Some(_) => bail!("agent: unexpected answer"),
         None => None,
     })

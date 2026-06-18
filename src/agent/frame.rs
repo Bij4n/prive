@@ -57,7 +57,7 @@ mod tests {
             &mut out,
             &Envelope {
                 v: VERSION,
-                body: Request::Lock,
+                body: Request::Lock { db: None },
             },
         )
         .unwrap();
@@ -65,7 +65,7 @@ mod tests {
         let a: Envelope<Request> = read(&mut input).unwrap().unwrap();
         let b: Envelope<Request> = read(&mut input).unwrap().unwrap();
         assert!(matches!(a.body, Request::Status));
-        assert!(matches!(b.body, Request::Lock));
+        assert!(matches!(b.body, Request::Lock { db: None }));
         assert!(read::<Envelope<Request>>(&mut input).unwrap().is_none());
     }
 

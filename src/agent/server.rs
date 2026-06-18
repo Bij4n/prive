@@ -85,8 +85,9 @@ fn answer(stream: UnixStream, state: &mut State, deadline: Instant) -> Result<bo
         )?;
         return Ok(false);
     }
-    let stop = matches!(req.body, Request::Lock);
     let mut resp = state.handle(req.body);
+    // Locked everything (or the last one): nothing left to keep, so exit.
+    let stop = matches!(resp, Response::Bye);
     if let Response::Status {
         idle_seconds_left, ..
     } = &mut resp

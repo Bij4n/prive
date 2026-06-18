@@ -32,8 +32,11 @@ pub enum Request {
         db: PathBuf,
     },
     Status,
-    /// Forget the database and exit.
-    Lock,
+    /// Forget `db`, or every database when it is absent. The agent exits once it holds none.
+    Lock {
+        #[serde(default)]
+        db: Option<PathBuf>,
+    },
 }
 
 impl std::fmt::Debug for Request {
@@ -47,7 +50,7 @@ impl std::fmt::Debug for Request {
                 .finish(),
             Request::Entries { db } => f.debug_struct("Entries").field("db", db).finish(),
             Request::Status => f.write_str("Status"),
-            Request::Lock => f.write_str("Lock"),
+            Request::Lock { db } => f.debug_struct("Lock").field("db", db).finish(),
         }
     }
 }
@@ -71,9 +74,15 @@ pub enum Response {
         reason: String,
     },
     Status {
+        /// The database unlocked last.
         db: Option<PathBuf>,
         idle_seconds_left: u64,
+        /// Every unlocked database, the most recent first. Absent from older agents.
+        #[serde(default)]
+        open: Vec<PathBuf>,
     },
+    /// One database forgotten; others stay unlocked.
+    Forgot,
     Bye,
     Error {
         message: String,

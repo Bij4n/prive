@@ -85,15 +85,40 @@ pub fn unlock(global: &Global, minutes: Option<u64>) -> Result<()> {
     }
 }
 
-pub fn lock() -> Result<()> {
+/// Forget every unlocked database, or with `--db` on the command line only that one.
+/// `PRIVE_DB` alone doesn't narrow it: `prive lock` is the way to lock everything now.
+pub fn lock(global: &Global) -> Result<()> {
     #[cfg(unix)]
     {
-        if crate::agent::client::lock()? {
-            output::notice("Locked.");
-        } else {
-            output::notice("Nothing was unlocked.");
+        let only = global
+            .db
+            .as_ref()
+            .filter(|d| std::env::var_os("PRIVE_DB").is_none_or(|v| v != d.as_os_str()));
+        match only {
+            Some(d) => {
+                let cfg = config::Config::load()?;
+                let target = cfg.target(Some(d), None)?;
+                let name = cfg
+                    .name_of(&target.db)
+                    .map(str::to_string)
+                    .unwrap_or_else(|| target.db.display().to_string());
+                if crate::agent::client::lock(Some(&target.db))? {
+                    output::notice(&format!("Locked {name}."));
+                } else {
+                    output::notice(&format!("{name} was not unlocked."));
+                }
+            }
+            None => {
+                if crate::agent::client::lock(None)? {
+                    output::notice("Locked.");
+                } else {
+                    output::notice("Nothing was unlocked.");
+                }
+            }
         }
     }
+    #[cfg(not(unix))]
+    let _ = global;
     Ok(())
 }
 
@@ -102,31 +127,37 @@ pub fn status(json: bool) -> Result<()> {
     #[cfg(unix)]
     let state = crate::agent::client::status()?;
     #[cfg(not(unix))]
-    let state: Option<(Option<std::path::PathBuf>, u64)> = None;
-    let (db, left) = match state {
-        Some((Some(db), left)) => (Some(db), left),
-        _ => (None, 0),
-    };
+    let state: Option<(Vec<std::path::PathBuf>, u64)> = None;
+    let (open, left) = state.unwrap_or_default();
     if json {
+        let databases: Vec<serde_json::Value> = open
+            .iter()
+            .map(|d| serde_json::json!({ "path": d, "name": cfg.name_of(d) }))
+            .collect();
         return output::print_json(&serde_json::json!({
-            "unlocked": db.is_some(),
-            "db": db,
-            "name": db.as_deref().and_then(|d| cfg.name_of(d)),
+            "unlocked": !open.is_empty(),
+            "db": open.first(),
+            "name": open.first().and_then(|d| cfg.name_of(d)),
+            "databases": databases,
             "seconds_left": left,
         }));
     }
-    match db {
-        Some(db) => output::print(&format!(
+    if open.is_empty() {
+        return output::print("locked\n");
+    }
+    let mut text = String::new();
+    for db in &open {
+        text.push_str(&format!(
             "unlocked: {}{} (locks in {} min {} s if unused)\n",
-            cfg.name_of(&db)
+            cfg.name_of(db)
                 .map(|n| format!("{n}, "))
                 .unwrap_or_default(),
             db.display(),
             left / 60,
             left % 60
-        )),
-        None => output::print("locked\n"),
+        ));
     }
+    output::print(&text)
 }
 
 /// Copy a secret, then say on stderr when it will be cleared.
