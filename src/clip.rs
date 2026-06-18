@@ -100,6 +100,14 @@ enum Backend {
     System(arboard::Clipboard),
 }
 
+/// Whether copying can work here, and how; for `prive doctor`.
+pub fn available() -> Result<String> {
+    Ok(match Backend::open()? {
+        Backend::File(p) => format!("{} (PRIVE_CLIPBOARD_FILE)", p.display()),
+        Backend::System(_) => "the system clipboard".into(),
+    })
+}
+
 impl Backend {
     fn open() -> Result<Backend> {
         if let Some(p) = std::env::var_os("PRIVE_CLIPBOARD_FILE") {

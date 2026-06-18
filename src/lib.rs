@@ -14,6 +14,7 @@ pub mod commands;
 pub mod config;
 pub mod db;
 pub mod diff;
+pub mod doctor;
 pub mod entry;
 pub mod error;
 pub mod fsutil;
