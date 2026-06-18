@@ -801,6 +801,14 @@ pub fn show_config(global: &Global, json: bool) -> Result<()> {
         .as_ref()
         .map(|t| t.db.clone())
         .or_else(|| global.db.clone());
+    // The order unlock.rs tries them in, leaving out --password-stdin (it is per command).
+    let password_from = if let Some(f) = std::env::var_os("PRIVE_PASSWORD_FILE") {
+        format!("PRIVE_PASSWORD_FILE {}", std::path::Path::new(&f).display())
+    } else if let Some(cmd) = target.as_ref().and_then(|t| t.password_command.as_ref()) {
+        format!("password_command {}", cmd.join(" "))
+    } else {
+        "asked for when needed".to_string()
+    };
     let keyfile = target.and_then(|t| t.keyfile);
     #[cfg(unix)]
     let agent_dir = Some(crate::agent::dir::agent_dir());
@@ -813,6 +821,7 @@ pub fn show_config(global: &Global, json: bool) -> Result<()> {
             "database": db,
             "database_from": db_from,
             "keyfile": keyfile,
+            "password_from": password_from,
             "clipboard_seconds": cfg.clipboard_seconds(),
             "agent_minutes": cfg.agent_idle().as_secs() / 60,
             "agent_dir": agent_dir,
@@ -833,6 +842,7 @@ pub fn show_config(global: &Global, json: bool) -> Result<()> {
         "config file:       {}{exists}\n\
          database:          {} ({db_from})\n\
          key file:          {}\n\
+         password:          {password_from}\n\
          clipboard clears:  after {} s\n\
          agent locks:       after {} min unused\n\
          agent directory:   {}\n",

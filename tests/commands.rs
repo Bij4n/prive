@@ -1216,6 +1216,7 @@ fn config_shows_the_named_databases() {
     let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
     assert!(v["database"].as_str().unwrap().ends_with("kdbx41.kdbx"));
     assert!(v["databases"]["keys"]["keyfile"].is_string());
+    assert_eq!(v["password_from"], "asked for when needed");
 }
 
 #[test]
