@@ -21,10 +21,20 @@ forgets the database and exits:
 `--no-agent` (or `PRIVE_NO_AGENT=1`) makes a command read the file and ask, even when the
 database is unlocked.
 
-The agent holds one database at a time. Unlocking another (`prive --db work unlock`)
-replaces the first; commands for a database it doesn't hold read the file and ask as usual.
-When the unlocked file has a name in the config file, `unlock` and `status` use it:
-`unlocked: work, /home/me/Work/Work.kdbx`.
+The agent can hold several databases. `prive --db work unlock` adds the work database next
+to the one already unlocked; each command gets the database it names, and one the agent
+doesn't hold is read from the file with a prompt as usual. `prive status` lists them, using
+their names from the config file when they have one:
+
+```
+unlocked: work, /home/me/Work/Work.kdbx (locks in 14 min 40 s if unused)
+unlocked: /home/me/Passwords.kdbx (locks in 14 min 40 s if unused)
+```
+
+`prive lock` forgets all of them; `prive --db work lock` forgets only that one. (`PRIVE_DB`
+on its own doesn't narrow `lock`, so `prive lock` always locks everything.) A file that
+changes on disk is forgotten on its own; the others stay unlocked. The idle timeout counts
+from the last request to any of them.
 
 ## How it is protected
 

@@ -49,6 +49,7 @@ path, so a file called `work` in the current directory is `--db ./work`. When `-
 neither a file nor a database in the config, prive says which names there are (exit code 3).
 `prive config` lists them and shows what `--db NAME` stands for.
 
-The agent keeps one database unlocked at a time: unlocking another one replaces it.
+Several databases can be unlocked at once (`prive --db work unlock`); see
+[agent.md](agent.md).
 
 Unknown keys are ignored, so a config written for a newer prive still works with an older one.

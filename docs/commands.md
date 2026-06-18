@@ -8,8 +8,8 @@ Global options: `--db <file>` (or `PRIVE_DB`), `--keyfile <file>` (or `PRIVE_KEY
 | Command | What it prints |
 |---|---|
 | `unlock [--minutes N]` | Nothing on stdout. Opens the database once and keeps it in the agent (for N minutes unused, this time); see [agent.md](agent.md). |
-| `lock` | Nothing. Forgets the unlocked database. |
-| `status [--json]` | `locked`, or which database is unlocked and how long until it locks. |
+| `lock` | Nothing. Forgets every unlocked database; with `--db` on the command line, only that one. |
+| `status [--json]` | `locked`, or each unlocked database (by its config name, if it has one) and how long until they lock. |
 | `ls [GROUP] [-t TAG]... [-l] [-p] [--json]` | Every entry (or one group and its subgroups, or those with all the given tags): path, then username. Never a password. `--long` adds the date each last changed and markers: `2fa` (has a one-time code), `file` (has attachments), `expired`. `--paths` prints only the paths, for completion and fzf (see [shell.md](shell.md)). |
 | `search QUERY [--all] [--json]` | Entries whose path, username, URL or tags contain QUERY; exact and prefix title matches first. `--all` also looks in notes and unprotected custom fields, never in passwords. Exit 3 if none. |
 | `show ENTRY [--reveal] [--json]` | All of an entry. Password and protected fields hidden unless `--reveal`; in JSON they are `null`. |
