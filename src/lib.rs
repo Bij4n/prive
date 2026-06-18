@@ -107,6 +107,9 @@ fn dispatch(cli: Cli) -> Result<()> {
             entry, uri: true, ..
         } => commands::otp_setup(g, entry, false),
         Command::Otp {
+            entry, watch: true, ..
+        } => commands::otp_watch(g, entry),
+        Command::Otp {
             entry,
             min_validity,
             next,

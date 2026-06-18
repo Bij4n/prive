@@ -308,6 +308,28 @@ pub fn get(
     }
 }
 
+/// Redraw the current code and a bar of the time it has left, once a quarter second, until
+/// interrupted.
+pub fn otp_watch(global: &Global, entry: &str) -> Result<()> {
+    use std::io::Write;
+    // Checked first, so a pipe never gets a password prompt for nothing.
+    anyhow::ensure!(
+        std::io::stdout().is_terminal(),
+        "--watch needs a terminal; scripts use `prive otp` (with --min-validity if needed)"
+    );
+    let db = open(global)?;
+    let e = select::select(&db.entries, entry)?;
+    let totp = totp_of(e)?;
+    output::notice(&format!("{} (Ctrl-C to stop)", e.path()));
+    let mut out = std::io::stdout();
+    loop {
+        let (code, left) = totp.now();
+        write!(out, "\r{}", output::watch_line(&code, left, totp.period))?;
+        out.flush()?;
+        std::thread::sleep(std::time::Duration::from_millis(250));
+    }
+}
+
 pub fn otp(
     global: &Global,
     entry: &str,

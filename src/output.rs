@@ -192,6 +192,18 @@ pub fn show_json(e: &Entry, reveal: bool) -> ShowJson {
 }
 
 /// The `show` view of one entry. Passwords and protected fields stay hidden unless `reveal`.
+/// One line of `otp --watch`: the code, a bar of the time it has left, and the seconds.
+/// Padded to the same width every time, so a redraw over it leaves nothing behind.
+pub fn watch_line(code: &str, left: u64, period: u64) -> String {
+    const WIDTH: u64 = 20;
+    let filled = (left * WIDTH).div_ceil(period.max(1)).min(WIDTH) as usize;
+    format!(
+        "{code}  [{}{}] {left:>3} s ",
+        "#".repeat(filled),
+        "-".repeat(WIDTH as usize - filled)
+    )
+}
+
 /// `prive doctor`: one line per check, `ok`, `warn`, `FAIL` or `--` first.
 pub fn render_checks(checks: &[crate::doctor::Check]) -> String {
     use crate::doctor::Status;
@@ -498,6 +510,26 @@ mod tests {
         };
         assert_eq!(render_list(&[&a, &b]), "Work/GitHub  demo\nBank\n");
         assert_eq!(render_list(&[]), "");
+    }
+
+    #[test]
+    fn watch_lines_keep_their_width() {
+        assert_eq!(
+            watch_line("123456", 30, 30),
+            "123456  [####################]  30 s "
+        );
+        assert_eq!(
+            watch_line("123456", 15, 30),
+            "123456  [##########----------]  15 s "
+        );
+        assert_eq!(
+            watch_line("123456", 1, 30),
+            "123456  [#-------------------]   1 s "
+        );
+        assert_eq!(
+            watch_line("123456", 1, 30).len(),
+            watch_line("123456", 30, 30).len()
+        );
     }
 
     #[test]

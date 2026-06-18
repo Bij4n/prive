@@ -113,6 +113,10 @@ pub enum Command {
         /// Instead of a code, print the setup as an otpauth:// URI (this shows the secret)
         #[arg(long, conflicts_with_all = ["clip", "json"])]
         uri: bool,
+        /// Keep showing the current code and its time left, like an authenticator app, until
+        /// Ctrl-C (terminal only)
+        #[arg(long, conflicts_with_all = ["clip", "json", "qr", "uri", "next", "min_validity"])]
+        watch: bool,
     },
 
     /// Every current one-time code, like an authenticator app's list
