@@ -39,7 +39,7 @@ pub struct Global {
     #[arg(long, global = true, conflicts_with = "no_password")]
     pub password_stdin: bool,
 
-    /// Don't use the unlocked database from `prive unlock`; read the file and ask
+    /// Don't use a database unlocked with `prive unlock`; read the file and ask
     #[arg(
         long,
         global = true,
@@ -66,7 +66,7 @@ pub enum Command {
         minutes: Option<u64>,
     },
 
-    /// Forget the unlocked database now
+    /// Forget the unlocked databases now (with --db, only that one)
     Lock,
 
     /// Say whether a database is unlocked, and for how long

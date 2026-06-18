@@ -46,7 +46,8 @@ from the last request to any of them.
   the decrypted entries in memory that is wiped when freed.
 - The agent turns off core dumps, and on Linux marks itself non-dumpable so other processes
   of your user can't attach a debugger to it (`ptrace`).
-- It holds one database at a time and serves only that one.
+- It serves each database only to a request that names that file (after resolving
+  symlinks and relative paths), never one database in place of another.
 
 What it can't protect against: anything that already runs code as your user can ask the
 agent for your passwords, as it could read your keystrokes. Lock before leaving a shared

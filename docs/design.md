@@ -22,7 +22,7 @@ hibp.rs       Have I Been Pwned range lookups (the only network access)
 browser.rs    open http(s) URLs with the system opener, never a shell
 run.rs        `prive run`: secrets into a child's environment, exit code passed on
 agent/        the unlock-once agent: private socket dir, protocol, framing, peer check,
-              state (one database, forgotten when the file changes), server, client
+              state (unlocked databases by path, each forgotten when its file changes), server, client
 import/       reading other apps' exports into common records (CSV by column name)
 clip.rs       clipboard copy with a detached clearing helper
 output.rs     everything printed: list, show, audit, JSON, pipe-safe stdout
