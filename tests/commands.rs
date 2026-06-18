@@ -1273,3 +1273,66 @@ fn diff_with_another_password_and_no_terminal_exits_5() {
         "Only in keyfile.kdbx:\n  Key file entry\n",
     ));
 }
+
+fn doctor(db: &std::path::Path, extra: &[&str]) -> Command {
+    let mut cmd = Command::cargo_bin("prive").unwrap();
+    cmd.env("PRIVE_CONFIG", fixture("no-such-config.toml"))
+        .env("PRIVE_NO_AGENT", "1")
+        .env("PRIVE_CLIPBOARD_FILE", fixture("no-such-dir/clipboard"))
+        .env_remove("PRIVE_DB")
+        .env_remove("PRIVE_KEYFILE")
+        .arg("--db")
+        .arg(db)
+        .args(extra)
+        .arg("doctor")
+        .write_stdin("");
+    cmd
+}
+
+#[test]
+fn doctor_on_a_good_setup_asks_for_nothing() {
+    doctor(&fixture("kdbx41.kdbx"), &[])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("ok    database"))
+        .stdout(predicate::str::contains("KDBX 4.1"))
+        .stdout(predicate::str::contains("--    key file     none"))
+        .stderr(predicate::str::contains("Password").not());
+}
+
+#[test]
+fn doctor_fails_on_a_missing_database_or_key_file() {
+    doctor(&fixture("nope.kdbx"), &[])
+        .assert()
+        .code(1)
+        .stdout(predicate::str::contains("FAIL  database"))
+        .stderr(predicate::str::contains("1 check failed"));
+    let missing_key = fixture("nope.keyx");
+    doctor(
+        &fixture("keyfile.kdbx"),
+        &["--keyfile", missing_key.to_str().unwrap()],
+    )
+    .assert()
+    .code(1)
+    .stdout(predicate::str::contains("FAIL  key file"));
+}
+
+#[test]
+fn doctor_json() {
+    let out = doctor(&fixture("kdbx31.kdbx"), &["--quiet"])
+        .arg("--json")
+        .output()
+        .unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    let names: Vec<&str> = v
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|c| c["name"].as_str().unwrap())
+        .collect();
+    assert_eq!(
+        names,
+        ["config file", "database", "key file", "agent", "clipboard"]
+    );
+    assert_eq!(v[1]["status"], "ok");
+}
