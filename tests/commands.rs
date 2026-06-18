@@ -1336,6 +1336,7 @@ fn doctor_json() {
             "config file",
             "database",
             "key file",
+            "password",
             "sync",
             "agent",
             "clipboard"

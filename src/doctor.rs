@@ -112,6 +112,62 @@ pub fn conflicts(db: &Path) -> Check {
     }
 }
 
+/// Whether `program` can be run: a path that exists, or a name found on `PATH`.
+fn findable(program: &str) -> bool {
+    let p = Path::new(program);
+    if p.components().count() > 1 {
+        return p.is_file();
+    }
+    let exts: Vec<String> = if cfg!(windows) {
+        std::env::var("PATHEXT")
+            .unwrap_or_else(|_| ".EXE;.CMD;.BAT".into())
+            .split(';')
+            .map(str::to_string)
+            .collect()
+    } else {
+        vec![String::new()]
+    };
+    std::env::var_os("PATH").is_some_and(|path| {
+        std::env::split_paths(&path).any(|dir| {
+            exts.iter()
+                .any(|e| dir.join(format!("{program}{e}")).is_file())
+        })
+    })
+}
+
+/// Where the password will come from, checked without reading it.
+pub fn password(command: Option<&[String]>) -> Check {
+    if let Some(file) = std::env::var_os("PRIVE_PASSWORD_FILE") {
+        let p = Path::new(&file);
+        return if p.is_file() {
+            check(
+                "password",
+                Status::Ok,
+                format!("from PRIVE_PASSWORD_FILE {}", p.display()),
+            )
+        } else {
+            check(
+                "password",
+                Status::Fail,
+                format!("PRIVE_PASSWORD_FILE {} is not a file", p.display()),
+            )
+        };
+    }
+    match command.and_then(<[String]>::first) {
+        Some(program) if findable(program) => check(
+            "password",
+            Status::Ok,
+            format!("from password_command {program}"),
+        ),
+        Some(program) => check(
+            "password",
+            Status::Fail,
+            format!("password_command {program} is not installed or not on PATH"),
+        ),
+        None => check("password", Status::Ok, "asked for when needed"),
+    }
+}
+
 pub fn keyfile(path: Option<&Path>) -> Check {
     match path {
         None => check("key file", Status::Skip, "none"),
@@ -183,6 +239,7 @@ pub fn run(db: Option<&Path>, keyfile_arg: Option<&Path>) -> Vec<Check> {
             let found = db_check.status != Status::Fail;
             checks.push(db_check);
             checks.push(keyfile(target.keyfile.as_deref()));
+            checks.push(password(target.password_command.as_deref()));
             if found {
                 checks.push(conflicts(&target.db));
             }
@@ -241,6 +298,22 @@ mod tests {
         let c = conflicts(&db);
         assert_eq!(c.status, Status::Warn);
         assert!(c.detail.contains("prive diff"), "{}", c.detail);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn password_commands_are_looked_for_not_run() {
+        if std::env::var_os("PRIVE_PASSWORD_FILE").is_some() {
+            return;
+        }
+        let cmd = |p: &str| vec![p.to_string(), "lookup".into()];
+        assert_eq!(password(Some(&cmd("sh"))).status, Status::Ok);
+        assert_eq!(password(Some(&cmd("/bin/sh"))).status, Status::Ok);
+        assert_eq!(
+            password(Some(&cmd("prive-no-such-program"))).status,
+            Status::Fail
+        );
+        assert_eq!(password(None).status, Status::Ok);
     }
 
     #[test]
