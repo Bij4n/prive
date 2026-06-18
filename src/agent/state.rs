@@ -288,6 +288,27 @@ mod tests {
     }
 
     #[test]
+    fn a_change_on_disk_forgets_only_that_database() {
+        let dir = tempfile::tempdir().unwrap();
+        let (a, b) = (dir.path().join("a.kdbx"), dir.path().join("b.kdbx"));
+        std::fs::copy(fixture("kdbx41.kdbx"), &a).unwrap();
+        std::fs::copy(fixture("conflict.kdbx"), &b).unwrap();
+        let mut s = State::default();
+        unlock(&mut s, &a, "fixture-pass");
+        unlock(&mut s, &b, "fixture-pass");
+        std::fs::copy(fixture("kdbx40.kdbx"), &a).unwrap();
+        assert!(matches!(
+            s.handle(Request::Entries { db: a.clone() }),
+            Response::Locked { .. }
+        ));
+        assert!(matches!(
+            s.handle(Request::Entries { db: b.clone() }),
+            Response::Entries { .. }
+        ));
+        assert_eq!(s.databases().len(), 1);
+    }
+
+    #[test]
     fn lock_forgets() {
         let mut s = State::default();
         unlock(&mut s, &fixture("kdbx41.kdbx"), "fixture-pass");
