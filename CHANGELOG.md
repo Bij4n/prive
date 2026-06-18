@@ -8,6 +8,8 @@ The 1.0 rewrite has started: prive becomes a terminal client for KeePass (`.kdbx
 The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `legacy-0.5.0`.
 
 ### Added
+- `prive diff OTHER`: what differs between the database and a conflict copy or backup,
+  entries paired by UUID, field names only
 - `prive info`: how the database is stored (format, encryption, key derivation, the app that
   saved it) and how much is in it; works through the agent too
 - `prive audit` checks the database's own settings first: AES-KDF, Argon2 below OWASP's

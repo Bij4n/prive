@@ -24,6 +24,7 @@ Global options: `--db <file>` (or `PRIVE_DB`), `--keyfile <file>` (or `PRIVE_KEY
 | `import FILE --check [--from FMT] [--map F=COL]...` | Reads another app's export and reports what would come across. See [importing.md](importing.md). |
 | `pick [QUERY] [-f FIELD \| --otp] [--print]` | Fuzzy-find an entry, then copy its password (or the field, or the code). `--print` prints it instead. |
 | `audit [--hibp] [--max-age DAYS] [--expiring DAYS] [--json]` | First the database's own settings, if they are weak (see [security.md](security.md#key-derivation)); then weak, reused, expired and old passwords, worst first; with `--expiring`, also those expiring soon. Entries excluded from reports in KeePassXC are skipped. |
+| `diff OTHER [--other-keyfile FILE] [--json]` | What differs between the database and another copy of it (a sync conflict copy, a backup): entries only in one, and the names of changed fields, never their values. See [sync.md](sync.md). |
 | `info [--json]` | How the file is stored: format, encryption, key derivation settings, the app that last saved it, how many entries and groups it holds and how many entries wait in the recycle bin. No secrets. |
 | `gen [...] [-n COUNT]` | A new password, passphrase (`--words N`) or PIN (`--pin N`), or COUNT of them. No database needed. See [generate.md](generate.md). |
 | `config [--json]` | The config file, database and key file a command would use and where each came from, the clipboard and agent timeouts, and the agent's directory. |

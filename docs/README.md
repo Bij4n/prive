@@ -9,6 +9,7 @@
 - [Running commands with secrets](run.md): `prive run`
 - [git credential helper](git.md)
 - [Bringing passwords in](importing.md) from Proton Pass, Apple, Google, LastPass, any CSV
+- [Syncing and conflict copies](sync.md): `prive diff`
 - [Moving from prive 0.5](migrating-from-0.5.md)
 - [Scripting](scripting.md), [exit codes](exit-codes.md), [shell tips](shell.md)
 - [Clipboard](clipboard.md), [configuration](config.md)
