@@ -513,6 +513,81 @@ mod tests {
     }
 
     #[test]
+    fn diff_text() {
+        use crate::diff::{Difference, Kind, Newer};
+        let d =
+            |kind, path: &str, other: Option<&str>, fields: &[&str], newer, recycled| Difference {
+                kind,
+                path: path.into(),
+                other_path: other.map(str::to_string),
+                fields: fields.iter().map(|f| f.to_string()).collect(),
+                newer,
+                uuid: String::new(),
+                recycled_in_other: recycled,
+            };
+        let (a, b) = (
+            std::path::Path::new("/x/A.kdbx"),
+            std::path::Path::new("B.kdbx"),
+        );
+        assert_eq!(
+            render_diff(a, b, &[]),
+            "A.kdbx and B.kdbx hold the same entries\n"
+        );
+        let text = render_diff(
+            a,
+            b,
+            &[
+                d(Kind::OnlyHere, "Old", None, &[], None, true),
+                d(Kind::OnlyThere, "New", None, &[], None, false),
+                d(
+                    Kind::Changed,
+                    "Bank",
+                    None,
+                    &["password"],
+                    Some(Newer::Here),
+                    false,
+                ),
+                d(
+                    Kind::Changed,
+                    "W/GH",
+                    Some("P/GH"),
+                    &["group"],
+                    Some(Newer::Unknown),
+                    false,
+                ),
+            ],
+        );
+        assert_eq!(
+            text,
+            "Only in A.kdbx:\n  Old (in the recycle bin of B.kdbx)\n\
+             Only in B.kdbx:\n  New\n\
+             Changed:\n  Bank: password (newer in A.kdbx)\n  W/GH -> P/GH: group\n"
+        );
+    }
+
+    #[test]
+    fn doctor_lines_line_up() {
+        use crate::doctor::{Check, Status};
+        let c = |name, status, detail: &str| Check {
+            name,
+            status,
+            detail: detail.into(),
+        };
+        assert_eq!(
+            render_checks(&[
+                c("config file", Status::Ok, "/c.toml"),
+                c("key file", Status::Skip, "none"),
+                c("database", Status::Fail, "missing"),
+                c("sync", Status::Warn, "a copy"),
+            ]),
+            "ok    config file  /c.toml\n\
+             --    key file     none\n\
+             FAIL  database     missing\n\
+             warn  sync         a copy\n"
+        );
+    }
+
+    #[test]
     fn watch_lines_keep_their_width() {
         assert_eq!(
             watch_line("123456", 30, 30),
