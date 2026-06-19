@@ -72,6 +72,17 @@ login --user "$(prive get Work/VPN -f username)" \
 prive audit --json | jq -e '(.findings | length) + (.database | length) == 0'
 ```
 
+```bash
+# Stop a sync job when a conflict copy holds anything the database doesn't
+prive diff ~/Sync/Passwords.sync-conflict-*.kdbx --json | jq -e '.differences | length == 0'
+
+# Which format and key derivation each database uses
+for db in work family; do prive --db "$db" info --json | jq -r '"\(.path): \(.format), \(.kdf.algorithm)"'; done
+
+# Check a machine before relying on prive in a script (no password needed)
+prive doctor --quiet >/dev/null || prive doctor
+```
+
 `get --format` fills in several fields at once, with KeePass's placeholder names. Only
 `{TITLE}`, `{USERNAME}`, `{PASSWORD}`, `{URL}`, `{NOTES}`, `{S:Field name}` and `{TOTP}` are
 replaced; any other braces are left as they are, so JSON and shell text pass through. A field
