@@ -7,6 +7,11 @@ AES-KDF with KeePassXC's default 1,000,000 rounds):
 |---|---|---|
 | `prive ls` | 0.10 s | 24 MB |
 | `prive audit --max-age 0` (strength of every password) | 0.47 s | 25 MB |
+| `prive info` | 0.10 s | 25 MB |
+| `prive diff` against a second copy of 5,000 entries | 0.23 s | 29 MB |
+
+`diff` opens both files, so it pays the key derivation twice; pairing the 5,000 entries
+takes about 3 ms.
 
 Most of `ls`'s time is the key derivation, which is the database's own setting: Argon2 with
 a large memory cost (KeePassXC's default for KDBX 4) takes about a second by design, on
