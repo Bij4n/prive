@@ -125,6 +125,9 @@ pub enum Command {
         query: Option<String>,
         #[arg(long)]
         json: bool,
+        /// Keep the list on screen, codes and times redrawn, until Ctrl-C (terminal only)
+        #[arg(long, conflicts_with = "json")]
+        watch: bool,
     },
 
     /// Run a command with secrets in its environment (never printed, never on disk)

@@ -427,20 +427,35 @@ pub fn otp_setup(global: &Global, entry: &str, qr: bool) -> Result<()> {
 }
 
 /// The current code of every entry that has one (or of those matching `query`).
-pub fn codes(global: &Global, query: Option<&str>, json: bool) -> Result<()> {
+pub fn codes(global: &Global, query: Option<&str>, json: bool, watch: bool) -> Result<()> {
+    if watch {
+        anyhow::ensure!(
+            std::io::stdout().is_terminal(),
+            "--watch needs a terminal; scripts use `prive codes --json`"
+        );
+    }
     let db = open(global)?;
     let pool: Vec<&Entry> = match query {
         Some(q) => select::search(&db.entries, q),
         None => db.entries.iter().collect(),
     };
-    let rows: Vec<(String, String, u64)> = pool
+    let codes: Vec<(String, otp::Totp)> = pool
         .iter()
-        .filter_map(|e| otp::Totp::from_entry(e).map(|t| (e.path(), t.now())))
-        .map(|(path, (code, left))| (path, code, left))
+        .filter_map(|e| otp::Totp::from_entry(e).map(|t| (e.path(), t)))
         .collect();
-    if rows.is_empty() {
+    if codes.is_empty() {
         return Err(Failure::Missing("no entries with one-time codes".into()).into());
     }
+    if watch {
+        return watch_codes(&codes);
+    }
+    let rows: Vec<(String, String, u64)> = codes
+        .iter()
+        .map(|(path, t)| {
+            let (code, left) = t.now();
+            (path.clone(), code, left)
+        })
+        .collect();
     if json {
         let list: Vec<_> = rows
             .iter()
@@ -458,6 +473,36 @@ pub fn codes(global: &Global, query: Option<&str>, json: bool) -> Result<()> {
         .map(|(p, c, l)| format!("{p:<width$}  {c:<10} {l:>2}s\n"))
         .collect();
     output::print(&text)
+}
+
+/// Draw every code with its time left, then redraw the same lines in place (the cursor goes
+/// back up over them) four times a second until interrupted.
+fn watch_codes(codes: &[(String, otp::Totp)]) -> Result<()> {
+    use std::io::Write;
+    let width = codes
+        .iter()
+        .map(|(p, _)| p.chars().count())
+        .max()
+        .unwrap_or(0);
+    output::notice("Ctrl-C to stop");
+    let mut out = std::io::stdout();
+    let mut first = true;
+    loop {
+        if !first {
+            write!(out, "\x1b[{}A", codes.len())?;
+        }
+        first = false;
+        for (path, t) in codes {
+            let (code, left) = t.now();
+            writeln!(
+                out,
+                "\r{path:<width$}  {}",
+                output::watch_line(&format!("{code:<10}"), left, t.period)
+            )?;
+        }
+        out.flush()?;
+        std::thread::sleep(std::time::Duration::from_millis(250));
+    }
 }
 
 /// When an entry was changed before, and what changed about its password.

@@ -1456,3 +1456,12 @@ fn doctor_warns_about_a_password_file_others_can_read() {
             "ok    password     from PRIVE_PASSWORD_FILE",
         ));
 }
+
+#[test]
+fn codes_watch_needs_a_terminal() {
+    prive(&["codes", "--watch"])
+        .assert()
+        .code(1)
+        .stdout(predicate::str::is_empty())
+        .stderr(predicate::str::contains("--watch needs a terminal"));
+}
