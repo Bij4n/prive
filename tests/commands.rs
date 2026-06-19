@@ -1465,3 +1465,34 @@ fn codes_watch_needs_a_terminal() {
         .stdout(predicate::str::is_empty())
         .stderr(predicate::str::contains("--watch needs a terminal"));
 }
+
+#[cfg(unix)]
+#[test]
+fn a_named_database_brings_its_own_password_command() {
+    let dir = tempfile::tempdir().unwrap();
+    let cfg = dir.path().join("config.toml");
+    std::fs::write(
+        &cfg,
+        format!(
+            "[databases.keys]\npath = {:?}\nkeyfile = {:?}\npassword_command = [\"printf\", \"%s\\\\n\", \"fixture-pass\"]\n",
+            fixture("keyfile.kdbx"),
+            fixture("keyfile.keyx"),
+        ),
+    )
+    .unwrap();
+    let run = |db: &str| {
+        let mut c = Command::cargo_bin("prive").unwrap();
+        c.env("PRIVE_CONFIG", &cfg)
+            .env("PRIVE_NO_AGENT", "1")
+            .env_remove("PRIVE_DB")
+            .env_remove("PRIVE_PASSWORD_FILE")
+            .args(["--db", db, "ls", "--paths"])
+            .write_stdin("");
+        c
+    };
+    run("keys").assert().success().stdout("Key file entry\n");
+    // The same file by its path gets neither the key file nor the command.
+    run(fixture("keyfile.kdbx").to_str().unwrap())
+        .assert()
+        .code(5);
+}
