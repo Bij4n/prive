@@ -73,8 +73,11 @@ prive audit --json | jq -e '(.findings | length) + (.database | length) == 0'
 ```
 
 ```bash
-# Stop a sync job when a conflict copy holds anything the database doesn't
-prive diff ~/Sync/Passwords.sync-conflict-*.kdbx --json | jq -e '.differences | length == 0'
+# Stop a sync job when any conflict copy differs from the database (diff takes one at a time)
+for copy in ~/Sync/Passwords.sync-conflict-*.kdbx; do
+  [ -e "$copy" ] || continue
+  prive diff "$copy" --json | jq -e '.differences | length == 0' >/dev/null || exit 1
+done
 
 # Which format and key derivation each database uses
 for db in work family; do prive --db "$db" info --json | jq -r '"\(.path): \(.format), \(.kdf.algorithm)"'; done

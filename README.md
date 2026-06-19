@@ -54,6 +54,8 @@ prive pick                       # fuzzy finder; Enter copies the password
 prive audit                      # weak key settings; weak, reused, old and expired passwords
 prive audit --hibp               # also check Have I Been Pwned (k-anonymity)
 prive info                       # format, encryption and key settings of the file
+prive diff Passwords.sync-conflict-*.kdbx   # what a sync conflict copy holds that this doesn't
+prive doctor                     # what would get in the way, without a password
 prive --db work ls               # another database, by its name in the config file
 prive gen --words 6              # a passphrase, no database needed
 prive lock                       # forget the unlocked databases now
