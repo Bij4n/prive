@@ -10,7 +10,8 @@ The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `l
 ### Added
 - `prive diff OTHER`: what differs between the database and a conflict copy or backup,
   entries paired by UUID, field names only
-- `prive otp ENTRY --watch`: the current code and its time left, redrawn until Ctrl-C
+- `prive otp ENTRY --watch` and `prive codes --watch`: codes and their time left, redrawn
+  until Ctrl-C, like an authenticator app
 - `password_command` in the config file, per database: the master password from the system
   keyring, `pass`, `op` or any program that prints it; run without a shell
 - The agent keeps several databases unlocked at once; `prive --db work lock` forgets one,

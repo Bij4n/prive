@@ -28,6 +28,7 @@ prive otp Work/GitHub --min-validity 10  # never one about to expire: waits for 
 prive otp Work/GitHub --next             # the one after, for sites that ask for two
 prive otp Work/GitHub --watch            # keeps showing it, like an authenticator app
 prive codes                              # every entry's current code at once
+prive codes --watch                      # all of them, kept up to date on screen
 ```
 
 `--watch` redraws one line until Ctrl-C, with a bar of the time left:
@@ -36,7 +37,9 @@ prive codes                              # every entry's current code at once
 123456  [##########----------]  15 s
 ```
 
-It needs a terminal, and says so before asking for any password.
+`codes --watch` does the same for every entry with a code (or those matching a search),
+one line each, redrawn in place. Both need a terminal, and say so before asking for any
+password.
 
 ## When prive can't read a code
 

@@ -20,7 +20,7 @@ Global options: `--db <file>` (or `PRIVE_DB`), `--keyfile <file>` (or `PRIVE_KEY
 | `file ENTRY [NAME] [-o PATH]` | Without NAME, the entry's attached files and their sizes (tab-separated). With NAME, that file's bytes to stdout (refused on a terminal) or to a new file at PATH, readable only by you. |
 | `open ENTRY [--no-copy]` | Opens the entry's URL in the browser (http and https only; a bare `github.com` gets https://) and copies the password. `cmd://` and other schemes are refused. |
 | `tags [--json]` | Every tag in use with how many entries carry it. |
-| `codes [QUERY] [--json]` | The current code of every entry that has one (or of those matching QUERY), with seconds left. |
+| `codes [QUERY] [--json \| --watch]` | The current code of every entry that has one (or of those matching QUERY), with seconds left. `--watch` keeps them on screen, redrawn, until Ctrl-C. |
 | `import FILE --check [--from FMT] [--map F=COL]...` | Reads another app's export and reports what would come across. See [importing.md](importing.md). |
 | `pick [QUERY] [-f FIELD \| --otp] [--print]` | Fuzzy-find an entry, then copy its password (or the field, or the code). `--print` prints it instead. |
 | `audit [--hibp] [--max-age DAYS] [--expiring DAYS] [--json]` | First the database's own settings, if they are weak (see [security.md](security.md#key-derivation)); then weak, reused, expired and old passwords, worst first; with `--expiring`, also those expiring soon. Entries excluded from reports in KeePassXC are skipped. |
