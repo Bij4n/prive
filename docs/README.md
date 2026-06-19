@@ -13,7 +13,7 @@
 - [Moving from prive 0.5](migrating-from-0.5.md)
 - [Scripting](scripting.md), [exit codes](exit-codes.md), [shell tips](shell.md)
 - [Clipboard](clipboard.md), [configuration](config.md)
-- [Troubleshooting](troubleshooting.md)
+- [Troubleshooting](troubleshooting.md): start with `prive doctor`
 
 **How it works**
 - [KeePass compatibility](keepass-compatibility.md), [field references](references.md)
