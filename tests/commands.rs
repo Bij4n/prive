@@ -1496,3 +1496,19 @@ fn a_named_database_brings_its_own_password_command() {
         .assert()
         .code(5);
 }
+
+#[cfg(unix)]
+#[test]
+fn doctor_warns_about_a_config_file_others_can_change() {
+    use std::os::unix::fs::PermissionsExt;
+    let dir = tempfile::tempdir().unwrap();
+    let cfg = dir.path().join("config.toml");
+    std::fs::write(&cfg, "clipboard_seconds = 30\n").unwrap();
+    std::fs::set_permissions(&cfg, std::fs::Permissions::from_mode(0o666)).unwrap();
+    doctor(&fixture("kdbx41.kdbx"), &[])
+        .env("PRIVE_CONFIG", &cfg)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("warn  config file"))
+        .stdout(predicate::str::contains("mode 666: others can change it"));
+}
