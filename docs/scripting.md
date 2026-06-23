@@ -106,6 +106,17 @@ curl -u "$(prive get Work/API --format '{USERNAME}:{PASSWORD}')" https://api.exa
 prive get Work/DB --format '{"user":"{USERNAME}","password":"{PASSWORD}","key":"{S:API key}"}'
 ```
 
+`ls --format` does the same for every entry listed, one line each, and never shows a secret:
+`{PASSWORD}`, `{TOTP}` and protected fields are refused (before any password is asked
+for), and a field an entry doesn't have is left empty. It also knows `{PATH}`, `{GROUP}`,
+`{TAGS}` and `{UUID}`, which `get --format` takes too.
+
+```bash
+# A tab-separated sheet of what is in the database, for a spreadsheet (bash's $'...' makes
+# the tabs; prive keeps them)
+prive ls --format $'{PATH}\t{USERNAME}\t{URL}\t{TAGS}' > logins.tsv
+```
+
 Values are put in as they are: nothing is escaped for JSON, URLs or the shell. A password
 with a `"` in it breaks the JSON above; for anything a password could break, `show --json
 --reveal` and `jq` are the safe way.

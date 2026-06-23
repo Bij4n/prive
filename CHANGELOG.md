@@ -32,7 +32,8 @@ The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `l
 - `prive audit` checks the database's own settings first: AES-KDF, Argon2 below OWASP's
   smallest setting, passwords not encrypted inside the file
 - `prive get ENTRY --format TEMPLATE`: several fields in one line, with KeePass's
-  placeholders (`{USERNAME}`, `{PASSWORD}`, `{S:field}`, `{TOTP}`)
+  placeholders (`{USERNAME}`, `{PASSWORD}`, `{S:field}`, `{TOTP}`, `{PATH}`, `{UUID}`, ...)
+- `prive ls --format TEMPLATE`: a line per entry, never with a secret
 - Databases by name: `[databases.work]` in the config file, opened with `--db work`, with
   its own key file; `prive config` lists them
 - `git-credential` reads a request's `url=` line as its parts
