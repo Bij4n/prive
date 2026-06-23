@@ -1553,3 +1553,15 @@ fn escape_sequences_are_shown_not_sent() {
     );
     assert!(err.contains("Evil\\x1b]52;c;aGk=\\x07\\x0d"), "{err}");
 }
+
+#[test]
+fn a_tag_nothing_in_a_group_carries_is_not_a_missing_group() {
+    prive(&["ls", "Work", "-t", "no-such-tag"])
+        .assert()
+        .success()
+        .stdout("");
+    prive(&["ls", "Nope"])
+        .assert()
+        .code(3)
+        .stderr(predicate::str::contains("no group 'Nope'"));
+}

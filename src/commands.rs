@@ -211,13 +211,14 @@ pub fn ls(
 ) -> Result<()> {
     let db = open(global)?;
     let mut shown = select::in_group(&db.entries, group.unwrap_or(""));
-    for t in tags {
-        shown = select::with_tag(&shown, t);
-    }
+    // Checked before the tags narrow it: a group with no entry carrying the tag still exists.
     if let Some(g) = group
         && shown.is_empty()
     {
         return Err(Failure::Missing(format!("no group '{g}'")).into());
+    }
+    for t in tags {
+        shown = select::with_tag(&shown, t);
     }
     if long {
         return output::print_human(&output::render_long_list(&shown));
