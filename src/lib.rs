@@ -85,8 +85,14 @@ fn dispatch(cli: Cli) -> Result<()> {
             tags,
             long,
             paths,
+            expired,
+            expiring,
             json,
-        } => commands::ls(g, group.as_deref(), tags, *long, *paths, *json),
+        } => {
+            // --expired is --expiring 0.
+            let expiring = if *expired { Some(0) } else { *expiring };
+            commands::ls(g, group.as_deref(), tags, expiring, *long, *paths, *json)
+        }
         Command::Search { query, all, json } => commands::search(g, query, *all, *json),
         Command::Tags { json } => commands::tags(g, *json),
         Command::Show {

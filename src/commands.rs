@@ -205,6 +205,7 @@ pub fn ls(
     global: &Global,
     group: Option<&str>,
     tags: &[String],
+    expiring: Option<i64>,
     long: bool,
     paths: bool,
     json: bool,
@@ -219,6 +220,9 @@ pub fn ls(
     }
     for t in tags {
         shown = select::with_tag(&shown, t);
+    }
+    if let Some(days) = expiring {
+        shown = select::expiring(&shown, chrono::Utc::now().naive_utc(), days);
     }
     if long {
         return output::print_human(&output::render_long_list(&shown));

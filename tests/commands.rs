@@ -1565,3 +1565,19 @@ fn a_tag_nothing_in_a_group_carries_is_not_a_missing_group() {
         .code(3)
         .stderr(predicate::str::contains("no group 'Nope'"));
 }
+
+#[test]
+fn ls_expired_and_expiring() {
+    prive(&["ls", "--expired", "--paths"])
+        .assert()
+        .success()
+        .stdout("Old VPN\n");
+    // Nothing else in the fixture has an expiry date, however far ahead we look.
+    prive(&["ls", "--expiring", "36500", "--paths"])
+        .assert()
+        .success()
+        .stdout("Old VPN\n");
+    prive(&["ls", "--expired", "--expiring", "7"])
+        .assert()
+        .code(2);
+}

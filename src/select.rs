@@ -143,6 +143,20 @@ pub fn with_tag<'a>(entries: &[&'a Entry], tag: &str) -> Vec<&'a Entry> {
         .collect()
 }
 
+/// Entries that have expired by `now`, or will within `days` of it (0: expired ones only).
+pub fn expiring<'a>(
+    entries: &[&'a Entry],
+    now: chrono::NaiveDateTime,
+    days: i64,
+) -> Vec<&'a Entry> {
+    let until = now + chrono::Duration::days(days.max(0));
+    entries
+        .iter()
+        .copied()
+        .filter(|e| e.expires.is_some_and(|x| x <= until))
+        .collect()
+}
+
 /// Every tag in use and how many entries carry it, most used first, then by name. Tags that
 /// differ only in case are counted together under their most common spelling.
 pub fn tag_counts(entries: &[Entry]) -> Vec<(String, usize)> {
@@ -280,6 +294,27 @@ mod tests {
             protected: false,
         }];
         assert_eq!(search(&e, "second.example").len(), 1);
+    }
+
+    #[test]
+    fn expired_and_expiring() {
+        let day = |d: u32| {
+            chrono::NaiveDate::from_ymd_opt(2026, 6, d)
+                .unwrap()
+                .and_hms_opt(12, 0, 0)
+                .unwrap()
+        };
+        let mut e = sample();
+        e[0].expires = Some(day(1)); // gone
+        e[1].expires = Some(day(20)); // in a week
+        let all: Vec<&Entry> = e.iter().collect();
+        let titles = |v: Vec<&Entry>| v.iter().map(|x| x.title.clone()).collect::<Vec<_>>();
+        assert_eq!(titles(expiring(&all, day(13), 0)), [e[0].title.clone()]);
+        assert_eq!(
+            titles(expiring(&all, day(13), 7)),
+            [e[0].title.clone(), e[1].title.clone()]
+        );
+        assert_eq!(expiring(&all, day(13), 7).len(), 2);
     }
 
     #[test]

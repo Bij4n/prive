@@ -216,6 +216,12 @@ pub enum Command {
         /// Only the paths, one per line (for shell completion and fzf)
         #[arg(short = 'p', long, conflicts_with_all = ["json", "long"])]
         paths: bool,
+        /// Only entries that have expired
+        #[arg(long, conflicts_with = "expiring")]
+        expired: bool,
+        /// Only entries that have expired or will within DAYS
+        #[arg(long, value_name = "DAYS")]
+        expiring: Option<i64>,
         #[arg(long)]
         json: bool,
     },
