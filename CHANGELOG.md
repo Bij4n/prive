@@ -10,6 +10,7 @@ The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `l
 ### Added
 - `prive diff OTHER`: what differs between the database and a conflict copy or backup,
   entries paired by UUID, field names only
+- `prive ls --expired` and `--expiring DAYS`
 - `prive gen --symbols CHARS` and `--exclude CHARS`, for sites with rules about characters
 - Colour in `doctor`, `audit` and `diff` on a terminal; `NO_COLOR` and `CLICOLOR_FORCE`
   are honoured; values and JSON are never coloured
@@ -102,6 +103,7 @@ The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `l
   source policy checked in CI
 
 ### Fixed
+- `ls GROUP -t TAG` said the group was missing when no entry in it had the tag
 - Text from a database (titles, usernames, URLs, notes) and names quoted in messages are
   shown with control characters spelled out, so escape sequences in them never reach the
   terminal; values from `get`, `otp` and `--json` are unchanged
