@@ -1623,3 +1623,22 @@ fn open_print_gives_the_address_and_copies_nothing() {
     assert_eq!(std::fs::read_to_string(clip.path()).unwrap(), "");
     prive(&["open", "Wi-Fi", "--print"]).assert().code(1);
 }
+
+#[test]
+fn git_credential_answers_a_url_line() {
+    let dir = tempfile::tempdir().unwrap();
+    let pwfile = dir.path().join("pw");
+    std::fs::write(&pwfile, "fixture-pass\n").unwrap();
+    Command::cargo_bin("prive")
+        .unwrap()
+        .env("PRIVE_CONFIG", fixture("no-such-config.toml"))
+        .env("PRIVE_NO_AGENT", "1")
+        .env("PRIVE_PASSWORD_FILE", &pwfile)
+        .arg("--db")
+        .arg(fixture("kdbx41.kdbx"))
+        .args(["git-credential", "get"])
+        .write_stdin("url=https://demo@github.com/org/repo.git\n\n")
+        .assert()
+        .success()
+        .stdout("username=demo\npassword=gh-Secret-1\n");
+}
