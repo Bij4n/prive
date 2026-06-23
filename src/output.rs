@@ -240,13 +240,16 @@ pub fn render_checks(checks: &[crate::doctor::Check]) -> String {
     let width = checks.iter().map(|c| c.name.len()).max().unwrap_or(0);
     let mut out = String::new();
     for c in checks {
-        let status = match c.status {
-            Status::Ok => "ok",
-            Status::Warn => "warn",
-            Status::Fail => "FAIL",
-            Status::Skip => "--",
+        let (status, s) = match c.status {
+            Status::Ok => ("ok", style::OK),
+            Status::Warn => ("warn", style::WARN),
+            Status::Fail => ("FAIL", style::BAD),
+            Status::Skip => ("--", style::DIM),
         };
-        out.push_str(&format!("{status:<5} {:<width$}  {}\n", c.name, c.detail));
+        out.push_str(&format!(
+            "{s}{status:<5}{s:#} {:<width$}  {}\n",
+            c.name, c.detail
+        ));
     }
     out
 }
@@ -617,13 +620,16 @@ mod tests {
             status,
             detail: detail.into(),
         };
+        let text = render_checks(&[
+            c("config file", Status::Ok, "/c.toml"),
+            c("key file", Status::Skip, "none"),
+            c("database", Status::Fail, "missing"),
+            c("sync", Status::Warn, "a copy"),
+        ]);
+        assert!(text.contains("\x1b["), "coloured for a terminal");
+        // Off a terminal the colours are dropped and the columns stay.
         assert_eq!(
-            render_checks(&[
-                c("config file", Status::Ok, "/c.toml"),
-                c("key file", Status::Skip, "none"),
-                c("database", Status::Fail, "missing"),
-                c("sync", Status::Warn, "a copy"),
-            ]),
+            anstream::adapter::strip_str(&text).to_string(),
             "ok    config file  /c.toml\n\
              --    key file     none\n\
              FAIL  database     missing\n\

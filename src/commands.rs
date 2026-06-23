@@ -831,7 +831,7 @@ pub fn doctor(global: &Global, json: bool) -> Result<()> {
     if json {
         output::print_json(&checks)?;
     } else {
-        output::print(&output::render_checks(&checks))?;
+        output::print_styled(&output::render_checks(&checks))?;
     }
     let failed = checks
         .iter()
