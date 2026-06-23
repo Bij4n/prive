@@ -217,6 +217,86 @@ fn info_matches_keepassxc() {
     }
 }
 
+/// `prive diff` finds what `keepassxc-cli merge --dry-run` would act on, entry for entry:
+/// one to create, one newer in the other copy, one changed on both sides at once.
+#[test]
+fn diff_agrees_with_a_keepassxc_merge_dry_run() {
+    if !available() {
+        return;
+    }
+    let dir = tempfile::tempdir().unwrap();
+    let here = dir.path().join("here.kdbx");
+    std::fs::copy(fixture("kdbx41.kdbx"), &here).unwrap();
+    let merge = Command::new("keepassxc-cli")
+        .args(["merge", "-s", "--dry-run"])
+        .arg(&here)
+        .arg(fixture("conflict.kdbx"))
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .unwrap();
+    {
+        use std::io::Write;
+        writeln!(merge.stdin.as_ref().unwrap(), "{PASSWORD}").unwrap();
+    }
+    let out = merge.wait_with_output().unwrap();
+    let theirs = format!(
+        "{}{}",
+        String::from_utf8_lossy(&out.stdout),
+        String::from_utf8_lossy(&out.stderr)
+    );
+    // Each line KeePassXC prints names the entry's UUID in brackets.
+    let uuid_on = |needle: &str| -> Vec<String> {
+        theirs
+            .lines()
+            .filter(|l| l.contains(needle))
+            .filter_map(|l| {
+                let (_, rest) = l.rsplit_once('[')?;
+                let (uuid, _) = rest.split_once(']')?;
+                Some(uuid.to_lowercase())
+            })
+            .collect()
+    };
+    let ours = assert_cmd::Command::cargo_bin("prive")
+        .unwrap()
+        .env("PRIVE_CONFIG", fixture("no-such-config.toml"))
+        .env("PRIVE_NO_AGENT", "1")
+        .arg("--db")
+        .arg(&here)
+        .args(["--password-stdin", "diff"])
+        .arg(fixture("conflict.kdbx"))
+        .arg("--json")
+        .write_stdin(format!("{PASSWORD}\n"))
+        .output()
+        .unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&ours.stdout).unwrap();
+    let ours_where = |pred: &dyn Fn(&serde_json::Value) -> bool| -> Vec<String> {
+        v["differences"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|d| pred(d))
+            .map(|d| d["uuid"].as_str().unwrap().replace('-', ""))
+            .collect()
+    };
+    assert_eq!(
+        uuid_on("Creating missing"),
+        ours_where(&|d| d["kind"] == "only_there"),
+        "{theirs}"
+    );
+    assert_eq!(
+        uuid_on("newer source"),
+        ours_where(&|d| d["newer"] == "there"),
+        "{theirs}"
+    );
+    assert_eq!(
+        uuid_on("conflicting changes"),
+        ours_where(&|d| d["kind"] == "changed" && d["newer"] == "unknown"),
+        "{theirs}"
+    );
+}
+
 /// `prive otp` and `keepassxc-cli show -t` agree on every entry with a code, read from the
 /// same file.
 #[test]
