@@ -38,6 +38,31 @@ pub fn print(text: &str) -> Result<()> {
     }
 }
 
+/// Colours for reports people read: doctor, audit, diff. Written with [`print_styled`].
+pub mod style {
+    use anstyle::{AnsiColor, Color, Style};
+
+    pub const OK: Style = Style::new().fg_color(Some(Color::Ansi(AnsiColor::Green)));
+    pub const WARN: Style = Style::new().fg_color(Some(Color::Ansi(AnsiColor::Yellow)));
+    pub const BAD: Style = Style::new()
+        .fg_color(Some(Color::Ansi(AnsiColor::Red)))
+        .bold();
+    pub const DIM: Style = Style::new().dimmed();
+    pub const HEADING: Style = Style::new().bold();
+}
+
+/// Write a report that may carry colours to stdout. They are kept on a terminal and dropped
+/// for pipes and files, and when `NO_COLOR` is set or `CLICOLOR=0` (`CLICOLOR_FORCE=1` keeps
+/// them). Never used for secrets or JSON: dropping colours means rewriting the text, and a
+/// value must come out exactly as stored.
+pub fn print_styled(text: &str) -> Result<()> {
+    let mut out = anstream::AutoStream::auto(std::io::stdout().lock());
+    match out.write_all(text.as_bytes()).and_then(|()| out.flush()) {
+        Err(e) if e.kind() == std::io::ErrorKind::BrokenPipe => std::process::exit(0),
+        other => Ok(other?),
+    }
+}
+
 /// Pretty JSON on stdout, one trailing newline.
 pub fn print_json<T: Serialize + ?Sized>(value: &T) -> Result<()> {
     let mut text = serde_json::to_string_pretty(value)?;

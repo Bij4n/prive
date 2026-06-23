@@ -21,6 +21,8 @@ include = [
 ]
 
 [dependencies]
+anstream = "1"
+anstyle = "1"
 anyhow = "1"
 arboard = { version = "3.6", default-features = false, features = ["wayland-data-control"] }
 base32 = "0.5"

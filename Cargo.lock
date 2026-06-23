@@ -1464,6 +1464,8 @@ dependencies = [
 name = "prive"
 version = "0.6.0"
 dependencies = [
+ "anstream",
+ "anstyle",
  "anyhow",
  "arboard",
  "assert_cmd",
