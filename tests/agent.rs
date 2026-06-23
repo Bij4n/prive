@@ -387,3 +387,38 @@ fn unlock_all_opens_every_database_in_the_config_file() {
         .stderr(predicate::str::contains("already unlocked"));
     cmd(&["--db", "second", "unlock", "--all"]).assert().code(1);
 }
+
+#[test]
+fn unlock_all_carries_on_past_one_that_fails() {
+    let s = Sandbox::new();
+    // keyfile.kdbx needs a key file the config doesn't give: that one fails, main doesn't.
+    std::fs::write(
+        s.dir.path().join("config.toml"),
+        format!(
+            "agent_minutes = 1\n[databases.main]\npath = {:?}\n[databases.locked]\npath = {:?}\n",
+            s.db,
+            fixture("keyfile.kdbx")
+        ),
+    )
+    .unwrap();
+    Command::cargo_bin("prive")
+        .unwrap()
+        .env("PRIVE_CONFIG", s.dir.path().join("config.toml"))
+        .env("PRIVE_AGENT_DIR", s.agent_dir())
+        .env_remove("PRIVE_NO_AGENT")
+        .env_remove("PRIVE_PASSWORD_FILE")
+        .env_remove("PRIVE_DB")
+        .args(["--password-stdin", "unlock", "--all"])
+        .write_stdin("fixture-pass\n")
+        .timeout(std::time::Duration::from_secs(30))
+        .assert()
+        .code(1)
+        .stderr(predicate::str::contains("Unlocked main"))
+        .stderr(predicate::str::contains(
+            "prive: locked (keyfile.kdbx): could not open",
+        ))
+        .stderr(predicate::str::contains(
+            "not unlocked: locked (keyfile.kdbx)",
+        ));
+    s.prive(&["get", "Bank"]).assert().success();
+}
