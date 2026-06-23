@@ -18,6 +18,10 @@ How the entry is chosen:
 - if the remote URL names a user (`https://demo@github.com/...`), the entry's username is
   that user.
 
+Requests may also come as one `url=https://demo@github.com/org/repo.git` line (as some tools
+send them); prive reads it as its protocol, host, path and user, the way git-credential(1)
+describes.
+
 When two entries still fit, prive answers nothing and says so on stderr (git then asks you
 as usual). Put the username in the remote URL, or set `git config credential.useHttpPath
 true` and give the entries URLs with their paths.

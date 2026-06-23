@@ -35,6 +35,7 @@ The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `l
   placeholders (`{USERNAME}`, `{PASSWORD}`, `{S:field}`, `{TOTP}`)
 - Databases by name: `[databases.work]` in the config file, opened with `--db work`, with
   its own key file; `prive config` lists them
+- `git-credential` reads a request's `url=` line as its parts
 - KeePassXC's extra URLs (`KP2A_URL` fields) count for `search` and `git-credential`, and
   are never exported by `run --from`
 - `prive import FILE --check`: reads exports from Proton Pass, Apple Passwords, Google
