@@ -40,6 +40,9 @@ pub struct Info {
     /// The app that last saved the file, as it names itself (`KeePassXC`, `KeePassDX`, ...).
     pub generator: Option<String>,
     pub name: Option<String>,
+    /// The description set in KeePassXC's database settings.
+    #[serde(default)]
+    pub description: Option<String>,
     /// Groups below the root, leaving out the recycle bin and what is in it.
     pub groups: usize,
     /// Entries waiting in the recycle bin.
@@ -211,6 +214,11 @@ impl Db {
             compressed: db.config.compression_config != CompressionConfig::None,
             generator: db.meta.generator.clone().filter(|g| !g.is_empty()),
             name: db.meta.database_name.clone().filter(|n| !n.is_empty()),
+            description: db
+                .meta
+                .database_description
+                .clone()
+                .filter(|d| !d.is_empty()),
             groups: count_groups(&db.root(), recycle),
             recycled: db.recycle_bin().map(|g| count_entries(&g)).unwrap_or(0),
             key_changed: db.meta.master_key_changed,

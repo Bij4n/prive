@@ -390,6 +390,7 @@ pub fn render_info(db: &crate::db::Db, size: u64) -> String {
         ),
     );
     line("Name:", i.name.as_deref().unwrap_or(""));
+    line("Description:", i.description.as_deref().unwrap_or(""));
     line("Format:", &i.format);
     let inner = if i.inner_cipher == "none" {
         "passwords inside are not encrypted again".to_string()
@@ -607,6 +608,42 @@ mod tests {
         };
         assert_eq!(render_list(&[&a, &b]), "Work/GitHub  demo\nBank\n");
         assert_eq!(render_list(&[]), "");
+    }
+
+    #[test]
+    fn info_text() {
+        let db = crate::db::Db {
+            path: "/home/me/Passwords.kdbx".into(),
+            entries: vec![Entry::default()],
+            info: crate::db::Info {
+                format: "KDBX 4.1".into(),
+                cipher: "ChaCha20".into(),
+                inner_cipher: "ChaCha20".into(),
+                kdf: crate::db::Kdf {
+                    algorithm: "Argon2id".into(),
+                    iterations: 10,
+                    memory_kib: Some(65536),
+                    parallelism: Some(2),
+                },
+                compressed: true,
+                name: Some("Home".into()),
+                description: Some("The family's logins".into()),
+                groups: 1,
+                ..crate::db::Info::default()
+            },
+            recycled: Vec::new(),
+        };
+        assert_eq!(
+            render_info(&db, 2048),
+            "File:         /home/me/Passwords.kdbx (2.0 KB)\n\
+             Name:         Home\n\
+             Description:  The family's logins\n\
+             Format:       KDBX 4.1\n\
+             Encryption:   ChaCha20, passwords inside also ChaCha20\n\
+             Key:          Argon2id, 64 MiB, 10 passes, 2 threads\n\
+             Compressed:   yes\n\
+             Contents:     1 entry in 1 group\n"
+        );
     }
 
     #[test]
