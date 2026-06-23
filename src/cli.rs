@@ -64,6 +64,10 @@ pub enum Command {
         /// Lock after this many minutes unused, this time (default: agent_minutes, 15)
         #[arg(long, value_parser = clap::value_parser!(u64).range(1..=1440))]
         minutes: Option<u64>,
+        /// Unlock the config file's database and every named one, each with its own key file
+        /// and password command, or a prompt
+        #[arg(long)]
+        all: bool,
     },
 
     /// Forget the unlocked databases now (with --db, only that one)
