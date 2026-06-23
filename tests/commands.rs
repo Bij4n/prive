@@ -1581,3 +1581,33 @@ fn ls_expired_and_expiring() {
         .assert()
         .code(2);
 }
+
+#[test]
+fn doctor_all_checks_every_named_database() {
+    let dir = tempfile::tempdir().unwrap();
+    let cfg = named_config(dir.path());
+    let mut c = Command::cargo_bin("prive").unwrap();
+    c.env("PRIVE_CONFIG", &cfg)
+        .env("PRIVE_NO_AGENT", "1")
+        .env("PRIVE_CLIPBOARD_FILE", dir.path().join("clip"))
+        .env_remove("PRIVE_DB")
+        .env_remove("PRIVE_PASSWORD_FILE")
+        .args(["doctor", "--all", "--json"]);
+    let out = c.output().unwrap();
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stdout)
+    );
+    let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    let names: Vec<Option<&str>> = v
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|s| s["database"].as_str())
+        .collect();
+    assert_eq!(names, [None, Some("keys"), Some("main"), None]);
+    // [databases.keys] brings its key file.
+    assert_eq!(v[1]["checks"][1]["name"], "key file");
+    assert_eq!(v[1]["checks"][1]["status"], "ok");
+}
