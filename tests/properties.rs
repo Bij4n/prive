@@ -62,10 +62,15 @@ proptest! {
         digits in any::<bool>(),
         symbols in any::<bool>(),
         avoid in any::<bool>(),
+        // A few letters and symbols: never a whole class.
+        exclude in "[a-f!#$%]{0,6}",
     ) {
         let g = prive::generate::password(&prive::generate::CharsetSpec {
             length, upper, digits, symbols, avoid_ambiguous: avoid,
+            exclude: exclude.clone(),
+            ..Default::default()
         }).unwrap();
+        prop_assert!(!g.value.chars().any(|c| exclude.contains(c)), "{}", g.value);
         prop_assert_eq!(g.value.chars().count(), length);
         prop_assert!(g.value.chars().any(|c| c.is_ascii_lowercase()));
         prop_assert_eq!(g.value.chars().any(|c| c.is_ascii_uppercase()), upper);

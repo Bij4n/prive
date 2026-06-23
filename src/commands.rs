@@ -731,6 +731,8 @@ fn one_generated(args: &GenArgs) -> Result<generate::Generated> {
             digits: !args.no_digits,
             symbols: !args.no_symbols,
             avoid_ambiguous: args.avoid_ambiguous,
+            symbol_set: args.symbols.clone(),
+            exclude: args.exclude.clone().unwrap_or_default(),
         })?
     })
 }

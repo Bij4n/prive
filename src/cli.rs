@@ -341,6 +341,14 @@ pub struct GenArgs {
     #[arg(long)]
     pub avoid_ambiguous: bool,
 
+    /// Use only these symbols, for sites that allow some: --symbols '!@#$'
+    #[arg(long, value_name = "CHARS", conflicts_with_all = ["no_symbols", "words", "pin"])]
+    pub symbols: Option<String>,
+
+    /// Never use these characters: --exclude '<>&"'
+    #[arg(long, value_name = "CHARS", conflicts_with_all = ["words", "pin"])]
+    pub exclude: Option<String>,
+
     /// Generate a passphrase of this many words instead (EFF large word list)
     #[arg(short, long, value_name = "N", conflicts_with = "pin")]
     pub words: Option<usize>,

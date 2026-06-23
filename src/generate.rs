@@ -23,13 +23,17 @@ fn words() -> Vec<&'static str> {
         .collect()
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct CharsetSpec {
     pub length: usize,
     pub upper: bool,
     pub digits: bool,
     pub symbols: bool,
     pub avoid_ambiguous: bool,
+    /// The symbols to use instead of the default set, for sites that allow only some.
+    pub symbol_set: Option<String>,
+    /// Characters never to use, from any class.
+    pub exclude: String,
 }
 
 #[derive(serde::Serialize)]
@@ -42,21 +46,38 @@ pub struct Generated {
 pub fn password(spec: &CharsetSpec) -> anyhow::Result<Generated> {
     anyhow::ensure!(spec.length >= 4, "length must be at least 4");
     anyhow::ensure!(spec.length <= 1024, "length must be at most 1024");
+    let symbols = spec.symbol_set.as_deref().unwrap_or(SYMBOLS);
+    if let Some(bad) = symbols
+        .chars()
+        .find(|c| c.is_alphanumeric() || c.is_whitespace() || c.is_control())
+    {
+        anyhow::bail!("--symbols takes symbols only, not {bad:?}");
+    }
     let keep = |set: &str| -> Vec<char> {
-        set.chars()
+        let mut out: Vec<char> = set
+            .chars()
             .filter(|c| !spec.avoid_ambiguous || !AMBIGUOUS.contains(*c))
-            .collect()
+            .filter(|c| !spec.exclude.contains(*c))
+            .collect();
+        out.sort_unstable();
+        out.dedup();
+        out
     };
-    let mut classes = vec![keep(LOWER)];
+    let mut classes = vec![("lower-case letters", keep(LOWER))];
     if spec.upper {
-        classes.push(keep(UPPER));
+        classes.push(("upper-case letters", keep(UPPER)));
     }
     if spec.digits {
-        classes.push(keep(DIGITS));
+        classes.push(("digits", keep(DIGITS)));
     }
     if spec.symbols {
-        classes.push(keep(SYMBOLS));
+        classes.push(("symbols", keep(symbols)));
     }
+    // An empty class could never appear, and the loop below would never end.
+    if let Some((name, _)) = classes.iter().find(|(_, c)| c.is_empty()) {
+        anyhow::bail!("no {name} left to use after --exclude");
+    }
+    let classes: Vec<Vec<char>> = classes.into_iter().map(|(_, c)| c).collect();
     let all: Vec<char> = classes.iter().flatten().copied().collect();
 
     let mut rng = rand::rng();
@@ -130,8 +151,53 @@ mod tests {
             upper: true,
             digits: true,
             symbols: true,
-            avoid_ambiguous: false,
+            ..CharsetSpec::default()
         }
+    }
+
+    #[test]
+    fn only_the_symbols_a_site_allows() {
+        for _ in 0..200 {
+            let g = password(&CharsetSpec {
+                symbol_set: Some("!@#".into()),
+                ..spec(12)
+            })
+            .unwrap();
+            let symbols: Vec<char> = g.value.chars().filter(|c| !c.is_alphanumeric()).collect();
+            assert!(!symbols.is_empty());
+            assert!(symbols.iter().all(|c| "!@#".contains(*c)), "{}", g.value);
+        }
+        let err = password(&CharsetSpec {
+            symbol_set: Some("!a".into()),
+            ..spec(12)
+        })
+        .err()
+        .unwrap();
+        assert!(err.to_string().contains("symbols only"));
+    }
+
+    #[test]
+    fn excluded_characters_never_appear() {
+        for _ in 0..200 {
+            let g = password(&CharsetSpec {
+                exclude: "aeiouAEIOU0<>&".into(),
+                ..spec(16)
+            })
+            .unwrap();
+            assert!(
+                !g.value.chars().any(|c| "aeiouAEIOU0<>&".contains(c)),
+                "{}",
+                g.value
+            );
+        }
+        // Leaving a class empty is refused instead of looping for ever.
+        let err = password(&CharsetSpec {
+            exclude: "0123456789".into(),
+            ..spec(16)
+        })
+        .err()
+        .unwrap();
+        assert!(err.to_string().contains("no digits left"), "{err}");
     }
 
     #[test]
@@ -154,6 +220,7 @@ mod tests {
             digits: false,
             symbols: false,
             avoid_ambiguous: false,
+            ..CharsetSpec::default()
         })
         .unwrap();
         assert!((lower.entropy_bits - 10.0 * 26f64.log2()).abs() < 1e-9);
