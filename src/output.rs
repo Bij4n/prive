@@ -17,6 +17,30 @@ pub fn set_quiet(quiet: bool) {
     QUIET.store(quiet, std::sync::atomic::Ordering::Relaxed);
 }
 
+/// `s` with control characters shown as `\x1b`-style escapes, so text from a database (a
+/// title, a URL, an imported note) can't move the cursor, retitle the terminal or write to
+/// the clipboard through escape sequences when it is shown. Newlines and tabs stay.
+pub fn visible(s: &str) -> std::borrow::Cow<'_, str> {
+    let hidden = |c: char| c.is_control() && c != '\n' && c != '\t';
+    if !s.chars().any(hidden) {
+        return std::borrow::Cow::Borrowed(s);
+    }
+    let mut out = String::with_capacity(s.len() + 8);
+    for c in s.chars() {
+        if hidden(c) {
+            let n = u32::from(c);
+            if n < 0x100 {
+                out.push_str(&format!("\\x{n:02x}"));
+            } else {
+                out.push_str(&format!("\\u{{{n:x}}}"));
+            }
+        } else {
+            out.push(c);
+        }
+    }
+    std::borrow::Cow::Owned(out)
+}
+
 /// A notice for the person at the terminal, on stderr, unless `--quiet`.
 pub fn notice(text: &str) {
     debug_assert!(
@@ -24,8 +48,15 @@ pub fn notice(text: &str) {
         "notice with an unformatted placeholder: {text}"
     );
     if !QUIET.load(std::sync::atomic::Ordering::Relaxed) {
-        eprintln!("{text}");
+        eprintln!("{}", visible(text));
     }
+}
+
+/// Write text meant for people (listings, `show`, reports) to stdout, with control
+/// characters made [`visible`]. Values a script takes as they are (`get`, `otp`, `gen`)
+/// go through [`print()`] instead.
+pub fn print_human(text: &str) -> Result<()> {
+    print(&visible(text))
 }
 
 /// Write text to stdout. A closed pipe (`prive ls | head -1`) is not an error: the reader
@@ -114,7 +145,7 @@ pub fn render_audit(r: &crate::audit::Report) -> String {
         ));
     }
     for f in &r.findings {
-        out.push_str(&format!("{h}{}{h:#}\n", f.path));
+        out.push_str(&format!("{h}{}{h:#}\n", visible(&f.path)));
         for i in &f.issues {
             // Red for what someone could use against you now; yellow for the rest.
             let s = match i {
@@ -260,7 +291,8 @@ pub fn render_checks(checks: &[crate::doctor::Check]) -> String {
         };
         out.push_str(&format!(
             "{s}{status:<5}{s:#} {:<width$}  {}\n",
-            c.name, c.detail
+            c.name,
+            visible(&c.detail)
         ));
     }
     out
@@ -295,9 +327,9 @@ pub fn render_diff(
         let (h, warn, dim) = (style::HEADING, style::WARN, style::DIM);
         out.push_str(&format!("{h}{heading}{h:#}\n"));
         for d in rows {
-            let mut line = format!("  {}", d.path);
+            let mut line = format!("  {}", visible(&d.path));
             if let Some(o) = &d.other_path {
-                line.push_str(&format!(" -> {o}"));
+                line.push_str(&format!(" -> {}", visible(o)));
             }
             if d.recycled_in_other {
                 let bin = if kind == Kind::OnlyHere { &b } else { &a };
@@ -553,6 +585,20 @@ mod tests {
         };
         assert_eq!(render_list(&[&a, &b]), "Work/GitHub  demo\nBank\n");
         assert_eq!(render_list(&[]), "");
+    }
+
+    #[test]
+    fn control_characters_are_shown_not_sent() {
+        assert_eq!(visible("GitHub"), "GitHub");
+        assert!(matches!(visible("plain"), std::borrow::Cow::Borrowed(_)));
+        // An OSC 52 sequence would write to the clipboard; a BEL and a CR hide things.
+        assert_eq!(
+            visible("evil\x1b]52;c;aGk=\x07title"),
+            "evil\\x1b]52;c;aGk=\\x07title"
+        );
+        assert_eq!(visible("a\rb"), "a\\x0db");
+        assert_eq!(visible("one\ntwo\tthree"), "one\ntwo\tthree");
+        assert_eq!(visible("c1\u{9b}31m"), "c1\\x9b31m");
     }
 
     #[test]

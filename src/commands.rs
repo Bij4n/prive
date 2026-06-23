@@ -143,7 +143,7 @@ pub fn status(json: bool) -> Result<()> {
         }));
     }
     if open.is_empty() {
-        return output::print("locked\n");
+        return output::print_human("locked\n");
     }
     let mut text = String::new();
     for db in &open {
@@ -157,7 +157,7 @@ pub fn status(json: bool) -> Result<()> {
             left % 60
         ));
     }
-    output::print(&text)
+    output::print_human(&text)
 }
 
 /// Copy a secret, then say on stderr when it will be cleared.
@@ -197,7 +197,7 @@ fn list(entries: &[&Entry], json: bool) -> Result<()> {
         let summaries: Vec<_> = entries.iter().map(|e| e.summary()).collect();
         output::print_json(&summaries)
     } else {
-        output::print(&output::render_list(entries))
+        output::print_human(&output::render_list(entries))
     }
 }
 
@@ -220,11 +220,11 @@ pub fn ls(
         return Err(Failure::Missing(format!("no group '{g}'")).into());
     }
     if long {
-        return output::print(&output::render_long_list(&shown));
+        return output::print_human(&output::render_long_list(&shown));
     }
     if paths {
         let text: String = shown.iter().map(|e| format!("{}\n", e.path())).collect();
-        return output::print(&text);
+        return output::print_human(&text);
     }
     list(&shown, json)
 }
@@ -248,7 +248,7 @@ pub fn tags(global: &Global, json: bool) -> Result<()> {
         .iter()
         .map(|(t, n)| format!("{n:>width$}  {t}\n"))
         .collect();
-    output::print(&text)
+    output::print_human(&text)
 }
 
 pub fn search(global: &Global, query: &str, all: bool, json: bool) -> Result<()> {
@@ -284,7 +284,7 @@ pub fn show(global: &Global, entry: &str, reveal: bool, json: bool) -> Result<()
     if json {
         output::print_json(&output::show_json(e, reveal))
     } else {
-        output::print(&output::render_show(e, reveal))
+        output::print_human(&output::render_show(e, reveal))
     }
 }
 
@@ -472,7 +472,7 @@ pub fn codes(global: &Global, query: Option<&str>, json: bool, watch: bool) -> R
         .iter()
         .map(|(p, c, l)| format!("{}  {c:<10} {l:>2}s\n", output::pad(p, columns)))
         .collect();
-    output::print(&text)
+    output::print_human(&text)
 }
 
 /// Draw every code with its time left, then redraw the same lines in place (the cursor goes
@@ -497,7 +497,7 @@ fn watch_codes(codes: &[(String, otp::Totp)]) -> Result<()> {
             writeln!(
                 out,
                 "\r{}  {}",
-                output::pad(path, width),
+                output::pad(&output::visible(path), width),
                 output::watch_line(&format!("{code:<10}"), left, t.period)
             )?;
         }
@@ -537,7 +537,7 @@ pub fn history(global: &Global, entry: &str, reveal: bool, json: bool) -> Result
         return output::print_json(&list);
     }
     if rows.is_empty() {
-        return output::print(&format!("{} has no earlier versions\n", e.path()));
+        return output::print_human(&format!("{} has no earlier versions\n", e.path()));
     }
     let mut text = format!("{}  now\n", when(e.modified));
     for (t, v, changed) in rows {
@@ -552,7 +552,7 @@ pub fn history(global: &Global, entry: &str, reveal: bool, json: bool) -> Result
             text.push_str(&format!("{t}  {mark}\n"));
         }
     }
-    output::print(&text)
+    output::print_human(&text)
 }
 
 /// List an entry's attachments, or write one to a new file or to stdout.
@@ -570,7 +570,7 @@ pub fn file(
             .iter()
             .map(|a| format!("{}\t{}\n", a.name, a.data.len()))
             .collect();
-        return output::print(&text);
+        return output::print_human(&text);
     };
     let a = e
         .attachments
@@ -648,7 +648,7 @@ pub fn import_check(
         })?,
     };
     let (records, report) = format.parse(&text, &map)?;
-    output::print(&format!(
+    output::print_human(&format!(
         "{} export: {}",
         format.label(),
         report.render(&records)
@@ -822,7 +822,7 @@ pub fn info(global: &Global, json: bool) -> Result<()> {
         v["entries"] = serde_json::json!(db.entries.len());
         return output::print_json(&v);
     }
-    output::print(&output::render_info(&db, size))
+    output::print_human(&output::render_info(&db, size))
 }
 
 /// Run every check and print what each found. Exit 1 when any check fails.
@@ -935,7 +935,7 @@ pub fn show_config(global: &Global, json: bool) -> Result<()> {
             d.path.display()
         ));
     }
-    output::print(&text)
+    output::print_human(&text)
 }
 
 /// Answer git's credential request from stdin. Never an error that stops git: anything that

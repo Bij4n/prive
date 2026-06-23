@@ -1537,3 +1537,19 @@ fn colours_only_when_asked_for_off_a_terminal() {
         .unwrap();
     assert_eq!(out.stdout, b"b4nk-P@ss-2026!\n");
 }
+
+#[test]
+fn escape_sequences_are_shown_not_sent() {
+    // Whatever ends up on the terminal, here a name quoted back in an error, has its control
+    // characters spelled out: an OSC 52 sequence would otherwise write to the clipboard.
+    let out = prive(&["get", "Evil\x1b]52;c;aGk=\x07\r"])
+        .output()
+        .unwrap();
+    assert_eq!(out.status.code(), Some(3));
+    let err = String::from_utf8(out.stderr).unwrap();
+    assert!(
+        !err.contains('\x1b') && !err.contains('\x07') && !err.contains('\r'),
+        "{err:?}"
+    );
+    assert!(err.contains("Evil\\x1b]52;c;aGk=\\x07\\x0d"), "{err}");
+}

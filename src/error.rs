@@ -56,20 +56,25 @@ pub fn report(err: &anyhow::Error) -> ExitCode {
     if let Some(Failure::Cancelled) = err.downcast_ref::<Failure>() {
         return ExitCode::from(130); // the user knows; no message needed
     }
-    eprintln!("prive: {err}");
+    // Messages can quote entry names and paths; show any control characters in them.
+    let shown = |s: String| crate::output::visible(&s).into_owned();
+    eprintln!("prive: {}", shown(err.to_string()));
     for cause in err.chain().skip(1) {
-        eprintln!("  caused by: {cause}");
+        eprintln!("  caused by: {}", shown(cause.to_string()));
     }
     match err.downcast_ref::<Failure>() {
         Some(f) => {
             match f {
                 Failure::Ambiguous { candidates, .. } => {
                     for c in candidates {
-                        eprintln!("  {c}");
+                        eprintln!("  {}", crate::output::visible(c));
                     }
                 }
                 Failure::NoSuchEntry { close, .. } if !close.is_empty() => {
-                    eprintln!("  did you mean: {}?", close.join(", "));
+                    eprintln!(
+                        "  did you mean: {}?",
+                        crate::output::visible(&close.join(", "))
+                    );
                 }
                 _ => {}
             }
