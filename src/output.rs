@@ -192,28 +192,45 @@ pub fn human_size(bytes: usize) -> String {
 /// `ls --long`: the date it last changed, markers for a one-time code (`2fa`), attachments
 /// (`file`) and expiry (`expired`), then the path and username.
 pub fn render_long_list(entries: &[&Entry]) -> String {
-    let now = chrono::Utc::now().naive_utc();
-    let columns = entries.iter().map(|e| width(&e.path())).max().unwrap_or(0);
+    render_long_list_at(entries, chrono::Utc::now().naive_utc())
+}
+
+/// Entries that expire within this many days are marked `expiring` in `ls --long`.
+pub const EXPIRING_SOON_DAYS: i64 = 30;
+
+/// [`render_long_list`] as of `now`.
+pub fn render_long_list_at(entries: &[&Entry], now: chrono::NaiveDateTime) -> String {
+    let soon = now + chrono::Duration::days(EXPIRING_SOON_DAYS);
+    let marks: Vec<String> = entries
+        .iter()
+        .map(|e| {
+            let mut m = Vec::new();
+            if crate::otp::Totp::from_entry(e).is_some() {
+                m.push("2fa");
+            }
+            if !e.attachments.is_empty() {
+                m.push("file");
+            }
+            match e.expires {
+                Some(x) if x < now => m.push("expired"),
+                Some(x) if x < soon => m.push("expiring"),
+                _ => {}
+            }
+            m.join(",")
+        })
+        .collect();
+    let paths = entries.iter().map(|e| width(&e.path())).max().unwrap_or(0);
+    // Wide enough for the longest set of marks, so the paths always start in one column.
+    let marked = marks.iter().map(String::len).max().unwrap_or(0).max(3);
     let mut out = String::new();
-    for e in entries {
+    for (e, m) in entries.iter().zip(&marks) {
         let date = e
             .modified
-            .map(|m| m.format("%Y-%m-%d").to_string())
+            .map(|t| t.format("%Y-%m-%d").to_string())
             .unwrap_or_else(|| "-".repeat(10));
-        let mut marks = Vec::new();
-        if crate::otp::Totp::from_entry(e).is_some() {
-            marks.push("2fa");
-        }
-        if !e.attachments.is_empty() {
-            marks.push("file");
-        }
-        if e.expires.is_some_and(|x| x < now) {
-            marks.push("expired");
-        }
         let line = format!(
-            "{date}  {:<13} {}  {}",
-            marks.join(","),
-            pad(&e.path(), columns),
+            "{date}  {m:<marked$}  {}  {}",
+            pad(&e.path(), paths),
             e.username
         );
         out.push_str(line.trim_end());
@@ -593,6 +610,29 @@ mod tests {
     }
 
     #[test]
+    fn long_listings_mark_and_line_up() {
+        let at = |d: u32| {
+            chrono::NaiveDate::from_ymd_opt(2026, 6, d)
+                .unwrap()
+                .and_hms_opt(12, 0, 0)
+                .unwrap()
+        };
+        let mk = |t: &str, exp: Option<u32>| Entry {
+            title: t.into(),
+            modified: Some(at(1)),
+            expires: exp.map(at),
+            ..Entry::default()
+        };
+        let (gone, soon, fine) = (mk("Gone", Some(2)), mk("Soon", Some(30)), mk("Fine", None));
+        assert_eq!(
+            render_long_list_at(&[&gone, &soon, &fine], at(10)),
+            "2026-06-01  expired   Gone\n\
+             2026-06-01  expiring  Soon\n\
+             2026-06-01            Fine\n"
+        );
+    }
+
+    #[test]
     fn control_characters_are_shown_not_sent() {
         assert_eq!(visible("GitHub"), "GitHub");
         assert!(matches!(visible("plain"), std::borrow::Cow::Borrowed(_)));
@@ -761,8 +801,8 @@ mod tests {
         b.modified = None;
         assert_eq!(
             render_long_list(&[&a, &b]),
-            "2026-05-01  file          Work/GitHub  demo\n\
-             ----------  expired       Old\n"
+            "2026-05-01  file     Work/GitHub  demo\n\
+             ----------  expired  Old\n"
         );
     }
 
