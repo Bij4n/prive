@@ -31,6 +31,13 @@ prive won't ask for a password at all.
 There is deliberately no environment variable that holds the password itself: other processes
 running as the same user can read a process's environment.
 
+## Colour
+
+`doctor`, `audit` and `diff` use colour on a terminal and plain text everywhere else, so a
+pipe or a file never gets escape codes. `NO_COLOR=1` turns colour off on the terminal too;
+`CLICOLOR_FORCE=1` keeps it for a pipe (`prive audit | less -R`), unless `NO_COLOR` is set.
+Values (`get`, `otp`, `show`, `--json`) are never coloured: they come out exactly as stored.
+
 ## Choosing the database
 
 `--db <file>` or `PRIVE_DB`, otherwise the database recorded in the config file
