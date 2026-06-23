@@ -286,6 +286,9 @@ pub enum Command {
 
     /// Check the config, database, key file, agent and clipboard, without a password
     Doctor {
+        /// Check every database the config file names, not only the one a command would open
+        #[arg(long)]
+        all: bool,
         #[arg(long)]
         json: bool,
     },

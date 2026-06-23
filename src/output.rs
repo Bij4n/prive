@@ -279,8 +279,13 @@ pub fn watch_line(code: &str, left: u64, period: u64) -> String {
 
 /// `prive doctor`: one line per check, `ok`, `warn`, `FAIL` or `--` first.
 pub fn render_checks(checks: &[crate::doctor::Check]) -> String {
-    use crate::doctor::Status;
     let width = checks.iter().map(|c| c.name.len()).max().unwrap_or(0);
+    render_checks_at(checks, width)
+}
+
+/// [`render_checks`] with the names padded to `width`, so several groups line up.
+pub fn render_checks_at(checks: &[crate::doctor::Check], width: usize) -> String {
+    use crate::doctor::Status;
     let mut out = String::new();
     for c in checks {
         let (status, s) = match c.status {

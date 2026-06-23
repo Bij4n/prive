@@ -265,20 +265,60 @@ pub fn clipboard() -> Check {
 }
 
 /// Every check, in the order a command meets them.
+/// The checks that belong to one database: the file, its key file, its password source and
+/// conflict copies next to it.
+fn database_checks(target: &crate::config::Target) -> Vec<Check> {
+    let db_check = database(&target.db);
+    let found = db_check.status != Status::Fail;
+    let mut checks = vec![
+        db_check,
+        keyfile(target.keyfile.as_deref()),
+        password(target.password_command.as_deref()),
+    ];
+    if found {
+        checks.push(conflicts(&target.db));
+    }
+    checks
+}
+
+/// A heading (empty for checks that aren't about one database) and its checks.
+pub type Section = (String, Vec<Check>);
+
+/// `doctor --all`: the config file, then each database it names, then the agent and the
+/// clipboard.
+pub fn run_all() -> Vec<Section> {
+    let (cfg_check, cfg) = config_file();
+    let mut sections = vec![(String::new(), vec![cfg_check])];
+    if let Some(cfg) = cfg {
+        let mut seen = std::collections::HashSet::new();
+        let mut each = |label: String, t: Result<crate::config::Target, anyhow::Error>| match t {
+            Ok(t) => {
+                let canonical = std::fs::canonicalize(&t.db).unwrap_or_else(|_| t.db.clone());
+                if seen.insert(canonical) {
+                    sections.push((label, database_checks(&t)));
+                }
+            }
+            Err(e) => sections.push((
+                label,
+                vec![check("database", Status::Fail, format!("{e:#}"))],
+            )),
+        };
+        if cfg.db.is_some() {
+            each("the default database".into(), cfg.target(None, None));
+        }
+        for name in cfg.databases.keys() {
+            each(name.clone(), cfg.target(Some(Path::new(name)), None));
+        }
+    }
+    sections.push((String::new(), vec![agent(), clipboard()]));
+    sections
+}
+
 pub fn run(db: Option<&Path>, keyfile_arg: Option<&Path>) -> Vec<Check> {
     let (cfg_check, cfg) = config_file();
     let mut checks = vec![cfg_check];
     match cfg.map(|c| c.target(db, keyfile_arg)) {
-        Some(Ok(target)) => {
-            let db_check = database(&target.db);
-            let found = db_check.status != Status::Fail;
-            checks.push(db_check);
-            checks.push(keyfile(target.keyfile.as_deref()));
-            checks.push(password(target.password_command.as_deref()));
-            if found {
-                checks.push(conflicts(&target.db));
-            }
-        }
+        Some(Ok(target)) => checks.extend(database_checks(&target)),
         Some(Err(e)) => checks.push(check("database", Status::Fail, format!("{e:#}"))),
         None => checks.push(check(
             "database",

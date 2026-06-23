@@ -909,15 +909,48 @@ pub fn info(global: &Global, json: bool) -> Result<()> {
 }
 
 /// Run every check and print what each found. Exit 1 when any check fails.
-pub fn doctor(global: &Global, json: bool) -> Result<()> {
-    let checks = crate::doctor::run(global.db.as_deref(), global.keyfile.as_deref());
-    if json {
-        output::print_json(&checks)?;
+pub fn doctor(global: &Global, all: bool, json: bool) -> Result<()> {
+    let sections = if all {
+        crate::doctor::run_all()
     } else {
-        output::print_styled(&output::render_checks(&checks))?;
+        vec![(
+            String::new(),
+            crate::doctor::run(global.db.as_deref(), global.keyfile.as_deref()),
+        )]
+    };
+    if json && all {
+        let v: Vec<serde_json::Value> = sections
+            .iter()
+            .map(|(name, checks)| {
+                serde_json::json!({
+                    "database": (!name.is_empty()).then_some(name),
+                    "checks": checks,
+                })
+            })
+            .collect();
+        output::print_json(&v)?;
+    } else if json {
+        output::print_json(&sections[0].1)?;
+    } else {
+        let h = output::style::HEADING;
+        let width = sections
+            .iter()
+            .flat_map(|(_, c)| c)
+            .map(|c| c.name.len())
+            .max()
+            .unwrap_or(0);
+        let mut text = String::new();
+        for (name, checks) in &sections {
+            if !name.is_empty() {
+                text.push_str(&format!("{h}{}{h:#}\n", output::visible(name)));
+            }
+            text.push_str(&output::render_checks_at(checks, width));
+        }
+        output::print_styled(&text)?;
     }
-    let failed = checks
+    let failed = sections
         .iter()
+        .flat_map(|(_, c)| c)
         .filter(|c| c.status == crate::doctor::Status::Fail)
         .count();
     if failed > 0 {
