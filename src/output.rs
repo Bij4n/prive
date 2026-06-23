@@ -100,21 +100,28 @@ pub fn render_list(entries: &[&Entry]) -> String {
 /// The `audit` report for people: one block per entry with problems, worst first, and a
 /// closing summary line.
 pub fn render_audit(r: &crate::audit::Report) -> String {
+    use crate::audit::Issue;
+    let (h, warn, bad, dim) = (style::HEADING, style::WARN, style::BAD, style::DIM);
     let mut out = String::new();
     if !r.database.is_empty() {
-        out.push_str("This database\n");
+        out.push_str(&format!("{h}This database{h:#}\n"));
         for i in &r.database {
-            out.push_str(&format!("  - {}\n", i.describe()));
+            out.push_str(&format!("  - {warn}{}{warn:#}\n", i.describe()));
         }
-        out.push_str(
-            "  (KeePassXC: Database > Database Security > Encryption Settings; \
-             the change takes effect on the next save)\n",
-        );
+        out.push_str(&format!(
+            "  {dim}(KeePassXC: Database > Database Security > Encryption Settings; \
+             the change takes effect on the next save){dim:#}\n",
+        ));
     }
     for f in &r.findings {
-        out.push_str(&format!("{}\n", f.path));
+        out.push_str(&format!("{h}{}{h:#}\n", f.path));
         for i in &f.issues {
-            out.push_str(&format!("  - {}\n", i.describe()));
+            // Red for what someone could use against you now; yellow for the rest.
+            let s = match i {
+                Issue::Breached { .. } | Issue::Weak { .. } | Issue::Expired => bad,
+                _ => warn,
+            };
+            out.push_str(&format!("  - {s}{}{s:#}\n", i.describe()));
         }
     }
     let skipped = if r.skipped > 0 {
@@ -122,8 +129,13 @@ pub fn render_audit(r: &crate::audit::Report) -> String {
     } else {
         String::new()
     };
+    let s = if r.is_clean() {
+        style::OK
+    } else {
+        style::HEADING
+    };
     out.push_str(&format!(
-        "{} of {} checked entries need attention{skipped}\n",
+        "{s}{} of {} checked entries need attention{s:#}{skipped}\n",
         r.findings.len(),
         r.checked
     ));
@@ -672,7 +684,7 @@ mod tests {
             database: Vec::new(),
         };
         assert_eq!(
-            render_audit(&r),
+            anstream::adapter::strip_str(&render_audit(&r)).to_string(),
             "Work/GitHub\n  - weak (strength 1/4)\n  - reused by 1 other entry\n\
              1 of 3 checked entries need attention, 1 skipped (excluded or no password)\n"
         );

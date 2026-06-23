@@ -691,7 +691,7 @@ pub fn audit(global: &Global, hibp: bool, max_age: i64, expiring: i64, json: boo
     if json {
         output::print_json(&report)
     } else {
-        output::print(&output::render_audit(&report))
+        output::print_styled(&output::render_audit(&report))
     }
 }
 
