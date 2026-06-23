@@ -12,7 +12,9 @@ pub struct Request {
     pub username: String,
 }
 
-/// Git's `key=value` lines, up to a blank line or the end.
+/// Git's `key=value` lines, up to a blank line or the end. A `url=` line counts as its
+/// parts (protocol, host, path and any user in it), as git-credential(1) describes; lines
+/// after it can still override them.
 pub fn parse_request(text: &str) -> Request {
     let mut r = Request::default();
     for line in text.lines() {
@@ -25,6 +27,18 @@ pub fn parse_request(text: &str) -> Request {
                 "host" => r.host = v.to_lowercase(),
                 "path" => r.path = v.to_string(),
                 "username" => r.username = v.to_string(),
+                "url" => {
+                    if let Some((scheme, host, path)) = split_url(v) {
+                        r.protocol = scheme;
+                        r.host = host;
+                        r.path = path;
+                    }
+                    let authority = v.split_once("://").map_or(v, |(_, rest)| rest);
+                    let authority = authority.split('/').next().unwrap_or("");
+                    if let Some((user, _)) = authority.rsplit_once('@') {
+                        r.username = user.to_string();
+                    }
+                }
                 _ => {}
             }
         }
@@ -130,6 +144,24 @@ mod tests {
                 username: "demo".into()
             }
         );
+    }
+
+    #[test]
+    fn a_url_line_counts_as_its_parts() {
+        let r = parse_request("url=https://demo@GitHub.com/org/repo.git\n");
+        assert_eq!(
+            r,
+            Request {
+                protocol: "https".into(),
+                host: "github.com".into(),
+                path: "org/repo.git".into(),
+                username: "demo".into()
+            }
+        );
+        // A later line wins, as in git.
+        let r = parse_request("url=https://github.com/x\nusername=other\n");
+        assert_eq!(r.username, "other");
+        assert_eq!(r.host, "github.com");
     }
 
     #[test]
