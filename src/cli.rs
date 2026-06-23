@@ -224,6 +224,9 @@ pub enum Command {
         /// Only the paths, one per line (for shell completion and fzf)
         #[arg(short = 'p', long, conflicts_with_all = ["json", "long"])]
         paths: bool,
+        /// One line per entry from a template, never with secrets: '{PATH}\t{USERNAME}\t{URL}'
+        #[arg(long, value_name = "TEMPLATE", conflicts_with_all = ["json", "long", "paths"])]
+        format: Option<String>,
         /// Only entries that have expired
         #[arg(long, conflicts_with = "expiring")]
         expired: bool,

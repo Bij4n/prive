@@ -85,13 +85,21 @@ fn dispatch(cli: Cli) -> Result<()> {
             tags,
             long,
             paths,
+            format,
             expired,
             expiring,
             json,
         } => {
             // --expired is --expiring 0.
             let expiring = if *expired { Some(0) } else { *expiring };
-            commands::ls(g, group.as_deref(), tags, expiring, *long, *paths, *json)
+            let shape = match (format, *long, *paths, *json) {
+                (Some(t), ..) => commands::Listing::Format(t),
+                (None, true, ..) => commands::Listing::Long,
+                (None, _, true, _) => commands::Listing::Paths,
+                (None, _, _, true) => commands::Listing::Json,
+                _ => commands::Listing::Plain,
+            };
+            commands::ls(g, group.as_deref(), tags, expiring, shape)
         }
         Command::Search { query, all, json } => commands::search(g, query, *all, *json),
         Command::Tags { json } => commands::tags(g, *json),

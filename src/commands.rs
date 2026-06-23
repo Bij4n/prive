@@ -277,15 +277,27 @@ fn list(entries: &[&Entry], json: bool) -> Result<()> {
     }
 }
 
+/// How `ls` prints what it found.
+pub enum Listing<'a> {
+    Plain,
+    Long,
+    Paths,
+    Json,
+    /// `--format`: a template per entry, never with secrets.
+    Format(&'a str),
+}
+
 pub fn ls(
     global: &Global,
     group: Option<&str>,
     tags: &[String],
     expiring: Option<i64>,
-    long: bool,
-    paths: bool,
-    json: bool,
+    shape: Listing<'_>,
 ) -> Result<()> {
+    if let Listing::Format(t) = shape {
+        // Refused before the password is asked for.
+        crate::template::check_listing(t)?;
+    }
     let db = open(global)?;
     let mut shown = select::in_group(&db.entries, group.unwrap_or(""));
     // Checked before the tags narrow it: a group with no entry carrying the tag still exists.
@@ -300,14 +312,23 @@ pub fn ls(
     if let Some(days) = expiring {
         shown = select::expiring(&shown, chrono::Utc::now().naive_utc(), days);
     }
-    if long {
-        return output::print_human(&output::render_long_list(&shown));
+    match shape {
+        Listing::Long => output::print_human(&output::render_long_list(&shown)),
+        Listing::Paths => {
+            let text: String = shown.iter().map(|e| format!("{}\n", e.path())).collect();
+            output::print_human(&text)
+        }
+        Listing::Format(t) => {
+            let mut text = String::new();
+            for e in shown {
+                text.push_str(&crate::template::render_listing(t, e, &db.entries)?);
+                text.push('\n');
+            }
+            output::print_human(&text)
+        }
+        Listing::Json => list(&shown, true),
+        Listing::Plain => list(&shown, false),
     }
-    if paths {
-        let text: String = shown.iter().map(|e| format!("{}\n", e.path())).collect();
-        return output::print_human(&text);
-    }
-    list(&shown, json)
 }
 
 pub fn tags(global: &Global, json: bool) -> Result<()> {

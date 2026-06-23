@@ -1642,3 +1642,27 @@ fn git_credential_answers_a_url_line() {
         .success()
         .stdout("username=demo\npassword=gh-Secret-1\n");
 }
+
+#[test]
+fn ls_format_lists_without_secrets() {
+    prive(&["ls", "Work", "--format", "{TITLE}|{GROUP}|{UUID}"])
+        .assert()
+        .success()
+        .stdout(
+            "Steam|Work/Cloud|00000000-0000-0000-0000-000000000021\n\
+             GitHub|Work|00000000-0000-0000-0000-000000000020\n",
+        );
+    // Refused before any password is read: stdin is still unread here.
+    for t in ["{PASSWORD}", "{totp}"] {
+        prive(&["ls", "--format", t])
+            .assert()
+            .code(1)
+            .stdout(predicate::str::is_empty())
+            .stderr(predicate::str::contains("never shows secrets"));
+    }
+    // A protected field is refused when it is met.
+    prive(&["ls", "--format", "{S:API key}"])
+        .assert()
+        .code(1)
+        .stdout(predicate::str::is_empty());
+}
