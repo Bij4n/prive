@@ -115,8 +115,29 @@ fn completions_for_each_shell() {
         assert!(out.status.success(), "{shell}");
         let text = String::from_utf8(out.stdout).unwrap();
         for command in [
-            "gen", "ls", "show", "get", "otp", "open", "pick", "audit", "tags", "unlock", "lock",
-            "status", "run", "import", "file", "codes", "history",
+            "gen",
+            "ls",
+            "show",
+            "get",
+            "otp",
+            "open",
+            "pick",
+            "audit",
+            "tags",
+            "unlock",
+            "lock",
+            "status",
+            "run",
+            "import",
+            "file",
+            "codes",
+            "history",
+            "info",
+            "diff",
+            "doctor",
+            "config",
+            "git-credential",
+            "search",
         ] {
             assert!(
                 text.contains(command),
@@ -124,8 +145,8 @@ fn completions_for_each_shell() {
             );
         }
         assert!(
-            !text.contains("__clip"),
-            "{shell} completions must not offer the helper"
+            !text.contains("__clip") && !text.contains("__agent"),
+            "{shell} completions must not offer the helpers"
         );
     }
 }
