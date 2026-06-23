@@ -254,3 +254,25 @@ proptest! {
         prop_assert_eq!(count(&ab, Kind::OnlyHere), here.difference(&there).count());
     }
 }
+
+proptest! {
+    #[test]
+    fn text_without_braces_passes_through_a_template(text in "[^{}]{0,80}") {
+        let e = prive::entry::Entry::default();
+        let all = [e];
+        let out = prive::template::render(&text, &all[0], &all).unwrap();
+        prop_assert_eq!(out.as_str(), text.as_str());
+        let listed = prive::template::render_listing(&text, &all[0], &all).unwrap();
+        prop_assert_eq!(listed, text);
+    }
+
+    #[test]
+    fn nothing_shown_carries_a_control_character(text in "\\PC{0,40}|.{0,40}|[\\x00-\\x1f\\x7f-\\x9f]{0,10}") {
+        let shown = prive::output::visible(&text);
+        prop_assert!(!shown.chars().any(|c| c.is_control() && c != '\n' && c != '\t'));
+        // Nothing is lost: text with no control characters comes back as it was.
+        if !text.chars().any(|c| c.is_control() && c != '\n' && c != '\t') {
+            prop_assert_eq!(shown.as_ref(), text.as_str());
+        }
+    }
+}
