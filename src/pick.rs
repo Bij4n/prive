@@ -30,7 +30,9 @@ pub fn label(e: &Entry) -> String {
     if let Some((_, host, _)) = crate::gitcred::split_url(&e.url) {
         out.push_str(&format!("  {host}"));
     }
-    out
+    // The picker draws labels straight onto the terminal, so control characters are spelled
+    // out, as everywhere else (see output::visible). Newlines would break its rows too.
+    crate::output::visible(&out).replace('\n', " ")
 }
 
 /// Let the user choose one entry. `None` if they cancel (Esc or Ctrl-C).
@@ -73,6 +75,16 @@ mod tests {
         assert_eq!(label(&e), "Work/GitHub  (demo)");
         e.url = "https://github.com/login".into();
         assert_eq!(label(&e), "Work/GitHub  (demo)  github.com");
+    }
+
+    #[test]
+    fn labels_never_carry_control_characters() {
+        let e = Entry {
+            title: "Evil\u{9b}2J".into(),
+            username: "line\none".into(),
+            ..Entry::default()
+        };
+        assert_eq!(label(&e), "Evil\\x9b2J  (line one)");
     }
 
     #[test]
