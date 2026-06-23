@@ -346,3 +346,44 @@ fn two_databases_unlocked_together() {
         .stderr(predicate::str::contains("Locked."));
     cmd(Some(&second), &["get", "Bank"]).assert().code(5);
 }
+
+#[test]
+fn unlock_all_opens_every_database_in_the_config_file() {
+    let s = Sandbox::new();
+    let second = s.dir.path().join("second.kdbx");
+    std::fs::copy(fixture("conflict.kdbx"), &second).unwrap();
+    std::fs::write(
+        s.dir.path().join("config.toml"),
+        format!(
+            "agent_minutes = 1\ndb = {:?}\n[databases.second]\npath = {:?}\n[databases.main]\npath = {:?}\n",
+            s.db, second, s.db
+        ),
+    )
+    .unwrap();
+    let cmd = |args: &[&str]| {
+        let mut c = Command::cargo_bin("prive").unwrap();
+        c.env("PRIVE_CONFIG", s.dir.path().join("config.toml"))
+            .env("PRIVE_AGENT_DIR", s.agent_dir())
+            .env_remove("PRIVE_NO_AGENT")
+            .env_remove("PRIVE_PASSWORD_FILE")
+            .env_remove("PRIVE_DB")
+            .args(args)
+            .write_stdin("fixture-pass\n")
+            .timeout(std::time::Duration::from_secs(30));
+        c
+    };
+    // One password on stdin serves both; "main" is the default database again, opened once.
+    cmd(&["--password-stdin", "unlock", "--all"])
+        .assert()
+        .success()
+        .stderr(predicate::str::contains("Unlocked main (db.kdbx)"))
+        .stderr(predicate::str::contains("Unlocked second (second.kdbx)"));
+    let out = cmd(&["status", "--json"]).output().unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert_eq!(v["databases"].as_array().unwrap().len(), 2);
+    cmd(&["--password-stdin", "unlock", "--all"])
+        .assert()
+        .success()
+        .stderr(predicate::str::contains("already unlocked"));
+    cmd(&["--db", "second", "unlock", "--all"]).assert().code(1);
+}
