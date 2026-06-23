@@ -10,6 +10,7 @@ The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `l
 ### Added
 - `prive diff OTHER`: what differs between the database and a conflict copy or backup,
   entries paired by UUID, field names only
+- `prive gen --symbols CHARS` and `--exclude CHARS`, for sites with rules about characters
 - Colour in `doctor`, `audit` and `diff` on a terminal; `NO_COLOR` and `CLICOLOR_FORCE`
   are honoured; values and JSON are never coloured
 - Columns line up by display width, so CJK titles and emoji don't skew `ls`, `codes`, `show`

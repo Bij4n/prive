@@ -16,6 +16,10 @@ Guarantees:
 - With lower-case, upper-case, digits and symbols on, every class appears at least once
   (drawn uniformly, retried until true, so no position is predictable).
 - `--avoid-ambiguous` leaves out `0 O 1 l I |`.
+- `--symbols '!@#$'` uses only those symbols, for a site that allows some and rejects the
+  rest; `--exclude '<>&"'` never uses the characters given, from any class. If an exclusion
+  leaves a class empty (`--exclude 0123456789`), prive says so instead of guessing; use
+  `--no-digits` for that.
 - The entropy figure assumes an attacker knows exactly how the password was made; it is the
   honest number, not a guess based on how the result looks.
 
@@ -23,5 +27,10 @@ Four words in the EFF list contain a hyphen (`drop-down`, `felt-tip`, `t-shirt`,
 so with the default `-` separator a passphrase can look one word longer than it is. That
 changes nothing about its strength; use `--separator ' '` if you'd rather see the words apart.
 
-Options: `--no-symbols`, `--no-digits`, `--no-upper`, `--separator` and `--capitalize` (for
-passphrases).
+Options: `--no-symbols`, `--no-digits`, `--no-upper`, `--symbols CHARS`, `--exclude CHARS`,
+`--separator` and `--capitalize` (for passphrases).
+
+```bash
+prive gen --length 16 --symbols '!@#$%'     # a bank that allows five symbols
+prive gen --exclude '<>&;'                  # for a form that mangles markup characters
+```
