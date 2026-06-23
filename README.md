@@ -69,18 +69,23 @@ Entries are named by title, by `Group/Title` path when a title is used twice, or
 - stdout carries only the result; prompts, notices and errors go to stderr.
 - Stable exit codes: 0 ok, 1 error, 2 usage, 3 not found, 4 ambiguous, 5 wrong password or no
   terminal for the prompt.
-- `--password-stdin` or `PRIVE_PASSWORD_FILE` instead of a prompt; prive never waits on a
-  prompt nobody can answer.
-- `--json` on `ls`, `search`, `show`, `otp`, `audit` and `gen`.
+- `--password-stdin`, `PRIVE_PASSWORD_FILE` or a `password_command` (the system keyring,
+  `pass`, `op`) instead of a prompt; prive never waits on a prompt nobody can answer.
+- `--json` on `ls`, `search`, `show`, `otp`, `codes`, `audit`, `info`, `diff`, `doctor` and
+  `gen`; `--format` templates with KeePass's placeholders on `get`, `ls` and `search`.
 
 ```bash
 # Secrets for one command, never on screen, in history or on disk
 prive run -e GITHUB_TOKEN=Work/GitHub:token -- gh repo list
 prive run --from Work/AWS -- aws s3 ls
+
+# Several fields at once
+curl -u "$(prive get Work/API --format '{USERNAME}:{PASSWORD}')" https://api.example.com/
 ```
 
-Everything else is in the [documentation index](docs/README.md), including [scripting](docs/scripting.md), [exit codes](docs/exit-codes.md),
-[one-time codes](docs/totp.md), [clipboard](docs/clipboard.md),
+Everything else is in the [documentation index](docs/README.md), including
+[scripting](docs/scripting.md), [exit codes](docs/exit-codes.md),
+[one-time codes](docs/totp.md), [syncing and conflict copies](docs/sync.md),
 [configuration](docs/config.md), [KeePass compatibility](docs/keepass-compatibility.md),
 [security](docs/security.md), [design](docs/design.md),
 [troubleshooting](docs/troubleshooting.md).
