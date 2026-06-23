@@ -10,6 +10,8 @@ The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `l
 ### Added
 - `prive diff OTHER`: what differs between the database and a conflict copy or backup,
   entries paired by UUID, field names only
+- `prive unlock --all`: every database in the config file, each with its own key file and
+  password command
 - `prive ls --expired` and `--expiring DAYS`
 - `prive gen --symbols CHARS` and `--exclude CHARS`, for sites with rules about characters
 - Colour in `doctor`, `audit` and `diff` on a terminal; `NO_COLOR` and `CLICOLOR_FORCE`

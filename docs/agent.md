@@ -31,6 +31,11 @@ unlocked: work, /home/me/Work/Work.kdbx (locks in 14 min 40 s if unused)
 unlocked: /home/me/Passwords.kdbx (locks in 14 min 40 s if unused)
 ```
 
+`prive unlock --all` unlocks the config file's database and every named one in one go, each
+with its own key file and `password_command` (or a prompt for each); with `--password-stdin`
+one password is read and tried on all of them. Ones already unlocked are skipped, and one
+that fails doesn't stop the others.
+
 `prive lock` forgets all of them; `prive --db work lock` forgets only that one. (`PRIVE_DB`
 on its own doesn't narrow `lock`, so `prive lock` always locks everything.) A file that
 changes on disk is forgotten on its own; the others stay unlocked. The idle timeout counts
