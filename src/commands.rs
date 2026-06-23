@@ -809,7 +809,7 @@ pub fn diff(
             "differences": differences,
         }));
     }
-    output::print(&output::render_diff(&here.path, &there.path, &differences))
+    output::print_styled(&output::render_diff(&here.path, &there.path, &differences))
 }
 
 pub fn info(global: &Global, json: bool) -> Result<()> {

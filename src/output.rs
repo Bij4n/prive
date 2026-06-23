@@ -292,8 +292,8 @@ pub fn render_diff(
         if rows.is_empty() {
             continue;
         }
-        out.push_str(&heading);
-        out.push('\n');
+        let (h, warn, dim) = (style::HEADING, style::WARN, style::DIM);
+        out.push_str(&format!("{h}{heading}{h:#}\n"));
         for d in rows {
             let mut line = format!("  {}", d.path);
             if let Some(o) = &d.other_path {
@@ -301,14 +301,14 @@ pub fn render_diff(
             }
             if d.recycled_in_other {
                 let bin = if kind == Kind::OnlyHere { &b } else { &a };
-                line.push_str(&format!(" (in the recycle bin of {bin})"));
+                line.push_str(&format!(" {dim}(in the recycle bin of {bin}){dim:#}"));
             }
             if !d.fields.is_empty() {
-                line.push_str(&format!(": {}", d.fields.join(", ")));
+                line.push_str(&format!(": {warn}{}{warn:#}", d.fields.join(", ")));
             }
             match d.newer {
-                Some(Newer::Here) => line.push_str(&format!(" (newer in {a})")),
-                Some(Newer::There) => line.push_str(&format!(" (newer in {b})")),
+                Some(Newer::Here) => line.push_str(&format!(" {dim}(newer in {a}){dim:#}")),
+                Some(Newer::There) => line.push_str(&format!(" {dim}(newer in {b}){dim:#}")),
                 _ => {}
             }
             out.push_str(&line);
@@ -617,7 +617,7 @@ mod tests {
             ],
         );
         assert_eq!(
-            text,
+            anstream::adapter::strip_str(&text).to_string(),
             "Only in A.kdbx:\n  Old (in the recycle bin of B.kdbx)\n\
              Only in B.kdbx:\n  New\n\
              Changed:\n  Bank: password (newer in A.kdbx)\n  W/GH -> P/GH: group\n"
