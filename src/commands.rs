@@ -318,14 +318,7 @@ pub fn ls(
             let text: String = shown.iter().map(|e| format!("{}\n", e.path())).collect();
             output::print_human(&text)
         }
-        Listing::Format(t) => {
-            let mut text = String::new();
-            for e in shown {
-                text.push_str(&crate::template::render_listing(t, e, &db.entries)?);
-                text.push('\n');
-            }
-            output::print_human(&text)
-        }
+        Listing::Format(t) => formatted(t, &shown, &db.entries),
         Listing::Json => list(&shown, true),
         Listing::Plain => list(&shown, false),
     }
@@ -353,7 +346,16 @@ pub fn tags(global: &Global, json: bool) -> Result<()> {
     output::print_human(&text)
 }
 
-pub fn search(global: &Global, query: &str, all: bool, json: bool) -> Result<()> {
+pub fn search(
+    global: &Global,
+    query: &str,
+    all: bool,
+    format: Option<&str>,
+    json: bool,
+) -> Result<()> {
+    if let Some(t) = format {
+        crate::template::check_listing(t)?;
+    }
     let db = open(global)?;
     let hits = if all {
         select::search_everywhere(&db.entries, query)
@@ -364,7 +366,20 @@ pub fn search(global: &Global, query: &str, all: bool, json: bool) -> Result<()>
     if hits.is_empty() {
         return Err(Failure::NotFound(query.to_string()).into());
     }
-    list(&hits, json)
+    match format {
+        Some(t) => formatted(t, &hits, &db.entries),
+        None => list(&hits, json),
+    }
+}
+
+/// `--format`: one line per entry from a template, in listing mode (no secrets).
+fn formatted(template: &str, entries: &[&Entry], all: &[Entry]) -> Result<()> {
+    let mut text = String::new();
+    for e in entries {
+        text.push_str(&crate::template::render_listing(template, e, all)?);
+        text.push('\n');
+    }
+    output::print_human(&text)
 }
 
 pub fn show(global: &Global, entry: &str, reveal: bool, json: bool) -> Result<()> {

@@ -101,7 +101,12 @@ fn dispatch(cli: Cli) -> Result<()> {
             };
             commands::ls(g, group.as_deref(), tags, expiring, shape)
         }
-        Command::Search { query, all, json } => commands::search(g, query, *all, *json),
+        Command::Search {
+            query,
+            all,
+            format,
+            json,
+        } => commands::search(g, query, *all, format.as_deref(), *json),
         Command::Tags { json } => commands::tags(g, *json),
         Command::Show {
             entry,

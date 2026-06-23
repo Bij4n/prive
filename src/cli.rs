@@ -207,6 +207,9 @@ pub enum Command {
         /// Also look in notes and unprotected custom fields (never in passwords)
         #[arg(short = 'a', long)]
         all: bool,
+        /// One line per match from a template, never with secrets (as `ls --format`)
+        #[arg(long, value_name = "TEMPLATE", conflicts_with = "json")]
+        format: Option<String>,
         #[arg(long)]
         json: bool,
     },

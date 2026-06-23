@@ -1666,3 +1666,14 @@ fn ls_format_lists_without_secrets() {
         .code(1)
         .stdout(predicate::str::is_empty());
 }
+
+#[test]
+fn search_format() {
+    prive(&["search", "github", "--format", "{PATH} <{USERNAME}>"])
+        .assert()
+        .success()
+        .stdout("Personal/GitHub <me-personal>\nWork/GitHub <demo>\n");
+    prive(&["search", "github", "--format", "{PASSWORD}"])
+        .assert()
+        .code(1);
+}
