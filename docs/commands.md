@@ -18,7 +18,7 @@ Global options: `--db <file>` (or `PRIVE_DB`), `--keyfile <file>` (or `PRIVE_KEY
 | `run [-e NAME=ENTRY[:FIELD]]... [--from ENTRY]... -- COMMAND...` | Runs COMMAND with those secrets in its environment and exits with its exit code. See [run.md](run.md). |
 | `history ENTRY [--reveal] [--json]` | When each earlier version was saved and whether the password changed after it. Old passwords only with `--reveal`. |
 | `file ENTRY [NAME] [-o PATH]` | Without NAME, the entry's attached files and their sizes (tab-separated). With NAME, that file's bytes to stdout (refused on a terminal) or to a new file at PATH, readable only by you. |
-| `open ENTRY [--no-copy]` | Opens the entry's URL in the browser (http and https only; a bare `github.com` gets https://) and copies the password. `cmd://` and other schemes are refused. |
+| `open ENTRY [--no-copy \| --print]` | Opens the entry's URL in the browser (http and https only; a bare `github.com` gets https://) and copies the password. `cmd://` and other schemes are refused. `--print` prints the address instead (over SSH, or for another browser) and copies nothing. |
 | `tags [--json]` | Every tag in use with how many entries carry it. |
 | `codes [QUERY] [--json \| --watch]` | The current code of every entry that has one (or of those matching QUERY), with seconds left. `--watch` keeps them on screen, redrawn, until Ctrl-C. |
 | `import FILE --check [--from FMT] [--map F=COL]...` | Reads another app's export and reports what would come across. See [importing.md](importing.md). |
