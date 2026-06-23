@@ -12,6 +12,8 @@ ok    agent        running, /home/me/Passwords.kdbx unlocked (12 min left)
 warn  clipboard    no clipboard available: --clip and pick won't work here; print instead
 ```
 
+`prive doctor --all` does the same for every database in the config file.
+
 `prive config` shows which config file, database and key file prive is using, and where each
 setting came from.
 
