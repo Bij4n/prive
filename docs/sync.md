@@ -60,3 +60,9 @@ keepassxc-cli merge --same-credentials Passwords.kdbx Passwords.sync-conflict-..
 ```
 
 then check with `prive diff` that nothing is left, and delete the conflict copy.
+
+`prive diff` and KeePassXC's merge see the same things (the test suite checks it against
+`merge --dry-run`): an entry only in the conflict copy is created, one marked
+`(newer in ...)` is taken from the newer side. A changed entry with no newer side was
+changed in both copies at the same time; KeePassXC warns that merging it "may lose data",
+so compare those two by hand (`prive show` in each) before merging.
