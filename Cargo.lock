@@ -1491,6 +1491,7 @@ dependencies = [
  "tempfile",
  "thiserror 2.0.18",
  "toml",
+ "unicode-width",
  "ureq",
  "windows-sys 0.61.2",
  "zeroize",

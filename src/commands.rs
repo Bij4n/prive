@@ -463,14 +463,14 @@ pub fn codes(global: &Global, query: Option<&str>, json: bool, watch: bool) -> R
             .collect();
         return output::print_json(&list);
     }
-    let width = rows
+    let columns = rows
         .iter()
-        .map(|(p, _, _)| p.chars().count())
+        .map(|(p, _, _)| output::width(p))
         .max()
         .unwrap_or(0);
     let text: String = rows
         .iter()
-        .map(|(p, c, l)| format!("{p:<width$}  {c:<10} {l:>2}s\n"))
+        .map(|(p, c, l)| format!("{}  {c:<10} {l:>2}s\n", output::pad(p, columns)))
         .collect();
     output::print(&text)
 }
@@ -481,7 +481,7 @@ fn watch_codes(codes: &[(String, otp::Totp)]) -> Result<()> {
     use std::io::Write;
     let width = codes
         .iter()
-        .map(|(p, _)| p.chars().count())
+        .map(|(p, _)| output::width(p))
         .max()
         .unwrap_or(0);
     output::notice("Ctrl-C to stop");
@@ -496,7 +496,8 @@ fn watch_codes(codes: &[(String, otp::Totp)]) -> Result<()> {
             let (code, left) = t.now();
             writeln!(
                 out,
-                "\r{path:<width$}  {}",
+                "\r{}  {}",
+                output::pad(path, width),
                 output::watch_line(&format!("{code:<10}"), left, t.period)
             )?;
         }
@@ -920,13 +921,18 @@ pub fn show_config(global: &Global, json: bool) -> Result<()> {
         cfg.agent_idle().as_secs() / 60,
         show(&agent_dir),
     );
-    let width = cfg.databases.keys().map(|n| n.chars().count()).max();
+    let columns = cfg
+        .databases
+        .keys()
+        .map(|n| output::width(n))
+        .max()
+        .unwrap_or(0);
     for (i, (name, d)) in cfg.databases.iter().enumerate() {
         let label = if i == 0 { "named databases:" } else { "" };
         text.push_str(&format!(
-            "{label:<18} {name:<w$}  {}\n",
-            d.path.display(),
-            w = width.unwrap_or(0)
+            "{label:<18} {}  {}\n",
+            output::pad(name, columns),
+            d.path.display()
         ));
     }
     output::print(&text)

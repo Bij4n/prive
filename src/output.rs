@@ -45,19 +45,28 @@ pub fn print_json<T: Serialize + ?Sized>(value: &T) -> Result<()> {
     print(&text)
 }
 
+/// How many terminal columns `s` takes: two for CJK characters and most emoji, none for
+/// combining marks. Columns line up by this, not by the number of characters.
+pub fn width(s: &str) -> usize {
+    unicode_width::UnicodeWidthStr::width(s)
+}
+
+/// `s` followed by enough spaces to fill `columns`.
+pub fn pad(s: &str, columns: usize) -> String {
+    let mut out = s.to_string();
+    out.extend(std::iter::repeat_n(' ', columns.saturating_sub(width(s))));
+    out
+}
+
 /// One line per entry: the path, and the username after two spaces when there is one.
 pub fn render_list(entries: &[&Entry]) -> String {
-    let width = entries
-        .iter()
-        .map(|e| e.path().chars().count())
-        .max()
-        .unwrap_or(0);
+    let columns = entries.iter().map(|e| width(&e.path())).max().unwrap_or(0);
     let mut out = String::new();
     for e in entries {
         if e.username.is_empty() {
             out.push_str(&format!("{}\n", e.path()));
         } else {
-            out.push_str(&format!("{:<width$}  {}\n", e.path(), e.username));
+            out.push_str(&format!("{}  {}\n", pad(&e.path(), columns), e.username));
         }
     }
     out
@@ -116,11 +125,7 @@ pub fn human_size(bytes: usize) -> String {
 /// (`file`) and expiry (`expired`), then the path and username.
 pub fn render_long_list(entries: &[&Entry]) -> String {
     let now = chrono::Utc::now().naive_utc();
-    let width = entries
-        .iter()
-        .map(|e| e.path().chars().count())
-        .max()
-        .unwrap_or(0);
+    let columns = entries.iter().map(|e| width(&e.path())).max().unwrap_or(0);
     let mut out = String::new();
     for e in entries {
         let date = e
@@ -138,9 +143,9 @@ pub fn render_long_list(entries: &[&Entry]) -> String {
             marks.push("expired");
         }
         let line = format!(
-            "{date}  {:<13} {:<width$}  {}",
+            "{date}  {:<13} {}  {}",
             marks.join(","),
-            e.path(),
+            pad(&e.path(), columns),
             e.username
         );
         out.push_str(line.trim_end());
@@ -350,19 +355,17 @@ pub fn render_show(e: &Entry, reveal: bool) -> String {
         .collect();
     if !fields.is_empty() {
         out.push_str("Fields:\n");
-        let width = fields
-            .iter()
-            .map(|c| c.name.chars().count())
-            .max()
-            .unwrap_or(0)
-            + 1;
+        let columns = fields.iter().map(|c| width(&c.name)).max().unwrap_or(0) + 1;
         for c in fields {
             let value = if c.protected && !reveal {
                 HIDDEN
             } else {
                 c.value.as_str()
             };
-            out.push_str(&format!("  {:<width$} {value}\n", format!("{}:", c.name)));
+            out.push_str(&format!(
+                "  {} {value}\n",
+                pad(&format!("{}:", c.name), columns)
+            ));
         }
     }
     if !e.attachments.is_empty() {
@@ -510,6 +513,22 @@ mod tests {
         };
         assert_eq!(render_list(&[&a, &b]), "Work/GitHub  demo\nBank\n");
         assert_eq!(render_list(&[]), "");
+    }
+
+    #[test]
+    fn columns_line_up_by_display_width() {
+        assert_eq!(width("GitHub"), 6);
+        assert_eq!(width("銀行"), 4, "two columns per CJK character");
+        assert_eq!(width("e\u{301}"), 1, "a combining accent takes no column");
+        let mk = |t: &str| Entry {
+            title: t.into(),
+            username: "me".into(),
+            ..Entry::default()
+        };
+        let (a, b) = (mk("銀行"), mk("Bank"));
+        // Both usernames start in the same column.
+        assert_eq!(render_list(&[&a, &b]), "銀行  me\nBank  me\n");
+        assert_eq!(pad("銀", 4), "銀  ");
     }
 
     #[test]
