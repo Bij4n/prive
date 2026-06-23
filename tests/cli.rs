@@ -181,3 +181,12 @@ fn gen_count() {
     assert!(text.lines().all(|l| l.len() == 4));
     prive().args(["gen", "-n", "2", "--clip"]).assert().code(2);
 }
+
+/// clap checks the definitions themselves: every `conflicts_with` and `requires` names a real
+/// argument, no two short flags collide, and so on. A mistake there would otherwise only show
+/// when someone uses that flag.
+#[test]
+fn the_command_line_definition_is_consistent() {
+    use clap::CommandFactory;
+    prive::cli::Cli::command().debug_assert();
+}
