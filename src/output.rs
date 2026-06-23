@@ -52,8 +52,8 @@ pub mod style {
 }
 
 /// Write a report that may carry colours to stdout. They are kept on a terminal and dropped
-/// for pipes and files, and when `NO_COLOR` is set or `CLICOLOR=0` (`CLICOLOR_FORCE=1` keeps
-/// them). Never used for secrets or JSON: dropping colours means rewriting the text, and a
+/// for pipes and files, and when `NO_COLOR` is set or `CLICOLOR=0`. `CLICOLOR_FORCE=1` keeps
+/// them for a pipe (`| less -R`); `NO_COLOR` wins over it. Never used for secrets or JSON: dropping colours means rewriting the text, and a
 /// value must come out exactly as stored.
 pub fn print_styled(text: &str) -> Result<()> {
     let mut out = anstream::AutoStream::auto(std::io::stdout().lock());

@@ -1512,3 +1512,28 @@ fn doctor_warns_about_a_config_file_others_can_change() {
         .stdout(predicate::str::contains("warn  config file"))
         .stdout(predicate::str::contains("mode 666: others can change it"));
 }
+
+#[test]
+fn colours_only_when_asked_for_off_a_terminal() {
+    let first_line = |env: &[(&str, &str)]| {
+        let mut c = doctor(&fixture("kdbx41.kdbx"), &[]);
+        c.env_remove("NO_COLOR")
+            .env_remove("CLICOLOR")
+            .env_remove("CLICOLOR_FORCE");
+        for (k, v) in env {
+            c.env(k, v);
+        }
+        let out = c.output().unwrap();
+        String::from_utf8(out.stdout).unwrap()
+    };
+    // A pipe gets plain text.
+    assert!(!first_line(&[]).contains('\x1b'));
+    assert!(first_line(&[("CLICOLOR_FORCE", "1")]).contains("\x1b[32mok"));
+    assert!(!first_line(&[("CLICOLOR_FORCE", "1"), ("NO_COLOR", "1")]).contains('\x1b'));
+    // Passwords and JSON are never coloured, forced or not.
+    let out = prive(&["get", "Bank"])
+        .env("CLICOLOR_FORCE", "1")
+        .output()
+        .unwrap();
+    assert_eq!(out.stdout, b"b4nk-P@ss-2026!\n");
+}
