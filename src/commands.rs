@@ -694,10 +694,14 @@ pub fn file(
 }
 
 /// The everyday login: open the site, password on the clipboard ready to paste.
-pub fn open_url(global: &Global, entry: &str, no_copy: bool) -> Result<()> {
+pub fn open_url(global: &Global, entry: &str, no_copy: bool, print: bool) -> Result<()> {
     let db = open(global)?;
     let e = select::select(&db.entries, entry)?;
     let url = browser::web_url(&e.url).map_err(|err| anyhow::anyhow!("{}: {err}", e.path()))?;
+    if print {
+        // The same address `open` would use: checked to be http(s), a bare host given https.
+        return output::print(&format!("{url}\n"));
+    }
     browser::open(&url)?;
     output::notice(&format!("Opened {url}"));
     if !no_copy && !e.password.is_empty() {

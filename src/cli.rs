@@ -159,6 +159,10 @@ pub enum Command {
         /// Only open the URL; don't copy anything
         #[arg(long)]
         no_copy: bool,
+        /// Print the address instead of opening it (over SSH, or to open it elsewhere); copies
+        /// nothing
+        #[arg(long, conflicts_with = "no_copy")]
+        print: bool,
     },
 
     /// An entry's earlier versions: when each was saved, and whether the password changed

@@ -1611,3 +1611,15 @@ fn doctor_all_checks_every_named_database() {
     assert_eq!(v[1]["checks"][1]["name"], "key file");
     assert_eq!(v[1]["checks"][1]["status"], "ok");
 }
+
+#[test]
+fn open_print_gives_the_address_and_copies_nothing() {
+    let clip = tempfile::NamedTempFile::new().unwrap();
+    prive(&["open", "Work/GitHub", "--print"])
+        .env("PRIVE_CLIPBOARD_FILE", clip.path())
+        .assert()
+        .success()
+        .stdout("https://github.com\n");
+    assert_eq!(std::fs::read_to_string(clip.path()).unwrap(), "");
+    prive(&["open", "Wi-Fi", "--print"]).assert().code(1);
+}
