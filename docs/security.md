@@ -25,6 +25,10 @@ What prive protects against, and what it doesn't. This will grow as the rewrite 
 - Writes new files atomically (temporary file, flush, rename), readable only by you on Unix.
 - Keeps secrets in memory that is wiped when it is freed (`zeroize`), and keeps them out of
   debug output.
+- Text from the database is shown with its control characters spelled out (`\x1b`,
+  `\x0d`): a title, URL or imported note can't move the cursor, retitle the terminal or set
+  the clipboard (OSC 52) through escape sequences. Values a script reads (`get`, `otp`,
+  `--json`, `run`) come out exactly as stored; JSON escapes them itself.
 - `open` only ever opens http and https addresses, through the system's opener with no
   shell. KeePass's `cmd://` URLs, which run programs, are refused.
 - The only network access is the optional Have I Been Pwned check (`audit --hibp`), which

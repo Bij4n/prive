@@ -101,6 +101,9 @@ The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `l
   source policy checked in CI
 
 ### Fixed
+- Text from a database (titles, usernames, URLs, notes) and names quoted in messages are
+  shown with control characters spelled out, so escape sequences in them never reach the
+  terminal; values from `get`, `otp` and `--json` are unchanged
 - A missing field, attachment, one-time code or group was reported as "no entry matches";
   the message now says what is missing (still exit code 3)
 - Notices printed their `{...}` placeholders instead of the values ("clears in {seconds} s")
