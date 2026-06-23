@@ -74,6 +74,14 @@ fn render_as(
         };
         let name = &after[..close];
         match value(name, entry, all, mode)? {
+            Some(v) if mode == Mode::Listing => {
+                // One line per entry, whatever the notes hold.
+                out.extend(
+                    v.chars()
+                        .map(|c| if c == '\n' || c == '\r' { ' ' } else { c }),
+                );
+                rest = &after[close + 1..];
+            }
             Some(v) => {
                 out.push_str(&v);
                 rest = &after[close + 1..];
@@ -224,6 +232,21 @@ mod tests {
         // A protected field is refused even when the template got past check_listing.
         assert!(render_listing("{S:API key}", &all[0], &all).is_err());
         assert!(render_listing("{PASSWORD}", &all[0], &all).is_err());
+    }
+
+    #[test]
+    fn a_listing_keeps_each_entry_on_one_line() {
+        let mut all = sample();
+        all[0].notes = "first line\r\nsecond line".into();
+        assert_eq!(
+            render_listing("{TITLE}: {NOTES}", &all[0], &all).unwrap(),
+            "DB: first line  second line"
+        );
+        // get --format gives the notes as they are.
+        assert_eq!(
+            render("{NOTES}", &all[0], &all).unwrap().as_str(),
+            "first line\r\nsecond line"
+        );
     }
 
     #[test]
