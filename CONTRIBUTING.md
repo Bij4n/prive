@@ -24,6 +24,16 @@ with `tests/fixtures/make.sh` (needs `keepassxc-cli`). Never commit real data.
 Documentation lives in `docs/`, with an index in `docs/README.md`. A new page goes in the
 index; `tests/docs.rs` fails when a link between pages points at a file that does not exist.
 
+## Adding a command
+
+- The definition goes in `src/cli.rs`, the work in `src/commands.rs`, and anything it prints
+  in `src/output.rs`. `tests/cli.rs` checks the definition with clap's own `debug_assert`.
+- Text for people goes through `output::print_human` (control characters made visible);
+  values a script reads, through `output::print`; coloured reports, `output::print_styled`.
+- A row in `docs/commands.md`, a line in `CHANGELOG.md`, and the command's name in the
+  completions and man page tests (`tests/cli.rs`, `tests/man.rs`).
+- If it reads entries, a test against the KeePassXC-made fixtures in `tests/commands.rs`.
+
 ## Ground rules
 
 - stdout is for results only; prompts, notices and errors go to stderr.
