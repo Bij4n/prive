@@ -8,9 +8,9 @@ prive 1.0 is a fast terminal client for KeePass databases. The plan, in order:
    for a while, so a working session costs one password prompt each. Linux and macOS first.
    The prompt can be skipped altogether with a `password_command` (the system keyring,
    `pass`, `op`).
-3. **Everyday use** (done, ships in 0.6): several databases by name (`--db work`), `info`,
-   `doctor`, `diff` for sync conflict copies, `get --format`, `codes --watch`, and a git
-   credential helper.
+3. **Everyday use** (done, ships in 0.6): several databases by name (`--db work`, `unlock
+   --all`), `info`, `doctor`, `diff` for sync conflict copies, `--format` templates on `get`,
+   `ls` and `search`, `codes --watch`, colour on a terminal, and a git credential helper.
 4. **Bring passwords in** (0.7): reading the exports of Proton Pass, Apple Passwords, Google
    Password Manager, LastPass and any CSV is done (`import --check`); creating the new
    database from them comes with `prive init` in 0.7.
