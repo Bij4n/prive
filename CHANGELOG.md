@@ -34,8 +34,9 @@ The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `l
 - `prive get ENTRY --format TEMPLATE`: several fields in one line, with KeePass's
   placeholders (`{USERNAME}`, `{PASSWORD}`, `{S:field}`, `{TOTP}`, `{PATH}`, `{UUID}`, ...)
 - `prive ls --format TEMPLATE` and `search --format`: a line per entry, never with a secret
-- `ls --long` marks entries that expire within 30 days (`expiring`); `info` shows the
-  database's description
+- `ls --long` marks entries that expire within 30 days (`expiring`), and `show` says
+  "(expired)" or "(in N days)"; `info` shows the database's description
+- `codes --json` gives each code's period
 - Databases by name: `[databases.work]` in the config file, opened with `--db work`, with
   its own key file; `prive config` lists them
 - `git-credential` reads a request's `url=` line as its parts
