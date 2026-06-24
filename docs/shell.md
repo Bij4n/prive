@@ -38,6 +38,13 @@ _prive_db_names() { prive config --json 2>/dev/null | jq -r '.databases | keys[]
 #   [[ ${COMP_WORDS[COMP_CWORD-1]} == --db ]] && { COMPREPLY=($(compgen -W "$(_prive_db_names)" -- "$cur")); return; }
 ```
 
+In zsh, the same list can be offered after `--db`:
+
+```zsh
+_prive_db_names() { compadd -- ${(f)"$(prive config --json 2>/dev/null | jq -r '.databases | keys[]')"} }
+# then, in the compdef above, add: "--db[database]:name:_prive_db_names"
+```
+
 ## Short functions
 
 ```bash
