@@ -1677,3 +1677,13 @@ fn search_format() {
         .assert()
         .code(1);
 }
+
+#[test]
+fn show_says_when_an_entry_has_expired() {
+    prive(&["show", "Old VPN"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(
+            "Expires:   2025-01-01 00:00 (expired)\n",
+        ));
+}

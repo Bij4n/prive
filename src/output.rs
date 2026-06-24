@@ -479,8 +479,18 @@ pub fn render_show(e: &Entry, reveal: bool) -> String {
         ));
     }
     if let Some(x) = e.expires {
+        let now = chrono::Utc::now().naive_utc();
+        let when = if x < now {
+            " (expired)".to_string()
+        } else {
+            match (x - now).num_days() {
+                0 => " (today)".to_string(),
+                d if d < EXPIRING_SOON_DAYS => format!(" (in {d} days)"),
+                _ => String::new(),
+            }
+        };
         out.push_str(&format!(
-            "{:<10} {}\n",
+            "{:<10} {}{when}\n",
             "Expires:",
             x.format("%Y-%m-%d %H:%M")
         ));
