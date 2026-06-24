@@ -574,9 +574,13 @@ pub fn codes(global: &Global, query: Option<&str>, json: bool, watch: bool) -> R
         })
         .collect();
     if json {
+        // The same fields as `otp --json`, with the entry's path.
         let list: Vec<_> = rows
             .iter()
-            .map(|(p, c, l)| serde_json::json!({ "path": p, "code": c, "seconds_left": l }))
+            .zip(&codes)
+            .map(|((p, c, l), (_, t))| {
+                serde_json::json!({ "path": p, "code": c, "seconds_left": l, "period": t.period })
+            })
             .collect();
         return output::print_json(&list);
     }

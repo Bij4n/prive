@@ -806,6 +806,9 @@ fn file_lists_and_writes_attachments() {
 fn codes_lists_every_entry_with_a_code() {
     let out = prive(&["codes", "--json"]).output().unwrap();
     let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    // Bank's code runs for 60 seconds, the others for 30.
+    assert_eq!(v[0]["period"], 60);
+    assert_eq!(v[1]["period"], 30);
     let paths: Vec<&str> = v
         .as_array()
         .unwrap()
