@@ -125,7 +125,7 @@ pub enum Command {
 
     /// Show an entry; passwords and protected fields stay hidden unless --reveal
     Show {
-        /// Title, Group/Title path, or uuid:UUID
+        /// The entry: its title, its Group/Title path, or uuid:UUID
         entry: String,
         #[arg(long)]
         reveal: bool,
@@ -136,6 +136,7 @@ pub enum Command {
 
     /// Print one field of an entry (the password by default), nothing else
     Get {
+        /// The entry: its title, its Group/Title path, or uuid:UUID
         entry: String,
         /// password, username, url, notes, title, or a custom field's name
         #[arg(short, long, default_value = "password")]
@@ -151,6 +152,7 @@ pub enum Command {
 
     /// Print the current one-time (TOTP) code of an entry
     Otp {
+        /// The entry: its title, its Group/Title path, or uuid:UUID
         entry: String,
         /// If the current code expires sooner than this, wait for the next one (useful in
         /// scripts that type the code somewhere slow)
@@ -195,6 +197,7 @@ pub enum Command {
 
     /// Open an entry's URL in the browser and copy its password
     Open {
+        /// The entry: its title, its Group/Title path, or uuid:UUID
         entry: String,
         /// Only open the URL; don't copy anything
         #[arg(long)]
@@ -255,6 +258,7 @@ pub enum Command {
 
     /// An entry's earlier versions: when each was saved, and whether the password changed
     History {
+        /// The entry: its title, its Group/Title path, or uuid:UUID
         entry: String,
         /// Show the old passwords themselves
         #[arg(long)]
@@ -266,6 +270,7 @@ pub enum Command {
 
     /// List an entry's attached files, or write one out
     File {
+        /// The entry: its title, its Group/Title path, or uuid:UUID
         entry: String,
         /// The file to write out; without it, the files are listed
         name: Option<String>,
