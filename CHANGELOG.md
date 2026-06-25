@@ -29,6 +29,7 @@ The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `l
   if anything fails
 - `prive info`: how the database is stored (format, encryption, key derivation, the app that
   saved it) and how much is in it; works through the agent too
+- `prive audit --only KINDS`, to work through one kind of problem at a time
 - `prive audit` checks the database's own settings first: AES-KDF, Argon2 below OWASP's
   smallest setting, passwords not encrypted inside the file
 - `prive get ENTRY --format TEMPLATE`: several fields in one line, with KeePass's
@@ -112,6 +113,8 @@ The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `l
   source policy checked in CI
 
 ### Fixed
+- A missing database file is reported as such, with where prive looked; a quoted `~/` in
+  `--db`, `PRIVE_DB` or `--keyfile` means the home directory
 - `ls GROUP -t TAG` said the group was missing when no entry in it had the tag
 - Text from a database (titles, usernames, URLs, notes) and names quoted in messages are
   shown with control characters spelled out, so escape sequences in them never reach the
