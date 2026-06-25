@@ -63,3 +63,36 @@ fn links_are_found() {
     let text = "see [a](docs/a.md), [b](https://x.org) and [c](c.md#part), [d](#here)";
     assert_eq!(local_links(text), ["docs/a.md", "c.md"]);
 }
+
+/// Every command the CLI has is in the table in docs/commands.md, and the table names nothing
+/// the CLI doesn't have.
+#[test]
+fn every_command_has_a_row_in_the_commands_doc() {
+    use clap::CommandFactory;
+    let doc =
+        std::fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join("docs/commands.md"))
+            .unwrap();
+    let rows: Vec<String> = doc
+        .lines()
+        .filter_map(|l| l.strip_prefix("| `"))
+        .filter_map(|l| l.split([' ', '`']).next())
+        .map(str::to_string)
+        .collect();
+    let cli: Vec<String> = prive::cli::Cli::command()
+        .get_subcommands()
+        .map(|c| c.get_name().to_string())
+        .filter(|n| n != "help")
+        .collect();
+    for name in &cli {
+        assert!(
+            rows.contains(name),
+            "docs/commands.md has no row for `{name}`"
+        );
+    }
+    for name in &rows {
+        assert!(
+            cli.contains(name),
+            "docs/commands.md lists `{name}`, which isn't a command"
+        );
+    }
+}
