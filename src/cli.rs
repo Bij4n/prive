@@ -423,6 +423,11 @@ pub struct GenArgs {
     #[arg(long, default_value = "-", requires = "words")]
     pub separator: String,
 
+    /// Take passphrase words from this file instead of the EFF list: one word a line, or
+    /// numbered lines like the EFF lists'; at least 1024 different words
+    #[arg(long, value_name = "FILE", requires = "words")]
+    pub word_list: Option<std::path::PathBuf>,
+
     /// Capitalise each passphrase word
     #[arg(long, requires = "words")]
     pub capitalize: bool,

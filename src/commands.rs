@@ -3,7 +3,7 @@
 
 use std::io::IsTerminal;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use zeroize::Zeroizing;
 
 use crate::cli::{GenArgs, Global, PickArgs};
@@ -854,7 +854,16 @@ pub fn generate(args: &GenArgs) -> Result<()> {
 
 fn one_generated(args: &GenArgs) -> Result<generate::Generated> {
     Ok(if let Some(n) = args.words {
-        generate::passphrase(n, &args.separator, args.capitalize)?
+        match &args.word_list {
+            Some(file) => {
+                let text = std::fs::read_to_string(file)
+                    .with_context(|| format!("reading the word list {}", file.display()))?;
+                let list = generate::word_list(&text)
+                    .with_context(|| format!("word list {}", file.display()))?;
+                generate::passphrase_from(&list, n, &args.separator, args.capitalize)?
+            }
+            None => generate::passphrase(n, &args.separator, args.capitalize)?,
+        }
     } else if let Some(n) = args.pin {
         generate::pin(n)?
     } else {

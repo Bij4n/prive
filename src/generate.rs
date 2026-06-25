@@ -100,16 +100,49 @@ pub fn password(spec: &CharsetSpec) -> anyhow::Result<Generated> {
 
 /// Words from the EFF list joined by `separator`.
 pub fn passphrase(count: usize, separator: &str, capitalize: bool) -> anyhow::Result<Generated> {
+    passphrase_from(&words(), count, separator, capitalize)
+}
+
+/// Fewest distinct words a list must have: below this each word adds under 10 bits, and a
+/// short list is more likely a mistake than a choice.
+pub const MIN_LIST_WORDS: usize = 1024;
+
+/// Words from a file: one per line, or the EFF lists' numbered lines (`11111`, a tab, the
+/// word: the last field of each line is the word). Blank lines and duplicates are left out.
+pub fn word_list(text: &str) -> anyhow::Result<Vec<&str>> {
+    let mut list: Vec<&str> = text
+        .lines()
+        .filter_map(|l| l.split_whitespace().last())
+        .collect();
+    list.sort_unstable();
+    list.dedup();
+    anyhow::ensure!(
+        list.len() >= MIN_LIST_WORDS,
+        "the word list has {} different words; use one with at least {MIN_LIST_WORDS}",
+        list.len()
+    );
+    Ok(list)
+}
+
+/// [`passphrase`] from any list of words. The entropy is that of the list given.
+pub fn passphrase_from(
+    list: &[&str],
+    count: usize,
+    separator: &str,
+    capitalize: bool,
+) -> anyhow::Result<Generated> {
     anyhow::ensure!((3..=64).contains(&count), "use between 3 and 64 words");
     anyhow::ensure!(
         !separator.contains(['\n', '\r']),
         "the separator can't contain a line break"
     );
-    let list = words();
+    anyhow::ensure!(!list.is_empty(), "the word list is empty");
     let mut rng = rand::rng();
     let chosen: Vec<String> = (0..count)
         .map(|_| {
-            let w = *list.choose(&mut rng).expect("the word list is not empty");
+            let w = *list
+                .choose(&mut rng)
+                .expect("checked above: the list is not empty");
             if capitalize {
                 let mut c = w.chars();
                 c.next()
@@ -153,6 +186,21 @@ mod tests {
             symbols: true,
             ..CharsetSpec::default()
         }
+    }
+
+    #[test]
+    fn a_word_list_of_ones_own() {
+        let text: String = (0..1500).map(|i| format!("{i:05}\tword{i}\n")).collect();
+        let list = word_list(&text).unwrap();
+        assert_eq!(list.len(), 1500);
+        let g = passphrase_from(&list, 5, " ", false).unwrap();
+        assert_eq!(g.value.split(' ').count(), 5);
+        assert!(g.value.split(' ').all(|w| w.starts_with("word")));
+        assert!((g.entropy_bits - 5.0 * 1500f64.log2()).abs() < 1e-9);
+        // Plain one-word-a-line files work too; too short a list is refused.
+        let plain: String = (0..2000).map(|i| format!("w{i}\n")).collect();
+        assert_eq!(word_list(&plain).unwrap().len(), 2000);
+        assert!(word_list("a\nb\nc\n").is_err());
     }
 
     #[test]

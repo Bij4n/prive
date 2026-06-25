@@ -190,3 +190,30 @@ fn the_command_line_definition_is_consistent() {
     use clap::CommandFactory;
     prive::cli::Cli::command().debug_assert();
 }
+
+#[test]
+fn gen_with_a_word_list_of_ones_own() {
+    let dir = tempfile::tempdir().unwrap();
+    let list = dir.path().join("words.txt");
+    let text: String = (0..1200).map(|i| format!("{i:05}\tmot{i}\n")).collect();
+    std::fs::write(&list, text).unwrap();
+    let out = prive()
+        .args(["gen", "--words", "4", "--separator", " ", "--word-list"])
+        .arg(&list)
+        .output()
+        .unwrap();
+    assert!(out.status.success());
+    let words: Vec<String> = String::from_utf8(out.stdout)
+        .unwrap()
+        .split_whitespace()
+        .map(str::to_string)
+        .collect();
+    assert_eq!(words.len(), 4);
+    assert!(words.iter().all(|w| w.starts_with("mot")));
+    // Needs --words.
+    prive()
+        .args(["gen", "--word-list"])
+        .arg(&list)
+        .assert()
+        .code(2);
+}
