@@ -7,7 +7,7 @@
 //! `TimeOtp-Length`, `TimeOtp-Period` and `TimeOtp-Algorithm`; then the legacy KeePassXC
 //! fields `TOTP Seed` and `TOTP Settings` (`30;6`, or `30;S` for Steam).
 
-use hmac::{Hmac, Mac};
+use hmac::{Hmac, KeyInit, Mac};
 use zeroize::Zeroizing;
 
 use crate::entry::Entry;
@@ -49,7 +49,7 @@ impl std::fmt::Debug for Totp {
 macro_rules! hmac_digest {
     ($hash:ty, $key:expr, $msg:expr) => {{
         let mut mac =
-            <Hmac<$hash> as Mac>::new_from_slice($key).expect("HMAC accepts any key length");
+            <Hmac<$hash> as KeyInit>::new_from_slice($key).expect("HMAC accepts any key length");
         mac.update($msg);
         mac.finalize().into_bytes().to_vec()
     }};
