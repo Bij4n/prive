@@ -31,6 +31,11 @@ prive won't ask for a password at all.
 There is deliberately no environment variable that holds the password itself: other processes
 running as the same user can read a process's environment.
 
+## JSON
+
+`--json` output and its keys are listed in [json.md](json.md); like the exit codes, they are
+kept stable.
+
 ## Colour
 
 `doctor`, `audit` and `diff` use colour on a terminal and plain text everywhere else, so a
