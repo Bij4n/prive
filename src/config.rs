@@ -174,9 +174,11 @@ impl Config {
             .into());
         }
         match db {
+            // `~/` is expanded here too: a quoted PRIVE_DB="~/Passwords.kdbx" never reaches the
+            // shell's own expansion.
             Some(d) => Ok(Target {
-                db: d.to_path_buf(),
-                keyfile: keyfile.map(Path::to_path_buf),
+                db: expand_home(d),
+                keyfile: keyfile.map(expand_home),
                 password_command: None,
             }),
             None => {
@@ -216,8 +218,8 @@ impl Config {
     }
 }
 
-/// A leading `~/` in a config file path means the home directory, as people write it.
-/// (Paths from the command line are already expanded by the shell.)
+/// A leading `~/` means the home directory, as people write it in the config file or in a
+/// quoted environment variable.
 fn expand_home(p: &Path) -> PathBuf {
     match (p.strip_prefix("~"), dirs::home_dir()) {
         (Ok(rest), Some(home)) => home.join(rest),
@@ -435,6 +437,19 @@ mod tests {
         assert!(Config::load_from(&p).is_err(), "a path is needed");
         std::fs::write(&p, "[databases.work]\npath = \"/x.kdbx\"\n").unwrap();
         assert_eq!(Config::load_from(&p).unwrap().databases.len(), 1);
+    }
+
+    #[test]
+    fn a_quoted_tilde_on_the_command_line_means_home_too() {
+        let t = Config::default()
+            .target(
+                Some(Path::new("~/Passwords.kdbx")),
+                Some(Path::new("~/k.keyx")),
+            )
+            .unwrap();
+        let home = dirs::home_dir().unwrap();
+        assert_eq!(t.db, home.join("Passwords.kdbx"));
+        assert_eq!(t.keyfile.unwrap(), home.join("k.keyx"));
     }
 
     #[test]
