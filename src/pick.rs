@@ -20,8 +20,9 @@ impl Render<Item> for Labels {
     }
 }
 
-/// What the picker shows for an entry: its path, the username in brackets, and the site's
-/// host, so entries that share a title can be told apart (and found by typing the site).
+/// What the picker shows for an entry: its path, the username in brackets, the site's host
+/// and its tags, so entries that share a title can be told apart (and found by typing the
+/// site or a tag).
 pub fn label(e: &Entry) -> String {
     let mut out = e.path();
     if !e.username.is_empty() {
@@ -29,6 +30,9 @@ pub fn label(e: &Entry) -> String {
     }
     if let Some((_, host, _)) = crate::gitcred::split_url(&e.url) {
         out.push_str(&format!("  {host}"));
+    }
+    for t in &e.tags {
+        out.push_str(&format!("  #{t}"));
     }
     // The picker draws labels straight onto the terminal, so control characters are spelled
     // out, as everywhere else (see output::visible). Newlines would break its rows too.
@@ -75,6 +79,8 @@ mod tests {
         assert_eq!(label(&e), "Work/GitHub  (demo)");
         e.url = "https://github.com/login".into();
         assert_eq!(label(&e), "Work/GitHub  (demo)  github.com");
+        e.tags = vec!["dev".into(), "cloud".into()];
+        assert_eq!(label(&e), "Work/GitHub  (demo)  github.com  #dev  #cloud");
     }
 
     #[test]
