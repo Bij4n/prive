@@ -26,8 +26,8 @@ index; `tests/docs.rs` fails when a link between pages points at a file that doe
 
 ## Adding a command
 
-- The definition goes in `src/cli.rs`, the work in `src/commands.rs`, and anything it prints
-  in `src/output.rs`. `tests/cli.rs` checks the definition with clap's own `debug_assert`.
+- The definition goes in `src/cli.rs`, the work in the matching file of `src/commands/`
+  (entries, codes, agent, reports, tools), and anything it prints in `src/output.rs`. `tests/cli.rs` checks the definition with clap's own `debug_assert`.
 - Text for people goes through `output::print_human` (control characters made visible);
   values a script reads, through `output::print`; coloured reports, `output::print_styled`.
 - A row in `docs/commands.md`, a line in `CHANGELOG.md`, and the command's name in the

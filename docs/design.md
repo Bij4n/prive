@@ -9,7 +9,8 @@ truth, and other KeePass apps can change it at any time.
 ```
 cli.rs        argument parsing (clap); the CLI is the public interface
 lib.rs        run(): parse, dispatch, map errors to exit codes
-commands.rs   one function per command
+commands/     one function per command: entries.rs, codes.rs, agent.rs, reports.rs,
+              tools.rs; mod.rs opens the database (agent or file) for all of them
 db.rs         open a KDBX file (password and/or key file) into entries, its settings
               (format, ciphers, KDF) and the recycle bin's UUIDs
 config.rs     which database, key file and password command; named databases; timeouts
