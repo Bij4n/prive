@@ -86,6 +86,7 @@ pub fn search(
     global: &Global,
     query: &str,
     all: bool,
+    tags: &[String],
     format: Option<&str>,
     json: bool,
 ) -> Result<()> {
@@ -93,11 +94,14 @@ pub fn search(
         crate::template::check_listing(t)?;
     }
     let db = open(global)?;
-    let hits = if all {
+    let mut hits = if all {
         select::search_everywhere(&db.entries, query)
     } else {
         select::search(&db.entries, query)
     };
+    for t in tags {
+        hits = select::with_tag(&hits, t);
+    }
     // Like grep: nothing found is a failure scripts can test for (exit code 3).
     if hits.is_empty() {
         return Err(Failure::NotFound(query.to_string()).into());

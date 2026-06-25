@@ -118,6 +118,9 @@ pub enum Command {
         /// Also look in notes and unprotected custom fields (never in passwords)
         #[arg(short = 'a', long)]
         all: bool,
+        /// Only matches with this tag (repeat for several: all must match)
+        #[arg(short, long = "tag", value_name = "TAG")]
+        tags: Vec<String>,
         /// One line per match from a template, never with secrets (as `ls --format`)
         #[arg(long, value_name = "TEMPLATE", conflicts_with = "json")]
         format: Option<String>,

@@ -1742,3 +1742,12 @@ fn info_time_measures_an_open() {
         .success()
         .stdout(predicate::str::contains("Opening:      "));
 }
+
+#[test]
+fn search_by_text_and_tag() {
+    prive(&["search", "github", "-t", "dev", "--format", "{PATH}"])
+        .assert()
+        .success()
+        .stdout("Work/GitHub\n");
+    prive(&["search", "github", "-t", "nope"]).assert().code(3);
+}

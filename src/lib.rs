@@ -105,9 +105,10 @@ fn dispatch(cli: Cli) -> Result<()> {
         Command::Search {
             query,
             all,
+            tags,
             format,
             json,
-        } => commands::search(g, query, *all, format.as_deref(), *json),
+        } => commands::search(g, query, *all, tags, format.as_deref(), *json),
         Command::Tags { json } => commands::tags(g, *json),
         Command::Show {
             entry,
