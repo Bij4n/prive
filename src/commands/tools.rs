@@ -1,4 +1,4 @@
-//! Commands that need no entry chosen: run, gen, import, config, git's helper, completions.
+//! Commands around other programs and files: run, gen, import, config, git's helper, completions.
 
 use super::*;
 
