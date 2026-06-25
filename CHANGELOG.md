@@ -116,6 +116,8 @@ The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `l
   source policy checked in CI
 
 ### Fixed
+- `unlock` with an agent directory too deep for a Unix socket said "path must be shorter
+  than SUN_LEN"; it now says how to fix it, and `doctor` checks for it
 - A missing database file is reported as such, with where prive looked; a quoted `~/` in
   `--db`, `PRIVE_DB` or `--keyfile` means the home directory
 - `ls GROUP -t TAG` said the group was missing when no entry in it had the tag

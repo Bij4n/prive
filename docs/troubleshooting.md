@@ -42,6 +42,11 @@ The path points at something else (an export, a backup in another format, a KeeP
 KeePassXC or a sync tool saved a new version. The agent forgets old copies on purpose; run
 `prive unlock` again.
 
+**`the agent's socket path ... is N bytes, longer than this system allows`**
+Unix sockets have a short path limit (107 bytes on Linux, 103 on macOS). The agent's
+directory is `$PRIVE_AGENT_DIR`, else `$XDG_RUNTIME_DIR/prive`, else a folder in the temp
+directory; point `PRIVE_AGENT_DIR` at something short, such as `~/.prive-agent`.
+
 **`... is mode 755; it must be 700`**
 The agent's directory was made by something else, or its permissions were changed. Run
 `chmod 700` on it, or delete it and let prive make it again.
