@@ -32,7 +32,7 @@ databases, merge them, and unlock with a YubiKey; prive doesn't do those yet (se
 - every format KeePass apps store one-time codes in, `codes` for all of them, `--watch`;
 - `audit` with the database's own key settings, `diff` for sync conflict copies, `doctor`.
 
-They read and write the same file, so use both.
+They work on the same file (prive only reads it, for now), so use both.
 
 ## Install
 
