@@ -12,6 +12,12 @@ Include what you found, how to reproduce it, and which version or commit you use
 You'll get an answer within a week. Fixes for confirmed problems are released as soon as
 they're ready, with credit if you want it.
 
+## Supported versions
+
+Fixes go into the latest release and `master`. The 0.5 line (`legacy-0.5.0`, its own vault
+format and PGP toolkit) gets none: it had known serious problems, and the README says not to
+use it for real secrets.
+
 ## Scope
 
 In scope: anything that could expose a secret (database contents, master password, key file,
