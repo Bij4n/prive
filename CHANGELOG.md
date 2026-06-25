@@ -13,7 +13,7 @@ The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `l
 - `prive open ENTRY --print`: the checked address on stdout instead of a browser
 - `prive unlock --all`: every database in the config file, each with its own key file and
   password command
-- `prive ls --expired` and `--expiring DAYS`
+- `prive ls --expired` and `--expiring DAYS`; `--sort title` or `--sort changed`
 - `prive gen --symbols CHARS` and `--exclude CHARS`, for sites with rules about characters;
   `--word-list FILE` for passphrases from another list
 - Colour in `doctor`, `audit` and `diff` on a terminal; `NO_COLOR` and `CLICOLOR_FORCE`
