@@ -1708,3 +1708,25 @@ fn audit_only_some_kinds() {
     assert_eq!(v["database"].as_array().unwrap().len(), 0);
     prive(&["audit", "--only", "nonsense"]).assert().code(2);
 }
+
+#[test]
+fn ls_sort_changed_puts_the_newest_first() {
+    Command::cargo_bin("prive")
+        .unwrap()
+        .env("PRIVE_CONFIG", fixture("no-such-config.toml"))
+        .env("PRIVE_NO_AGENT", "1")
+        .arg("--db")
+        .arg(fixture("conflict.kdbx"))
+        .args(["--password-stdin", "ls", "--sort", "changed", "--paths"])
+        .write_stdin("fixture-pass\n")
+        .assert()
+        .success()
+        // The two changed a day later come first, in path order between themselves.
+        .stdout(predicate::str::starts_with("Bank\nConference Wi-Fi\n"));
+    prive(&["ls", "--sort", "title", "--paths"])
+        .assert()
+        .success()
+        .stdout(predicate::str::starts_with(
+            "Bank\nPersonal/GitHub\nWork/GitHub\n",
+        ));
+}

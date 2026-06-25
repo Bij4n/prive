@@ -292,6 +292,7 @@ pub fn ls(
     group: Option<&str>,
     tags: &[String],
     expiring: Option<i64>,
+    order: select::Order,
     shape: Listing<'_>,
 ) -> Result<()> {
     if let Listing::Format(t) = shape {
@@ -312,6 +313,7 @@ pub fn ls(
     if let Some(days) = expiring {
         shown = select::expiring(&shown, chrono::Utc::now().naive_utc(), days);
     }
+    select::sort(&mut shown, order);
     match shape {
         Listing::Long => output::print_human(&output::render_long_list(&shown)),
         Listing::Paths => {

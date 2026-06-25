@@ -88,6 +88,7 @@ fn dispatch(cli: Cli) -> Result<()> {
             format,
             expired,
             expiring,
+            sort,
             json,
         } => {
             // --expired is --expiring 0.
@@ -99,7 +100,7 @@ fn dispatch(cli: Cli) -> Result<()> {
                 (None, _, _, true) => commands::Listing::Json,
                 _ => commands::Listing::Plain,
             };
-            commands::ls(g, group.as_deref(), tags, expiring, shape)
+            commands::ls(g, group.as_deref(), tags, expiring, *sort, shape)
         }
         Command::Search {
             query,

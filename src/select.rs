@@ -143,6 +143,27 @@ pub fn with_tag<'a>(entries: &[&'a Entry], tag: &str) -> Vec<&'a Entry> {
         .collect()
 }
 
+/// How `ls` orders entries.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, clap::ValueEnum)]
+pub enum Order {
+    /// By group and title, ignoring case
+    #[default]
+    Path,
+    /// By title alone, ignoring case
+    Title,
+    /// The most recently changed first
+    Changed,
+}
+
+/// Put `entries` in `order`. Ties keep the path order they came in.
+pub fn sort(entries: &mut [&Entry], order: Order) {
+    match order {
+        Order::Path => {}
+        Order::Title => entries.sort_by_cached_key(|e| e.title.to_lowercase()),
+        Order::Changed => entries.sort_by_key(|e| std::cmp::Reverse(e.modified)),
+    }
+}
+
 /// Entries that have expired by `now`, or will within `days` of it (0: expired ones only).
 pub fn expiring<'a>(
     entries: &[&'a Entry],
@@ -315,6 +336,27 @@ mod tests {
             [e[0].title.clone(), e[1].title.clone()]
         );
         assert_eq!(expiring(&all, day(13), 7).len(), 2);
+    }
+
+    #[test]
+    fn orders() {
+        let mut e = sample();
+        let day = |d| {
+            chrono::NaiveDate::from_ymd_opt(2026, 6, d)
+                .unwrap()
+                .and_hms_opt(9, 0, 0)
+        };
+        for (i, x) in e.iter_mut().enumerate() {
+            x.modified = day(1 + i as u32);
+        }
+        let mut v: Vec<&Entry> = e.iter().collect();
+        sort(&mut v, Order::Changed);
+        assert_eq!(v[0].uuid, e[e.len() - 1].uuid, "newest first");
+        sort(&mut v, Order::Title);
+        let titles: Vec<String> = v.iter().map(|x| x.title.to_lowercase()).collect();
+        let mut sorted = titles.clone();
+        sorted.sort();
+        assert_eq!(titles, sorted);
     }
 
     #[test]

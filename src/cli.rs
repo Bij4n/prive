@@ -104,6 +104,9 @@ pub enum Command {
         /// Only entries that have expired or will within DAYS
         #[arg(long, value_name = "DAYS")]
         expiring: Option<i64>,
+        /// The order to list them in
+        #[arg(long, value_enum, default_value_t = crate::select::Order::Path)]
+        sort: crate::select::Order,
         /// Print JSON instead of text, for scripts
         #[arg(long)]
         json: bool,
