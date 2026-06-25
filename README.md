@@ -8,11 +8,12 @@ covers the terminal. It prints exactly what you ask for, nothing else, so it fit
 and it is quick: a 5,000-entry database lists in a tenth of a second
 ([performance](docs/performance.md)).
 
-> **Status: rewrite in progress (0.6).** Reading works (`ls`, `search`, `show`, `get`, `otp`,
-> `codes`, `open`, `file`, `history`, `pick`, `audit`, `gen`), `prive unlock` keeps the
-> database open so a session costs one password prompt, and `prive run` hands secrets to
-> other commands. Next: creating databases from other apps' exports, file encryption and
-> editing; see the [roadmap](docs/roadmap.md).
+> **Status: 0.6 reads.** Everything that reads a database works: `ls`, `search`, `show`,
+> `get`, `otp`, `codes`, `open`, `file`, `history`, `pick`, `audit`, `diff`, `info`, with
+> `--json` and `--format` for scripts. `prive unlock` keeps databases open so a session
+> costs one password prompt (or none, with a `password_command`), and `prive run` hands
+> secrets to other commands. Next: creating databases from other apps' exports, file
+> encryption and editing; see the [roadmap](docs/roadmap.md).
 >
 > The old 0.5 line (its own `.pv` vault format and a PGP toolkit) is kept at the tag
 > `legacy-0.5.0`. It had serious problems, PGP secret keys stored unencrypted among them;
