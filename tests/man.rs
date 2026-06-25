@@ -11,15 +11,11 @@ fn every_command_gets_a_man_page() {
         .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
         .collect();
     pages.sort();
-    for page in [
-        "prive.1",
-        "prive-gen.1",
-        "prive-info.1",
-        "prive-diff.1",
-        "prive-doctor.1",
-        "prive-git-credential.1",
-    ] {
-        assert!(pages.contains(&page.to_string()), "{page} in {pages:?}");
+    assert!(pages.contains(&"prive.1".to_string()));
+    // One page for every subcommand, whatever is added later.
+    for sub in prive::cli::Cli::command().get_subcommands() {
+        let page = format!("prive-{}.1", sub.get_name());
+        assert!(pages.contains(&page), "{page} missing from {pages:?}");
     }
     // The internal helpers never get a page.
     assert!(!pages.iter().any(|p| p.contains("__")), "{pages:?}");
