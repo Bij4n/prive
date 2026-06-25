@@ -52,7 +52,8 @@ What makes guessing a master password slow is the key derivation function, set p
   time. Only very old or unusual files are written this way.
 
 A strong master password matters more than any of these, but they decide how much each guess
-costs.
+costs. `prive info --time` shows what one open costs on your machine; KeePassXC's "1 second"
+setting is a good target for Argon2id, since an attacker pays the same for every guess.
 
 ## Reading a database
 

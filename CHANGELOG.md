@@ -28,6 +28,7 @@ The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `l
 - `prive doctor`: checks the config, database file, key file, password source, conflict
   copies, agent and clipboard without a password; `--all` for every named database; exit 1
   if anything fails
+- `prive info --time`: what opening the database costs on this machine
 - `prive info`: how the database is stored (format, encryption, key derivation, the app that
   saved it) and how much is in it; works through the agent too
 - `prive audit --only KINDS`, to work through one kind of problem at a time
