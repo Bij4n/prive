@@ -19,6 +19,21 @@ and it is quick: a 5,000-entry database lists in a tenth of a second
 > `legacy-0.5.0`. It had serious problems, PGP secret keys stored unencrypted among them;
 > please don't use it for real secrets.
 
+## Next to keepassxc-cli
+
+KeePassXC comes with its own command line tool, and it is good. Use it to create and edit
+databases, merge them, and unlock with a YubiKey; prive doesn't do those yet (see the
+[roadmap](docs/roadmap.md)). prive is for using a database all day from the terminal:
+
+- one password prompt a session (`prive unlock`), or none with a `password_command`, where
+  `keepassxc-cli` asks on every command outside its interactive `open` shell;
+- `--json` everywhere, `--format` templates, and exit codes a script can branch on;
+- secrets handed to other programs without showing them (`prive run`, `git-credential`);
+- every format KeePass apps store one-time codes in, `codes` for all of them, `--watch`;
+- `audit` with the database's own key settings, `diff` for sync conflict copies, `doctor`.
+
+They read and write the same file, so use both.
+
 ## Install
 
 There are no packaged releases yet. With a recent stable Rust (1.88 or later):
