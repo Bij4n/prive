@@ -338,7 +338,8 @@ fn a_file_that_is_not_keepass_says_so() {
         .write_stdin("x\n")
         .assert()
         .code(1)
-        .stderr(predicate::str::contains("opening database"));
+        .stderr(predicate::str::contains("no database at"))
+        .stderr(predicate::str::contains("missing.kdbx"));
 }
 
 #[test]

@@ -161,8 +161,20 @@ fn count_groups(group: &GroupRef<'_>, skip: Option<keepass::db::GroupId>) -> usi
 
 /// Read a database file and check it is KeePass, before anyone is asked for a password.
 pub fn read_file(path: &Path) -> Result<Vec<u8>> {
-    let bytes =
-        std::fs::read(path).with_context(|| format!("opening database {}", path.display()))?;
+    let bytes = match std::fs::read(path) {
+        Ok(b) => b,
+        // The commonest slip: a wrong path in --db, PRIVE_DB or the config file.
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => anyhow::bail!(
+            "no database at {} (check --db, PRIVE_DB or db in the config file; `prive doctor` \
+             shows which one is used)",
+            path.display()
+        ),
+        Err(e) => {
+            return Err(
+                anyhow::Error::new(e).context(format!("opening database {}", path.display()))
+            );
+        }
+    };
     // KeePass files start with 0x9AA2D903; anything else gets a plain answer instead of a
     // parser error.
     if bytes.len() < 12 || bytes[..4] != [0x03, 0xd9, 0xa2, 0x9a] {
