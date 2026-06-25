@@ -227,6 +227,9 @@ pub fn agent() -> Check {
     {
         return check("agent", Status::Fail, format!("{e:#}"));
     }
+    if let Err(e) = crate::agent::dir::check_socket_path(&crate::agent::dir::socket_path()) {
+        return check("agent", Status::Fail, format!("{e:#}"));
+    }
     match crate::agent::client::status() {
         Ok(Some((open, _))) if open.is_empty() => {
             check("agent", Status::Ok, "running, nothing unlocked")

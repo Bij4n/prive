@@ -20,6 +20,24 @@ pub fn agent_dir() -> PathBuf {
     std::env::temp_dir().join(format!("prive-{}", nix::unistd::getuid()))
 }
 
+/// Longest socket path the system takes, in bytes: `sun_path` holds 108 on Linux and 104 on
+/// macOS and the BSDs, one of them the terminating NUL.
+pub const MAX_SOCKET_PATH: usize = if cfg!(target_os = "linux") { 107 } else { 103 };
+
+/// Refuse a socket path the system can't bind, with what to do about it, rather than the
+/// system's own "path must be shorter than SUN_LEN".
+pub fn check_socket_path(path: &Path) -> Result<()> {
+    let len = path.as_os_str().len();
+    if len > MAX_SOCKET_PATH {
+        bail!(
+            "the agent's socket path {} is {len} bytes, longer than this system allows \
+             ({MAX_SOCKET_PATH}); set PRIVE_AGENT_DIR to a shorter directory",
+            path.display()
+        );
+    }
+    Ok(())
+}
+
 pub fn socket_path() -> PathBuf {
     agent_dir().join("agent.sock")
 }
@@ -57,6 +75,14 @@ pub fn check_private(dir: &Path) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn socket_paths_the_system_can_bind() {
+        assert!(check_socket_path(Path::new("/run/user/1000/prive/agent.sock")).is_ok());
+        let long = format!("/{}/agent.sock", "d".repeat(120));
+        let err = check_socket_path(Path::new(&long)).unwrap_err().to_string();
+        assert!(err.contains("PRIVE_AGENT_DIR"), "{err}");
+    }
 
     #[test]
     fn creates_a_private_directory() {

@@ -21,6 +21,7 @@ pub fn serve(idle: Duration, ready: impl FnOnce()) -> Result<()> {
     let socket_dir = dir::agent_dir();
     dir::ensure_private(&socket_dir)?;
     let path = dir::socket_path();
+    dir::check_socket_path(&path)?;
     if path.exists() {
         if UnixStream::connect(&path).is_ok() {
             bail!("an agent is already running");
