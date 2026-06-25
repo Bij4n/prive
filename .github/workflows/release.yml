@@ -97,10 +97,14 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           path: artifacts
+          merge-multiple: true
+      - name: Checksums
+        working-directory: artifacts
+        run: sha256sum prive-* > SHA256SUMS && cat SHA256SUMS
       - name: Create draft release
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ inputs.tag }}
           draft: true
           generate_release_notes: true
-          files: artifacts/**/*
+          files: artifacts/*
