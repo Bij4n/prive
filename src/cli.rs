@@ -27,7 +27,7 @@ pub struct Cli {
 
 #[derive(Debug, Args)]
 pub struct Global {
-    /// Database file [default: the one in the config file]
+    /// Database file, or the name of one in the config file [default: the config's db]
     #[arg(long, global = true, env = "PRIVE_DB", value_name = "FILE")]
     pub db: Option<PathBuf>,
 
@@ -59,22 +59,51 @@ pub struct Global {
 
 #[derive(Debug, Subcommand)]
 pub enum Command {
-    /// Unlock the database once; later commands use it without asking (Linux and macOS)
-    Unlock {
-        /// Lock after this many minutes unused, this time (default: agent_minutes, 15)
-        #[arg(long, value_parser = clap::value_parser!(u64).range(1..=1440))]
-        minutes: Option<u64>,
-        /// Unlock the config file's database and every named one, each with its own key file
-        /// and password command, or a prompt
+    /// List entries: paths and usernames, never passwords
+    Ls {
+        /// Only entries in this group and its subgroups
+        group: Option<String>,
+        /// Only entries with this tag (repeat for several: all must match)
+        #[arg(short, long = "tag", value_name = "TAG")]
+        tags: Vec<String>,
+        /// Also show when each changed, and whether it has a code, files or has expired
+        #[arg(short, long, conflicts_with = "json")]
+        long: bool,
+        /// Only the paths, one per line (for shell completion and fzf)
+        #[arg(short = 'p', long, conflicts_with_all = ["json", "long"])]
+        paths: bool,
+        /// One line per entry from a template, never with secrets: '{PATH}\t{USERNAME}\t{URL}'
+        #[arg(long, value_name = "TEMPLATE", conflicts_with_all = ["json", "long", "paths"])]
+        format: Option<String>,
+        /// Only entries that have expired
+        #[arg(long, conflicts_with = "expiring")]
+        expired: bool,
+        /// Only entries that have expired or will within DAYS
+        #[arg(long, value_name = "DAYS")]
+        expiring: Option<i64>,
         #[arg(long)]
-        all: bool,
+        json: bool,
     },
 
-    /// Forget the unlocked databases now (with --db, only that one)
-    Lock,
+    /// Find entries by title, username, URL, group or tag
+    Search {
+        query: String,
+        /// Also look in notes and unprotected custom fields (never in passwords)
+        #[arg(short = 'a', long)]
+        all: bool,
+        /// One line per match from a template, never with secrets (as `ls --format`)
+        #[arg(long, value_name = "TEMPLATE", conflicts_with = "json")]
+        format: Option<String>,
+        #[arg(long)]
+        json: bool,
+    },
 
-    /// Say whether a database is unlocked, and for how long
-    Status {
+    /// Show an entry; passwords and protected fields stay hidden unless --reveal
+    Show {
+        /// Title, Group/Title path, or uuid:UUID
+        entry: String,
+        #[arg(long)]
+        reveal: bool,
         #[arg(long)]
         json: bool,
     },
@@ -134,6 +163,41 @@ pub enum Command {
         watch: bool,
     },
 
+    /// Choose an entry interactively and copy its password
+    Pick(PickArgs),
+
+    /// Open an entry's URL in the browser and copy its password
+    Open {
+        entry: String,
+        /// Only open the URL; don't copy anything
+        #[arg(long)]
+        no_copy: bool,
+        /// Print the address instead of opening it (over SSH, or to open it elsewhere); copies
+        /// nothing
+        #[arg(long, conflicts_with = "no_copy")]
+        print: bool,
+    },
+
+    /// Unlock the database once; later commands use it without asking (Linux and macOS)
+    Unlock {
+        /// Lock after this many minutes unused, this time (default: agent_minutes, 15)
+        #[arg(long, value_parser = clap::value_parser!(u64).range(1..=1440))]
+        minutes: Option<u64>,
+        /// Unlock the config file's database and every named one, each with its own key file
+        /// and password command, or a prompt
+        #[arg(long)]
+        all: bool,
+    },
+
+    /// Forget the unlocked databases now (with --db, only that one)
+    Lock,
+
+    /// Say which databases are unlocked, and for how long
+    Status {
+        #[arg(long)]
+        json: bool,
+    },
+
     /// Run a command with secrets in its environment (never printed, never on disk)
     Run {
         /// NAME=ENTRY (the password) or NAME=ENTRY:FIELD; repeat for several
@@ -153,16 +217,12 @@ pub enum Command {
         command: Vec<String>,
     },
 
-    /// Open an entry's URL in the browser and copy its password
-    Open {
-        entry: String,
-        /// Only open the URL; don't copy anything
-        #[arg(long)]
-        no_copy: bool,
-        /// Print the address instead of opening it (over SSH, or to open it elsewhere); copies
-        /// nothing
-        #[arg(long, conflicts_with = "no_copy")]
-        print: bool,
+    /// Git credential helper: git config --global credential.helper '!prive git-credential'
+    #[command(name = "git-credential")]
+    GitCredential {
+        /// What git asks: get (answered), store and erase (ignored: prive never writes)
+        #[arg(value_parser = ["get", "store", "erase"])]
+        action: String,
     },
 
     /// An entry's earlier versions: when each was saved, and whether the password changed
@@ -185,80 +245,13 @@ pub enum Command {
         out: Option<std::path::PathBuf>,
     },
 
-    /// Show an entry; passwords and protected fields stay hidden unless --reveal
-    Show {
-        /// Title, Group/Title path, or uuid:UUID
-        entry: String,
-        #[arg(long)]
-        reveal: bool,
-        #[arg(long)]
-        json: bool,
-    },
-
     /// List the tags in use, with how many entries carry each
     Tags {
         #[arg(long)]
         json: bool,
     },
 
-    /// Find entries by title, username, URL, group or tag
-    Search {
-        query: String,
-        /// Also look in notes and unprotected custom fields (never in passwords)
-        #[arg(short = 'a', long)]
-        all: bool,
-        /// One line per match from a template, never with secrets (as `ls --format`)
-        #[arg(long, value_name = "TEMPLATE", conflicts_with = "json")]
-        format: Option<String>,
-        #[arg(long)]
-        json: bool,
-    },
-
-    /// List entries: paths and usernames, never passwords
-    Ls {
-        /// Only entries in this group and its subgroups
-        group: Option<String>,
-        /// Only entries with this tag (repeat for several: all must match)
-        #[arg(short, long = "tag", value_name = "TAG")]
-        tags: Vec<String>,
-        /// Also show when each changed, and whether it has a code, files or has expired
-        #[arg(short, long, conflicts_with = "json")]
-        long: bool,
-        /// Only the paths, one per line (for shell completion and fzf)
-        #[arg(short = 'p', long, conflicts_with_all = ["json", "long"])]
-        paths: bool,
-        /// One line per entry from a template, never with secrets: '{PATH}\t{USERNAME}\t{URL}'
-        #[arg(long, value_name = "TEMPLATE", conflicts_with_all = ["json", "long", "paths"])]
-        format: Option<String>,
-        /// Only entries that have expired
-        #[arg(long, conflicts_with = "expiring")]
-        expired: bool,
-        /// Only entries that have expired or will within DAYS
-        #[arg(long, value_name = "DAYS")]
-        expiring: Option<i64>,
-        #[arg(long)]
-        json: bool,
-    },
-
-    /// Choose an entry interactively and copy its password
-    Pick(PickArgs),
-
-    /// Read another password manager's export and say what would come across
-    Import {
-        /// The export file (CSV)
-        file: std::path::PathBuf,
-        /// Which app made it [default: recognised from its header]
-        #[arg(long, value_enum)]
-        from: Option<crate::import::Format>,
-        /// For --from csv: which column holds a field, e.g. --map username=Login (repeat)
-        #[arg(long, value_name = "FIELD=COLUMN")]
-        map: Vec<String>,
-        /// Only read and report. (Writing a KeePass database from it comes next.)
-        #[arg(long, required = true)]
-        check: bool,
-    },
-
-    /// Report weak, reused, old and expired passwords
+    /// Report weak key settings, and weak, reused, old and expired passwords
     Audit {
         /// Also check each password against Have I Been Pwned (sends 5 hex characters of its
         /// SHA-1 hash per password; nothing else leaves the machine)
@@ -274,10 +267,7 @@ pub enum Command {
         json: bool,
     },
 
-    /// Generate a password, passphrase or PIN (no database needed)
-    Gen(GenArgs),
-
-    /// Compare the database with another copy of it: a sync tool's conflict copy, a backup
+    /// Compare the database with another copy of it (a sync conflict copy, a backup)
     Diff {
         /// The other copy
         other: PathBuf,
@@ -294,6 +284,24 @@ pub enum Command {
         json: bool,
     },
 
+    /// Generate a password, passphrase or PIN (no database needed)
+    Gen(GenArgs),
+
+    /// Read another password manager's export and say what would come across
+    Import {
+        /// The export file (CSV)
+        file: std::path::PathBuf,
+        /// Which app made it [default: recognised from its header]
+        #[arg(long, value_enum)]
+        from: Option<crate::import::Format>,
+        /// For --from csv: which column holds a field, e.g. --map username=Login (repeat)
+        #[arg(long, value_name = "FIELD=COLUMN")]
+        map: Vec<String>,
+        /// Only read and report. (Writing a KeePass database from it comes next.)
+        #[arg(long, required = true)]
+        check: bool,
+    },
+
     /// Check the config, database, key file, agent and clipboard, without a password
     Doctor {
         /// Check every database the config file names, not only the one a command would open
@@ -307,14 +315,6 @@ pub enum Command {
     Config {
         #[arg(long)]
         json: bool,
-    },
-
-    /// Git credential helper: git config --global credential.helper '!prive git-credential'
-    #[command(name = "git-credential")]
-    GitCredential {
-        /// What git asks: get (answered), store and erase (ignored: prive never writes)
-        #[arg(value_parser = ["get", "store", "erase"])]
-        action: String,
     },
 
     /// Print shell completions (bash, zsh, fish, elvish, powershell)
