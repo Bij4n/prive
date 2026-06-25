@@ -802,7 +802,14 @@ pub fn pick(global: &Global, args: &PickArgs) -> Result<()> {
     }
 }
 
-pub fn audit(global: &Global, hibp: bool, max_age: i64, expiring: i64, json: bool) -> Result<()> {
+pub fn audit(
+    global: &Global,
+    hibp: bool,
+    max_age: i64,
+    expiring: i64,
+    only: &[audit::Kind],
+    json: bool,
+) -> Result<()> {
     let db = open(global)?;
     let mut report = audit::audit(
         &db.entries,
@@ -813,6 +820,7 @@ pub fn audit(global: &Global, hibp: bool, max_age: i64, expiring: i64, json: boo
         },
     )?;
     report.database = audit::check_database(&db.info);
+    report.only(only);
     if json {
         output::print_json(&report)
     } else {

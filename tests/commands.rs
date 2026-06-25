@@ -1691,3 +1691,20 @@ fn show_says_when_an_entry_has_expired() {
             "Expires:   2025-01-01 00:00 (expired)\n",
         ));
 }
+
+#[test]
+fn audit_only_some_kinds() {
+    let out = prive(&["audit", "--only", "expired", "--json"])
+        .output()
+        .unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    let paths: Vec<&str> = v["findings"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|f| f["path"].as_str().unwrap())
+        .collect();
+    assert_eq!(paths, ["Old VPN"]);
+    assert_eq!(v["database"].as_array().unwrap().len(), 0);
+    prive(&["audit", "--only", "nonsense"]).assert().code(2);
+}

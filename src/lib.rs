@@ -164,8 +164,9 @@ fn dispatch(cli: Cli) -> Result<()> {
             hibp,
             max_age,
             expiring,
+            only,
             json,
-        } => commands::audit(g, *hibp, *max_age, *expiring, *json),
+        } => commands::audit(g, *hibp, *max_age, *expiring, only, *json),
         Command::Gen(args) => commands::generate(args),
         Command::Info { json } => commands::info(g, *json),
         Command::Diff {

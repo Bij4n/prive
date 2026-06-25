@@ -30,6 +30,21 @@ pub enum Issue {
 }
 
 impl Report {
+    /// Keep only the kinds of problem in `kinds` (all of them when it is empty). Entries left
+    /// with nothing to report drop out; the counts of checked and skipped entries stay.
+    pub fn only(&mut self, kinds: &[Kind]) {
+        if kinds.is_empty() {
+            return;
+        }
+        for f in &mut self.findings {
+            f.issues.retain(|i| kinds.contains(&i.kind()));
+        }
+        self.findings.retain(|f| !f.issues.is_empty());
+        if !kinds.contains(&Kind::Settings) {
+            self.database.clear();
+        }
+    }
+
     /// Neither the database nor any entry needs attention.
     pub fn is_clean(&self) -> bool {
         self.findings.is_empty() && self.database.is_empty()
@@ -92,7 +107,31 @@ pub fn check_database(info: &crate::db::Info) -> Vec<DbIssue> {
     issues
 }
 
+/// The kinds of problem `audit --only` can pick out.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
+pub enum Kind {
+    /// The database's own key settings
+    Settings,
+    Breached,
+    Weak,
+    Reused,
+    Expired,
+    Expiring,
+    Old,
+}
+
 impl Issue {
+    pub fn kind(&self) -> Kind {
+        match self {
+            Issue::Breached { .. } => Kind::Breached,
+            Issue::Weak { .. } => Kind::Weak,
+            Issue::Reused { .. } => Kind::Reused,
+            Issue::Expired => Kind::Expired,
+            Issue::Expiring { .. } => Kind::Expiring,
+            Issue::Old { .. } => Kind::Old,
+        }
+    }
+
     pub fn describe(&self) -> String {
         match self {
             Issue::Breached { count } => format!("found in {count} breaches (Have I Been Pwned)"),
@@ -255,6 +294,31 @@ mod tests {
             },
             ..crate::db::Info::default()
         }
+    }
+
+    #[test]
+    fn only_some_kinds() {
+        let strong = "vX7#qL9!mZ2$wR4^tY6&";
+        let mut r = audit(
+            &[
+                entry("a", strong),
+                entry("b", strong),
+                entry("c", "password1"),
+            ],
+            &Options::default(),
+        )
+        .unwrap();
+        r.database = vec![DbIssue::NoInnerCipher];
+        r.only(&[Kind::Reused]);
+        let paths: Vec<&str> = r.findings.iter().map(|f| f.path.as_str()).collect();
+        assert_eq!(paths, ["a", "b"]);
+        assert!(
+            r.findings
+                .iter()
+                .all(|f| f.issues.iter().all(|i| i.kind() == Kind::Reused))
+        );
+        assert!(r.database.is_empty());
+        assert_eq!(r.checked, 3, "what was checked doesn't change");
     }
 
     #[test]

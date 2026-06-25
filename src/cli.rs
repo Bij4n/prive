@@ -298,6 +298,9 @@ pub enum Command {
         /// Also flag entries that expire within this many days
         #[arg(long, default_value_t = 0, value_name = "DAYS")]
         expiring: i64,
+        /// Report only these kinds of problem: --only reused,weak
+        #[arg(long, value_delimiter = ',', value_name = "KINDS")]
+        only: Vec<crate::audit::Kind>,
         /// Print JSON instead of text, for scripts
         #[arg(long)]
         json: bool,
