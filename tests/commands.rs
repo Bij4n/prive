@@ -657,22 +657,22 @@ fn import_check_recognises_each_export() {
         (
             "proton.csv",
             "Proton Pass",
-            "3 entries, 1 with one-time codes, in 2 group(s)",
+            "3 entries, 1 with a one-time code, in 2 groups",
         ),
         (
             "apple.csv",
             "Apple Passwords",
-            "2 entries, 1 with one-time codes, in 0 group(s)",
+            "2 entries, 1 with a one-time code, no groups",
         ),
         (
             "google.csv",
             "Google Password Manager",
-            "2 entries, 0 with one-time codes, in 0 group(s)",
+            "2 entries, none with one-time codes, no groups",
         ),
         (
             "lastpass.csv",
             "LastPass",
-            "3 entries, 1 with one-time codes, in 2 group(s)",
+            "3 entries, 1 with a one-time code, in 2 groups",
         ),
     ] {
         Command::cargo_bin("prive")
@@ -716,7 +716,7 @@ fn import_check_generic_csv() {
         .assert()
         .success()
         .stdout(predicate::str::starts_with(
-            "CSV export: 2 entries, 1 with one-time codes, in 1 group(s)",
+            "CSV export: 2 entries, 1 with a one-time code, in 1 group",
         ))
         .stdout(predicate::str::contains("username <- login_username"));
     Command::cargo_bin("prive")

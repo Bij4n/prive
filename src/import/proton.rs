@@ -101,8 +101,8 @@ pub fn parse(text: &str) -> Result<(Vec<Record>, Report)> {
     };
     for (kind, n) in not_logins {
         report.notes.push(format!(
-            "{n} {kind} item(s): Proton's CSV only has their name and note; its JSON export \
-             has the rest"
+            "{}: Proton's CSV only has their name and note; its JSON export has the rest",
+            super::plural(n, &format!("{kind} item"), &format!("{kind} items"))
         ));
     }
     Ok((records, report))
@@ -132,7 +132,7 @@ mod tests {
         assert_eq!(r[2].tags, ["note"]);
         assert_eq!(r[2].notes, "guest: 1234");
         assert_eq!(report.notes.len(), 1);
-        assert!(report.notes[0].starts_with("1 note item(s)"));
+        assert!(report.notes[0].starts_with("1 note item:"));
     }
 
     #[test]

@@ -66,22 +66,34 @@ impl Report {
             .filter(|g| !g.is_empty())
             .collect();
         let empty_pw = records.iter().filter(|r| r.password.is_empty()).count();
+        let codes = match with_otp {
+            0 => "none with one-time codes".to_string(),
+            1 => "1 with a one-time code".to_string(),
+            n => format!("{n} with one-time codes"),
+        };
+        let groups = match groups.len() {
+            0 => "no groups".to_string(),
+            n => format!("in {}", plural(n, "group", "groups")),
+        };
         let mut out = format!(
-            "{} entries, {} with one-time codes, in {} group(s)\n",
-            self.records,
-            with_otp,
-            groups.len()
+            "{}, {codes}, {groups}\n",
+            plural(self.records, "entry", "entries")
         );
-        if empty_pw > 0 {
-            out.push_str(&format!(
-                "  {empty_pw} have no password (kept as they are)\n"
-            ));
+        match empty_pw {
+            0 => {}
+            1 => out.push_str("  1 has no password (kept as it is)\n"),
+            n => out.push_str(&format!("  {n} have no password (kept as they are)\n")),
         }
         for note in &self.notes {
             out.push_str(&format!("  {note}\n"));
         }
         out
     }
+}
+
+/// `1 entry`, `3 entries`.
+pub(crate) fn plural(n: usize, one: &str, many: &str) -> String {
+    format!("{n} {}", if n == 1 { one } else { many })
 }
 
 /// The export formats prive reads.
@@ -166,8 +178,8 @@ pub fn tidy_otp(records: &mut [Record], report: &mut Report) {
     }
     if !unreadable.is_empty() {
         report.notes.push(format!(
-            "{} one-time code(s) couldn't be read and were kept as a field to fix by hand: {}",
-            unreadable.len(),
+            "{} couldn't be read and kept as a field to fix by hand: {}",
+            plural(unreadable.len(), "one-time code", "one-time codes"),
             unreadable.join(", ")
         ));
     }
@@ -257,10 +269,10 @@ mod tests {
         .unwrap();
         let text = report.render(&records);
         assert!(
-            text.starts_with("2 entries, 1 with one-time codes, in 2 group(s)\n"),
+            text.starts_with("2 entries, 1 with a one-time code, in 2 groups\n"),
             "{text}"
         );
-        assert!(text.contains("1 have no password"));
+        assert!(text.contains("1 has no password (kept as it is)"));
         assert!(text.contains("secure note"));
     }
 

@@ -69,10 +69,14 @@ pub fn parse(text: &str) -> Result<(Vec<Record>, Report)> {
         records: records.len(),
         notes: Vec::new(),
     };
-    if notes > 0 {
-        report.notes.push(format!(
-            "{notes} secure note(s) came in as entries tagged \"note\", their text in the notes"
-        ));
+    match notes {
+        0 => {}
+        1 => report.notes.push(
+            "1 secure note came in as an entry tagged \"note\", its text in the notes".into(),
+        ),
+        n => report.notes.push(format!(
+            "{n} secure notes came in as entries tagged \"note\", their text in the notes"
+        )),
     }
     Ok((records, report))
 }
