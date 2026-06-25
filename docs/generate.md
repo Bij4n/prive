@@ -23,6 +23,12 @@ Guarantees:
 - The entropy figure assumes an attacker knows exactly how the password was made; it is the
   honest number, not a guess based on how the result looks.
 
+`--word-list FILE` takes the words from a file of your own instead, for a passphrase in
+another language or from the EFF short lists: one word a line, or numbered lines like the
+EFF lists. Duplicates and blank lines are ignored, and a list needs at least 1,024 different
+words. The entropy shown is the honest one for that list's size (a 7,776-word list gives
+12.9 bits a word, a 2,048-word list 11).
+
 Four words in the EFF list contain a hyphen (`drop-down`, `felt-tip`, `t-shirt`, `yo-yo`),
 so with the default `-` separator a passphrase can look one word longer than it is. That
 changes nothing about its strength; use `--separator ' '` if you'd rather see the words apart.

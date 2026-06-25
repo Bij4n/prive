@@ -14,7 +14,8 @@ The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `l
 - `prive unlock --all`: every database in the config file, each with its own key file and
   password command
 - `prive ls --expired` and `--expiring DAYS`
-- `prive gen --symbols CHARS` and `--exclude CHARS`, for sites with rules about characters
+- `prive gen --symbols CHARS` and `--exclude CHARS`, for sites with rules about characters;
+  `--word-list FILE` for passphrases from another list
 - Colour in `doctor`, `audit` and `diff` on a terminal; `NO_COLOR` and `CLICOLOR_FORCE`
   are honoured; values and JSON are never coloured
 - Columns line up by display width, so CJK titles and emoji don't skew `ls`, `codes`, `show`
