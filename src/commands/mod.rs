@@ -65,6 +65,7 @@ fn from_agent(path: &std::path::Path) -> Option<db::Db> {
 }
 
 /// `work (Work.kdbx)` for a database the config file names, else just its file name.
+#[cfg(unix)]
 fn display_name(cfg: &config::Config, path: &std::path::Path) -> String {
     let file = path
         .file_name()
