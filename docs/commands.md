@@ -29,7 +29,7 @@ Global options: `--db <file>` (or `PRIVE_DB`), `--keyfile <file>` (or `PRIVE_KEY
 | `gen [...] [-n COUNT]` | A new password, passphrase (`--words N`) or PIN (`--pin N`), or COUNT of them. No database needed. See [generate.md](generate.md). |
 | `import FILE --check [--from FMT] [--map F=COL]...` | Reads another app's export and reports what would come across. See [importing.md](importing.md). |
 | `doctor [--all] [--json]` | Checks the config file, the database file (found, a KeePass file, which format), the key file, sync conflict copies next to the database, the agent and the clipboard, without asking for a password. One line each: `ok`, `warn`, `FAIL` or `--` (not used). `--all` checks every database the config file names. Exit 1 if anything fails. |
-| `config [--json]` | The config file, database and key file a command would use and where each came from, the clipboard and agent timeouts, and the agent's directory. |
+| `config [--json]` | The config file, database and key file a command would use and where each came from, where the password would come from, the clipboard and agent timeouts, the agent's directory and the named databases. |
 | `completions SHELL` | Shell completions for bash, zsh, fish, elvish or PowerShell. |
 
 `--clip` copies instead of printing and clears the clipboard after `clipboard_seconds`
