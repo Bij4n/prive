@@ -169,7 +169,7 @@ fn dispatch(cli: Cli) -> Result<()> {
             json,
         } => commands::audit(g, *hibp, *max_age, *expiring, only, *json),
         Command::Gen(args) => commands::generate(args),
-        Command::Info { json } => commands::info(g, *json),
+        Command::Info { time, json } => commands::info(g, *time, *json),
         Command::Diff {
             other,
             other_keyfile,

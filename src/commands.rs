@@ -958,17 +958,39 @@ pub fn diff(
     output::print_styled(&output::render_diff(&here.path, &there.path, &differences))
 }
 
-pub fn info(global: &Global, json: bool) -> Result<()> {
-    let db = open(global)?;
+pub fn info(global: &Global, time: bool, json: bool) -> Result<()> {
+    let (db, took) = if time {
+        // Timed from the file, never the agent: the point is what an unlock costs here.
+        let cfg = config::Config::load()?;
+        let target = cfg.target(global.db.as_deref(), global.keyfile.as_deref())?;
+        let bytes = db::read_file(&target.db)?;
+        let creds = unlock::KeySource::for_target(global, &target)?;
+        let started = std::time::Instant::now();
+        let db = db::Db::from_bytes(&target.db, &bytes, &creds)?;
+        (db, Some(started.elapsed()))
+    } else {
+        (open(global)?, None)
+    };
     let size = std::fs::metadata(&db.path).map(|m| m.len()).unwrap_or(0);
     if json {
         let mut v = serde_json::to_value(&db.info)?;
         v["path"] = serde_json::json!(db.path);
         v["size"] = serde_json::json!(size);
         v["entries"] = serde_json::json!(db.entries.len());
+        if let Some(t) = took {
+            v["open_seconds"] = serde_json::json!(t.as_secs_f64());
+        }
         return output::print_json(&v);
     }
-    output::print_human(&output::render_info(&db, size))
+    let mut text = output::render_info(&db, size);
+    if let Some(t) = took {
+        text.push_str(&format!(
+            "{:<13} {:.2} s on this machine, nearly all of it the key derivation\n",
+            "Opening:",
+            t.as_secs_f64()
+        ));
+    }
+    output::print_human(&text)
 }
 
 /// Run every check and print what each found. Exit 1 when any check fails.

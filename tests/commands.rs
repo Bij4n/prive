@@ -1730,3 +1730,15 @@ fn ls_sort_changed_puts_the_newest_first() {
             "Bank\nPersonal/GitHub\nWork/GitHub\n",
         ));
 }
+
+#[test]
+fn info_time_measures_an_open() {
+    let out = prive(&["info", "--time", "--json"]).output().unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    let t = v["open_seconds"].as_f64().unwrap();
+    assert!(t > 0.0 && t < 60.0, "{t}");
+    prive(&["info", "--time"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Opening:      "));
+}

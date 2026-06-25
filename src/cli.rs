@@ -323,6 +323,10 @@ pub enum Command {
 
     /// Show how the database is stored: format, encryption, key settings, counts
     Info {
+        /// Also time opening the file on this machine (asks for the password even when
+        /// unlocked): what the key derivation settings cost here
+        #[arg(long)]
+        time: bool,
         /// Print JSON instead of text, for scripts
         #[arg(long)]
         json: bool,
