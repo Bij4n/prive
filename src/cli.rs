@@ -28,19 +28,37 @@ pub struct Cli {
 #[derive(Debug, Args)]
 pub struct Global {
     /// Database file, or the name of one in the config file [default: the config's db]
-    #[arg(long, global = true, env = "PRIVE_DB", value_name = "FILE")]
+    #[arg(
+        help_heading = "Global options",
+        long,
+        global = true,
+        env = "PRIVE_DB",
+        value_name = "FILE"
+    )]
     pub db: Option<PathBuf>,
 
     /// Key file, if the database uses one
-    #[arg(long, global = true, env = "PRIVE_KEYFILE", value_name = "FILE")]
+    #[arg(
+        help_heading = "Global options",
+        long,
+        global = true,
+        env = "PRIVE_KEYFILE",
+        value_name = "FILE"
+    )]
     pub keyfile: Option<PathBuf>,
 
     /// Read the master password from the first line of stdin
-    #[arg(long, global = true, conflicts_with = "no_password")]
+    #[arg(
+        help_heading = "Global options",
+        long,
+        global = true,
+        conflicts_with = "no_password"
+    )]
     pub password_stdin: bool,
 
     /// Don't use a database unlocked with `prive unlock`; read the file and ask
     #[arg(
+        help_heading = "Global options",
         long,
         global = true,
         env = "PRIVE_NO_AGENT",
@@ -49,11 +67,16 @@ pub struct Global {
     pub no_agent: bool,
 
     /// Leave out notices on stderr ("Copied", seconds left, entropy); errors still show
-    #[arg(short, long, global = true)]
+    #[arg(help_heading = "Global options", short, long, global = true)]
     pub quiet: bool,
 
     /// The database has no password, only a key file
-    #[arg(long, global = true, requires = "keyfile")]
+    #[arg(
+        help_heading = "Global options",
+        long,
+        global = true,
+        requires = "keyfile"
+    )]
     pub no_password: bool,
 }
 
@@ -66,7 +89,7 @@ pub enum Command {
         /// Only entries with this tag (repeat for several: all must match)
         #[arg(short, long = "tag", value_name = "TAG")]
         tags: Vec<String>,
-        /// Also show when each changed, and whether it has a code, files or has expired
+        /// Also show when each changed, and whether it has a code, files, or has expired or soon will
         #[arg(short, long, conflicts_with = "json")]
         long: bool,
         /// Only the paths, one per line (for shell completion and fzf)
@@ -81,6 +104,7 @@ pub enum Command {
         /// Only entries that have expired or will within DAYS
         #[arg(long, value_name = "DAYS")]
         expiring: Option<i64>,
+        /// Print JSON instead of text, for scripts
         #[arg(long)]
         json: bool,
     },
@@ -94,6 +118,7 @@ pub enum Command {
         /// One line per match from a template, never with secrets (as `ls --format`)
         #[arg(long, value_name = "TEMPLATE", conflicts_with = "json")]
         format: Option<String>,
+        /// Print JSON instead of text, for scripts
         #[arg(long)]
         json: bool,
     },
@@ -104,6 +129,7 @@ pub enum Command {
         entry: String,
         #[arg(long)]
         reveal: bool,
+        /// Print JSON instead of text, for scripts
         #[arg(long)]
         json: bool,
     },
@@ -156,6 +182,7 @@ pub enum Command {
     Codes {
         /// Only entries matching this search
         query: Option<String>,
+        /// Print JSON instead of text, for scripts
         #[arg(long)]
         json: bool,
         /// Keep the list on screen, codes and times redrawn, until Ctrl-C (terminal only)
@@ -194,6 +221,7 @@ pub enum Command {
 
     /// Say which databases are unlocked, and for how long
     Status {
+        /// Print JSON instead of text, for scripts
         #[arg(long)]
         json: bool,
     },
@@ -231,6 +259,7 @@ pub enum Command {
         /// Show the old passwords themselves
         #[arg(long)]
         reveal: bool,
+        /// Print JSON instead of text, for scripts
         #[arg(long)]
         json: bool,
     },
@@ -247,6 +276,7 @@ pub enum Command {
 
     /// List the tags in use, with how many entries carry each
     Tags {
+        /// Print JSON instead of text, for scripts
         #[arg(long)]
         json: bool,
     },
@@ -263,6 +293,7 @@ pub enum Command {
         /// Also flag entries that expire within this many days
         #[arg(long, default_value_t = 0, value_name = "DAYS")]
         expiring: i64,
+        /// Print JSON instead of text, for scripts
         #[arg(long)]
         json: bool,
     },
@@ -274,12 +305,14 @@ pub enum Command {
         /// Key file for the other copy, when it isn't the same as the database's
         #[arg(long, value_name = "FILE")]
         other_keyfile: Option<PathBuf>,
+        /// Print JSON instead of text, for scripts
         #[arg(long)]
         json: bool,
     },
 
     /// Show how the database is stored: format, encryption, key settings, counts
     Info {
+        /// Print JSON instead of text, for scripts
         #[arg(long)]
         json: bool,
     },
@@ -307,12 +340,14 @@ pub enum Command {
         /// Check every database the config file names, not only the one a command would open
         #[arg(long)]
         all: bool,
+        /// Print JSON instead of text, for scripts
         #[arg(long)]
         json: bool,
     },
 
     /// Show the settings in effect and where each came from
     Config {
+        /// Print JSON instead of text, for scripts
         #[arg(long)]
         json: bool,
     },
