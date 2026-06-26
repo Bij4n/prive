@@ -847,7 +847,7 @@ fn history_shows_when_and_whether_the_password_changed() {
     let out = prive(&["history", "Work/GitHub"]).output().unwrap();
     let text = String::from_utf8(out.stdout).unwrap();
     assert_eq!(text.lines().count(), 2, "{text}");
-    assert!(text.lines().next().unwrap().ends_with("  now"));
+    assert!(text.lines().next().unwrap().ends_with("  current version"));
     assert!(text.contains("password changed after this"));
     assert!(!text.contains("old-password"));
     prive(&["history", "Work/GitHub", "--reveal"])

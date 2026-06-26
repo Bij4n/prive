@@ -198,7 +198,7 @@ pub fn history(global: &Global, entry: &str, reveal: bool, json: bool) -> Result
     if rows.is_empty() {
         return output::print_human(&format!("{} has no earlier versions\n", e.path()));
     }
-    let mut text = format!("{}  now\n", when(e.modified));
+    let mut text = format!("{}  current version\n", when(e.modified));
     for (t, v, changed) in rows {
         let mark = if changed {
             "password changed after this"
