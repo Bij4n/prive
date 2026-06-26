@@ -31,7 +31,8 @@ The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `l
 - `prive info --time`: what opening the database costs on this machine
 - `prive info`: how the database is stored (format, encryption, key derivation, the app that
   saved it) and how much is in it; works through the agent too
-- `prive audit --only KINDS`, to work through one kind of problem at a time
+- `prive audit --only KINDS`, to work through one kind of problem at a time; a clean report
+  says so, and weak or reused passwords come with what to do next
 - `prive audit` checks the database's own settings first: AES-KDF, Argon2 below OWASP's
   smallest setting, passwords not encrypted inside the file
 - `prive get ENTRY --format TEMPLATE`: several fields in one line, with KeePass's
@@ -116,6 +117,8 @@ The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `l
   source policy checked in CI
 
 ### Fixed
+- `import --check --map title=Site` also guessed the `Site` column as the URL; a column
+  given to one field is no longer guessed into another
 - `unlock` with an agent directory too deep for a Unix socket said "path must be shorter
   than SUN_LEN"; it now says how to fix it, and `doctor` checks for it
 - A missing database file is reported as such, with where prive looked; a quoted `~/` in
