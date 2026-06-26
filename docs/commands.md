@@ -20,7 +20,7 @@ Global options: `--db <file>` (or `PRIVE_DB`), `--keyfile <file>` (or `PRIVE_KEY
 | `status [--json]` | `locked`, or each unlocked database (by its config name, if it has one) and how long until they lock. |
 | `run [-e NAME=ENTRY[:FIELD]]... [--from ENTRY]... -- COMMAND...` | Runs COMMAND with those secrets in its environment and exits with its exit code. See [run.md](run.md). |
 | `git-credential get` | Answers git's credential requests; see [git.md](git.md). `store` and `erase` are ignored. |
-| `history ENTRY [--reveal] [--json]` | When each earlier version was saved and whether the password changed after it. Old passwords only with `--reveal`. |
+| `history ENTRY [--reveal] [--json]` | The current version's date, then when each earlier version was saved and whether the password changed after it, newest first. Old passwords only with `--reveal`. |
 | `file ENTRY [NAME] [-o PATH]` | Without NAME, the entry's attached files and their sizes (tab-separated). With NAME, that file's bytes to stdout (refused on a terminal) or to a new file at PATH, readable only by you. |
 | `tags [--json]` | Every tag in use with how many entries carry it. |
 | `audit [--hibp] [--max-age DAYS] [--expiring DAYS] [--only KINDS] [--json]` | First the database's own settings, if they are weak (see [security.md](security.md#key-derivation)); then weak, reused, expired and old passwords, worst first; with `--expiring`, also those expiring soon. Entries excluded from reports in KeePassXC are skipped. `--only reused,weak` reports just those kinds (`settings`, `breached`, `weak`, `reused`, `expired`, `expiring`, `old`). |
