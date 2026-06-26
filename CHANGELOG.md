@@ -137,6 +137,10 @@ The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `l
 - `pw` and `note` commands report a missing vault before asking for the master password
 
 ### Changed
+- `prive --help` lists commands in the order people reach for them; every command's help
+  puts the global options under their own heading, and every argument and `--json` says
+  what it is
+- `history` calls its first line the current version
 - Added the MIT `LICENSE` file
 - README: install from source only, and a notice listing the known problems in 0.5
 - Removed the Homebrew, AUR and WinGet manifests; they pointed at releases that were never published
