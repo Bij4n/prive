@@ -59,9 +59,11 @@ pub fn parse(text: &str, map: &[(String, String)]) -> Result<(Vec<Record>, Repor
             return Some(c.clone());
         }
         let names = FIELDS.iter().find(|(f, _)| *f == field).map(|(_, n)| *n)?;
+        // A column given to one field with --map is never guessed into another as well.
+        let mapped = |n: &str| map.iter().any(|(_, c)| c.eq_ignore_ascii_case(n));
         names
             .iter()
-            .find(|n| table.has(n))
+            .find(|n| table.has(n) && !mapped(n))
             .map(|n| (*n).to_string())
     };
     for (field, col) in map {
@@ -169,6 +171,8 @@ mod tests {
             (r[0].title.as_str(), r[0].username.as_str()),
             ("example", "me")
         );
+        // "Site" went to the title; it isn't also guessed as the URL.
+        assert_eq!(r[0].url, "");
         assert!(parse_map(&["colour=Site".into()]).is_err());
         assert!(parse(text, &[("password".into(), "Nope".into())]).is_err());
     }
