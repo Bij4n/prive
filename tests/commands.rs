@@ -1751,3 +1751,24 @@ fn search_by_text_and_tag() {
         .stdout("Work/GitHub\n");
     prive(&["search", "github", "-t", "nope"]).assert().code(3);
 }
+
+#[test]
+fn import_map_uses_each_column_once() {
+    let custom = fixture("exports/custom.csv");
+    prive(&[
+        "import",
+        custom.to_str().unwrap(),
+        "--check",
+        "--from",
+        "csv",
+        "--map",
+        "title=Site",
+        "--map",
+        "password=Secret",
+    ])
+    .assert()
+    .success()
+    .stdout(predicate::str::contains(
+        "columns used: title <- Site, password <- Secret, notes <- comment",
+    ));
+}
