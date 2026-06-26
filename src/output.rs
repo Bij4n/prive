@@ -131,7 +131,7 @@ pub fn render_list(entries: &[&Entry]) -> String {
 /// The `audit` report for people: one block per entry with problems, worst first, and a
 /// closing summary line.
 pub fn render_audit(r: &crate::audit::Report) -> String {
-    use crate::audit::Issue;
+    use crate::audit::{Issue, Kind};
     let (h, warn, bad, dim) = (style::HEADING, style::WARN, style::BAD, style::DIM);
     let mut out = String::new();
     if !r.database.is_empty() {
@@ -160,16 +160,31 @@ pub fn render_audit(r: &crate::audit::Report) -> String {
     } else {
         String::new()
     };
-    let s = if r.is_clean() {
-        style::OK
-    } else {
-        style::HEADING
-    };
+    if r.findings.is_empty() {
+        let s = style::OK;
+        out.push_str(&format!(
+            "{s}All {} checked entries look fine{s:#}{skipped}\n",
+            r.checked
+        ));
+        return out;
+    }
     out.push_str(&format!(
-        "{s}{} of {} checked entries need attention{s:#}{skipped}\n",
+        "{h}{} of {} checked entries need attention{h:#}{skipped}\n",
         r.findings.len(),
         r.checked
     ));
+    // What to do about the commonest findings. prive can't change entries yet.
+    let any = |k: Kind| {
+        r.findings
+            .iter()
+            .any(|f| f.issues.iter().any(|i| i.kind() == k))
+    };
+    if any(Kind::Weak) || any(Kind::Reused) || any(Kind::Breached) {
+        out.push_str(&format!(
+            "{dim}`prive gen` makes a strong replacement; change it on the site, then in \
+             KeePassXC{dim:#}\n"
+        ));
+    }
     out
 }
 
@@ -808,6 +823,20 @@ mod tests {
     }
 
     #[test]
+    fn a_clean_audit_says_so() {
+        let r = crate::audit::Report {
+            checked: 4,
+            skipped: 0,
+            findings: Vec::new(),
+            database: Vec::new(),
+        };
+        assert_eq!(
+            anstream::adapter::strip_str(&render_audit(&r)).to_string(),
+            "All 4 checked entries look fine\n"
+        );
+    }
+
+    #[test]
     fn audit_report_text() {
         let r = crate::audit::Report {
             checked: 3,
@@ -824,7 +853,8 @@ mod tests {
         assert_eq!(
             anstream::adapter::strip_str(&render_audit(&r)).to_string(),
             "Work/GitHub\n  - weak (strength 1/4)\n  - reused by 1 other entry\n\
-             1 of 3 checked entries need attention, 1 skipped (excluded or no password)\n"
+             1 of 3 checked entries need attention, 1 skipped (excluded or no password)\n\
+             `prive gen` makes a strong replacement; change it on the site, then in KeePassXC\n"
         );
     }
 
