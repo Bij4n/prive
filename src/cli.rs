@@ -352,6 +352,10 @@ pub enum Command {
         /// but never a terminal
         #[arg(short, long, value_name = "FILE")]
         out: Option<PathBuf>,
+        /// Also write every attached file under this directory, as Group/Title/name (new
+        /// files only, readable only by you)
+        #[arg(long, value_name = "DIR")]
+        files: Option<PathBuf>,
         /// Say you know the result holds every password unencrypted (required)
         #[arg(long, required = true)]
         plaintext: bool,

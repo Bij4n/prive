@@ -178,8 +178,16 @@ fn dispatch(cli: Cli) -> Result<()> {
             tags,
             format,
             out,
+            files,
             plaintext: _,
-        } => commands::export(g, group.as_deref(), tags, *format, out.as_deref()),
+        } => commands::export(
+            g,
+            group.as_deref(),
+            tags,
+            *format,
+            out.as_deref(),
+            files.as_deref(),
+        ),
         Command::Info { time, json } => commands::info(g, *time, *json),
         Command::Diff {
             other,

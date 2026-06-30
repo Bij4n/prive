@@ -1893,3 +1893,30 @@ fn export_one_group_or_tag() {
     assert_eq!(paths, ["Personal/GitHub", "Personal/Legacy 2FA"]);
     prive(&["export", "--plaintext", "Nope"]).assert().code(3);
 }
+
+#[test]
+fn export_files_writes_attachments_under_a_private_directory() {
+    let dir = tempfile::tempdir().unwrap();
+    let files = dir.path().join("files");
+    prive(&[
+        "export",
+        "--plaintext",
+        "-o",
+        dir.path().join("all.csv").to_str().unwrap(),
+        "--files",
+        files.to_str().unwrap(),
+    ])
+    .assert()
+    .success()
+    .stderr(predicate::str::contains("Wrote 1 attached file under"))
+    .stderr(predicate::str::contains("Not exported").not());
+    let written = files.join("Work/GitHub/deploy.txt");
+    assert_eq!(std::fs::read(&written).unwrap(), b"deploy-key-bytes\n");
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mode = |p: &std::path::Path| std::fs::metadata(p).unwrap().permissions().mode() & 0o777;
+        assert_eq!(mode(&written), 0o600);
+        assert_eq!(mode(&files.join("Work")), 0o700);
+    }
+}

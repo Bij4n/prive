@@ -35,6 +35,20 @@ pub fn write_new_file(path: &Path, bytes: &[u8]) -> Result<()> {
     result.with_context(|| format!("writing {}", path.display()))
 }
 
+/// Create `dir` and any missing parents, readable only by you on Unix (mode 0700): the names
+/// of what is inside (entry titles, file names) are nobody else's business either.
+pub fn create_private_dir_all(dir: &Path) -> Result<()> {
+    let mut b = fs::DirBuilder::new();
+    b.recursive(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::DirBuilderExt;
+        b.mode(0o700);
+    }
+    b.create(dir)
+        .with_context(|| format!("creating {}", dir.display()))
+}
+
 fn parent_dir(path: &Path) -> PathBuf {
     match path.parent() {
         Some(p) if !p.as_os_str().is_empty() => p.to_path_buf(),

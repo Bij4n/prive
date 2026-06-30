@@ -266,6 +266,7 @@ pub fn export(
     tags: &[String],
     format: crate::export::Format,
     out: Option<&std::path::Path>,
+    files: Option<&std::path::Path>,
 ) -> Result<()> {
     if out.is_none() && std::io::stdout().is_terminal() {
         anyhow::bail!(
@@ -282,14 +283,35 @@ pub fn export(
     for t in tags {
         chosen = select::with_tag(&chosen, t);
     }
-    // Attachments don't fit a CSV row; say which entries have some rather than drop them
+    // Attachments don't fit a CSV row: written under --files, or named so nothing is dropped
     // without a word.
     let with_files: Vec<String> = chosen
         .iter()
         .filter(|e| !e.attachments.is_empty())
         .map(|e| e.path())
         .collect();
-    if !with_files.is_empty() {
+    if let Some(dir) = files {
+        let mut written = 0;
+        for e in &chosen {
+            for a in &e.attachments {
+                let path = crate::export::attachment_path(dir, e, &a.name);
+                if let Some(parent) = path.parent() {
+                    crate::fsutil::create_private_dir_all(parent)?;
+                }
+                crate::fsutil::write_new_file(&path, &a.data)?;
+                written += 1;
+            }
+        }
+        output::notice(&format!(
+            "Wrote {} under {}.",
+            if written == 1 {
+                "1 attached file".to_string()
+            } else {
+                format!("{written} attached files")
+            },
+            dir.display()
+        ));
+    } else if !with_files.is_empty() {
         output::notice(&format!(
             "Not exported: the files attached to {} (prive file ENTRY NAME -o PATH writes them)",
             with_files.join(", ")
