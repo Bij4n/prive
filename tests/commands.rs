@@ -1874,3 +1874,19 @@ fn import_check_list_names_what_would_come_but_shows_no_password() {
         "a password leaked: {text}"
     );
 }
+
+#[test]
+fn export_one_group_or_tag() {
+    let out = prive(&["export", "--plaintext", "Personal", "--format", "json"])
+        .output()
+        .unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    let paths: Vec<&str> = v
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|e| e["path"].as_str().unwrap())
+        .collect();
+    assert_eq!(paths, ["Personal/GitHub", "Personal/Legacy 2FA"]);
+    prive(&["export", "--plaintext", "Nope"]).assert().code(3);
+}

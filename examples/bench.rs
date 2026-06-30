@@ -88,7 +88,8 @@ fn main() -> anyhow::Result<()> {
         prive::diff::compare(&db.entries, &db.entries).len()
     });
     time("export as csv", || {
-        prive::export::csv(&db.entries).map(|b| b.len())
+        let all: Vec<&prive::entry::Entry> = db.entries.iter().collect();
+        prive::export::csv(&all, &db.entries).map(|b| b.len())
     })?;
     Ok(())
 }

@@ -41,8 +41,9 @@ fn time(t: Option<chrono::NaiveDateTime>) -> String {
         .unwrap_or_default()
 }
 
-/// The CSV, in memory that is wiped when it is dropped.
-pub fn csv(entries: &[Entry]) -> anyhow::Result<Zeroizing<Vec<u8>>> {
+/// The CSV of `entries`, references resolved against `all`, in memory that is wiped when it
+/// is dropped.
+pub fn csv(entries: &[&Entry], all: &[Entry]) -> anyhow::Result<Zeroizing<Vec<u8>>> {
     let mut w = csv::WriterBuilder::new()
         .quote_style(csv::QuoteStyle::Always)
         .from_writer(Vec::new());
@@ -59,7 +60,7 @@ pub fn csv(entries: &[Entry]) -> anyhow::Result<Zeroizing<Vec<u8>>> {
         "Created",
     ])?;
     for e in entries {
-        let r = |v: &str| crate::refs::resolve(entries, v);
+        let r = |v: &str| crate::refs::resolve(all, v);
         w.write_record([
             e.group.as_str(),
             r(&e.title).as_str(),
@@ -109,11 +110,13 @@ struct JsonEntry<'a> {
     expires: Option<String>,
 }
 
-/// The JSON, in memory that is wiped when it is dropped.
-pub fn json(entries: &[Entry]) -> anyhow::Result<Zeroizing<Vec<u8>>> {
-    let r = |v: &str| crate::refs::resolve(entries, v);
+/// The JSON of `entries`, references resolved against `all`, in memory that is wiped when it
+/// is dropped.
+pub fn json(entries: &[&Entry], all: &[Entry]) -> anyhow::Result<Zeroizing<Vec<u8>>> {
+    let r = |v: &str| crate::refs::resolve(all, v);
     let list: Vec<JsonEntry<'_>> = entries
         .iter()
+        .copied()
         .map(|e| JsonEntry {
             path: e.path(),
             group: &e.group,
@@ -185,7 +188,9 @@ mod tests {
 
     #[test]
     fn csv_in_keepassxc_columns_with_references_resolved() {
-        let out = csv(&sample()).unwrap();
+        let all = sample();
+        let refs: Vec<&Entry> = all.iter().collect();
+        let out = csv(&refs, &all).unwrap();
         let mut r = csv::Reader::from_reader(&out[..]);
         let header: Vec<String> = r.headers().unwrap().iter().map(str::to_string).collect();
         assert_eq!(
@@ -203,8 +208,20 @@ mod tests {
     }
 
     #[test]
+    fn an_entry_exported_alone_still_gets_what_it_refers_to() {
+        let all = sample();
+        let out = csv(&[&all[1]], &all).unwrap();
+        let mut r = csv::Reader::from_reader(&out[..]);
+        let rows: Vec<csv::StringRecord> = r.records().map(Result::unwrap).collect();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(&rows[0][3], "pa\"ss,word");
+    }
+
+    #[test]
     fn json_has_fields_but_not_the_otp_setting_twice() {
-        let out = json(&sample()).unwrap();
+        let all = sample();
+        let refs: Vec<&Entry> = all.iter().collect();
+        let out = json(&refs, &all).unwrap();
         let v: serde_json::Value = serde_json::from_slice(&out).unwrap();
         assert_eq!(v[0]["path"], "Work/GitHub");
         assert_eq!(v[0]["password"], "pa\"ss,word");

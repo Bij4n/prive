@@ -262,6 +262,8 @@ pub fn completions(shell: clap_complete::Shell) -> Result<()> {
 /// where it would put every password on screen and into the scrollback.
 pub fn export(
     global: &Global,
+    group: Option<&str>,
+    tags: &[String],
     format: crate::export::Format,
     out: Option<&std::path::Path>,
 ) -> Result<()> {
@@ -271,16 +273,28 @@ pub fn export(
         );
     }
     let db = open(global)?;
+    let mut chosen = select::in_group(&db.entries, group.unwrap_or(""));
+    if let Some(g) = group
+        && chosen.is_empty()
+    {
+        return Err(Failure::Missing(format!("no group '{g}'")).into());
+    }
+    for t in tags {
+        chosen = select::with_tag(&chosen, t);
+    }
+    // References are resolved against the whole database, so an exported entry that points at
+    // one left out still gets its value.
+    let chosen: Vec<&crate::entry::Entry> = chosen;
     let bytes = match format {
-        crate::export::Format::Csv => crate::export::csv(&db.entries)?,
-        crate::export::Format::Json => crate::export::json(&db.entries)?,
+        crate::export::Format::Csv => crate::export::csv(&chosen, &db.entries)?,
+        crate::export::Format::Json => crate::export::json(&chosen, &db.entries)?,
     };
     match out {
         Some(path) => {
             crate::fsutil::write_new_file(path, &bytes)?;
             output::notice(&format!(
                 "Wrote {} entries, passwords in plain text, to {}. Delete it when you are done.",
-                db.entries.len(),
+                chosen.len(),
                 path.display()
             ));
             Ok(())

@@ -340,6 +340,11 @@ pub enum Command {
 
     /// Write every entry with its passwords in plain text (CSV or JSON), to move elsewhere
     Export {
+        /// Only this group and its subgroups
+        group: Option<String>,
+        /// Only entries with this tag (repeat for several: all must match)
+        #[arg(short, long = "tag", value_name = "TAG")]
+        tags: Vec<String>,
         /// csv (KeePassXC's columns) or json
         #[arg(long, value_enum, default_value_t = crate::export::Format::Csv)]
         format: crate::export::Format,

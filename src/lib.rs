@@ -174,10 +174,12 @@ fn dispatch(cli: Cli) -> Result<()> {
         } => commands::audit(g, *hibp, *max_age, *expiring, only, *json),
         Command::Gen(args) => commands::generate(args),
         Command::Export {
+            group,
+            tags,
             format,
             out,
             plaintext: _,
-        } => commands::export(g, *format, out.as_deref()),
+        } => commands::export(g, group.as_deref(), tags, *format, out.as_deref()),
         Command::Info { time, json } => commands::info(g, *time, *json),
         Command::Diff {
             other,
