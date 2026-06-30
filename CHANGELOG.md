@@ -4,146 +4,91 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-The 1.0 rewrite has started: prive becomes a terminal client for KeePass (`.kdbx`) databases.
-The 0.5 vault format, PGP toolkit and git sync are gone; 0.5 stays at the tag `legacy-0.5.0`.
+## [0.6.0] - 2026-06-30
 
-### Added
-- `prive diff OTHER`: what differs between the database and a conflict copy or backup,
-  entries paired by UUID, field names only
-- `prive open ENTRY --print`: the checked address on stdout instead of a browser
-- `prive unlock --all`: every database in the config file, each with its own key file and
+prive starts again as a terminal client for KeePass (`.kdbx`) databases: it opens the same
+file as KeePassXC, KeePassDX and Strongbox. This release reads; creating databases, file
+encryption and editing come in 0.7 and 0.8 (see `docs/roadmap.md`). The 0.5 vault format,
+PGP toolkit and git sync are gone; 0.5 stays at the tag `legacy-0.5.0` and should not be used
+for real secrets.
+
+### Reading a database
+- KDBX 3.1, 4.0 and 4.1, with a password, a key file or both (`--no-password` for a key file
+  alone); every format checked against files KeePassXC wrote, field for field
+- `ls` (by group, tag, expiry; `--long`, `--paths`, `--sort`), `search` (`--all` looks in
+  notes and unprotected fields, never secrets), `show` (secrets hidden unless `--reveal`),
+  `get` (any field, `--clip`), `tags`, `history` (earlier versions), `file` (attachments,
+  written owner-only), `open` (the site in the browser, password on the clipboard; http and
+  https only, never a shell), `pick` (fuzzy finder)
+- Entries named by title, `Group/Title` path or `uuid:`; "did you mean" when nothing
+  matches, the candidates when several do
+- KeePass field references (`{REF:P@I:...}`) resolved wherever a value is used, as KeePassXC
+  does; KeePassXC's extra URLs (`KP2A_URL` fields) count for `search` and `git-credential`
+- `--format` templates with KeePass's placeholders (`{USERNAME}`, `{PASSWORD}`, `{S:field}`,
+  `{TOTP}`, `{PATH}`, ...) on `get`; on `ls` and `search` they never show a secret
+- The recycle bin is left out; expiry is shown (`expired`, `expiring`), columns line up by
+  display width
+
+### One-time codes
+- Every way KeePass apps store them: otpauth URIs, KeeOtp, KeePass 2's TimeOtp fields,
+  KeePassXC's legacy fields; SHA-1/256/512, 4 to 10 digits, Steam Guard
+- `otp` (`--min-validity`, `--next`, `--clip`, `--watch`), `codes` for every entry at once
+  (`--watch` keeps them on screen), `otp --qr` / `--uri` to move a code to a phone
+
+### Unlocking once
+- `prive unlock`: a background agent keeps databases open so a session needs one password
+  prompt; several at once, `unlock --all` for every one the config file names
+- Private socket directory (mode 700, checked), same-user check on every connection, the
+  master password dropped after opening, a database forgotten when its file changes or
+  after `agent_minutes` idle; no core dumps, non-dumpable on Linux. Linux, macOS and the BSDs
+- `password_command` in the config file: the master password from the system keyring, `pass`,
+  `op`, ...; run without a shell
+- Databases by name (`[databases.work]`, `--db work`), each with its own key file and
   password command
-- `prive ls --expired` and `--expiring DAYS`; `--sort title` or `--sort changed`
-- `prive gen --symbols CHARS` and `--exclude CHARS`, for sites with rules about characters;
-  `--word-list FILE` for passphrases from another list
-- Colour in `doctor`, `audit` and `diff` on a terminal; `NO_COLOR` and `CLICOLOR_FORCE`
-  are honoured; values and JSON are never coloured
-- Columns line up by display width, so CJK titles and emoji don't skew `ls`, `codes`, `show`
-- `prive otp ENTRY --watch` and `prive codes --watch`: codes and their time left, redrawn
-  until Ctrl-C, like an authenticator app
-- `password_command` in the config file, per database: the master password from the system
-  keyring, `pass`, `op` or any program that prints it; run without a shell
-- The agent keeps several databases unlocked at once; `prive --db work lock` forgets one,
-  `prive lock` all of them; `status` lists them
-- `prive doctor`: checks the config, database file, key file, password source, conflict
-  copies, agent and clipboard without a password; `--all` for every named database; exit 1
-  if anything fails
-- `prive info --time`: what opening the database costs on this machine
-- `prive info`: how the database is stored (format, encryption, key derivation, the app that
-  saved it) and how much is in it; works through the agent too
-- `prive audit --only KINDS`, to work through one kind of problem at a time; a clean report
-  says so, and weak or reused passwords come with what to do next
-- `prive audit` checks the database's own settings first: AES-KDF, Argon2 below OWASP's
-  smallest setting, passwords not encrypted inside the file
-- `prive get ENTRY --format TEMPLATE`: several fields in one line, with KeePass's
-  placeholders (`{USERNAME}`, `{PASSWORD}`, `{S:field}`, `{TOTP}`, `{PATH}`, `{UUID}`, ...)
-- `prive ls --format TEMPLATE` and `search --format`: a line per entry, never with a secret
-- `prive search -t TAG`; `pick` shows tags, so typing one finds its entries
-- `ls --long` marks entries that expire within 30 days (`expiring`), and `show` says
-  "(expired)" or "(in N days)"; `info` shows the database's description
-- `codes --json` gives each code's period
-- Databases by name: `[databases.work]` in the config file, opened with `--db work`, with
-  its own key file; `prive config` lists them
-- `git-credential` reads a request's `url=` line as its parts
-- KeePassXC's extra URLs (`KP2A_URL` fields) count for `search` and `git-credential`, and
-  are never exported by `run --from`
-- `prive import FILE --check`: reads exports from Proton Pass, Apple Passwords, Google
-  Password Manager, LastPass, and any other CSV (`--from csv`, with `--map field=Column`;
-  covers Bitwarden, 1Password, Dashlane), recognised from the header, and reports what would
-  come across. One-time codes become otpauth URIs; unreadable ones are kept and listed.
-  Writing the KeePass database comes next
-- `prive file ENTRY [NAME] [--out PATH]`: list or write out an entry's attachments
-- `prive codes [QUERY]`: every current one-time code at once
-- `prive history ENTRY`: earlier versions, when they were saved and whether the password
-  changed (old passwords with `--reveal`)
-- `unlock --minutes N`; `gen --count N`
-- `otp --qr` (a QR code in the terminal to scan into a phone) and `otp --uri`, from any stored
-  form of the code
-- KeePass field references (`{REF:P@I:...}` and friends) are resolved wherever a value is
-  used, the same way KeePassXC resolves them; `audit` counts a shared password once
-- `prive config`: the settings in effect and where each came from
-- `audit --expiring DAYS`; `otp --next`; `ls --paths`; `ls --json` has dates and attachment
-  counts; `pick` shows each entry's site
-- `docs/shell.md`: entry-name completion for bash and zsh, short functions, fzf
-- A 5,000-entry scale test on every CI run, and `docs/performance.md`
-- `prive git-credential`: git's credential helper, answering HTTPS remotes from the entry
-  whose URL has their host
-- `search --all` also looks in notes and unprotected fields (never in secrets)
-- `prive run -e NAME=ENTRY[:FIELD] --from ENTRY -- COMMAND`: secrets in a command's
-  environment, never on the command line or disk; the command's exit code is passed on
-- `prive unlock`, `lock`, `status`: a background agent keeps the opened database so a session
-  needs one password prompt. Private socket directory (mode 700, checked), same-user check on
-  every connection, master password dropped after opening, forgets the database when the
-  file changes on disk or after `agent_minutes` (15) idle; no core dumps, non-dumpable on
-  Linux. `--no-agent` / `PRIVE_NO_AGENT` skip it. Linux, macOS and the BSDs
-- Reading KeePass databases (KDBX 3.1, 4.0, 4.1; password and/or key file), and the commands
-  `ls`, `search`, `show` (`--reveal`), `get` (`--field`, `--clip`), `otp`, `pick` and `audit`
-  (`--hibp`, `--max-age`), with `--json` where it fits. The recycle bin is left out; entries
-  excluded from reports in KeePassXC are skipped by `audit`
-- A missing or non-KeePass file is reported before the password is asked for; a wrong
-  password or key file exits with 5, nothing found with 3
-- "did you mean" suggestions when a name matches nothing
-- `otp --min-validity` waits for a fresh code when the current one is about to expire
-- `prive open`: the entry's site in the browser (http and https only, no shell) and its
-  password on the clipboard
-- `prive tags`, `ls --tag`, `ls --long`
-- `--quiet` for no notices on stderr; a missing field lists the fields the entry has
-- Cancelling `pick` exits with 130, like fzf
-- A leading `~/` in config file paths means the home directory
-- `show` lists one-time code settings once, on its TOTP line, not again under Fields
-- `docs/install.md` (completions, man pages) and `docs/migrating-from-0.5.md`
-- Fuzz targets for otpauth parsing and entry selection, built and run briefly in CI
-- `prive gen`: random passwords (every character class guaranteed, optional look-alike
-  filtering), passphrases from the EFF large word list, and numeric PINs
-- TOTP code generation for every way KeePass apps store secrets (otpauth URIs, KeeOtp,
-  KeePass 2 TimeOtp fields, legacy KeePassXC fields), including Steam Guard codes
-- Stable exit codes: 0 ok, 1 error, 2 usage, 3 not found, 4 ambiguous, 5 credentials
-- `gen --clip` copies instead of printing; a detached helper clears the clipboard after the
-  configured timeout, and only if it still holds the copied secret. Copies are marked
-  "don't keep in history" where supported
-- `gen --json`
-- Password report engine (weak, reused, old, expired, optional Have I Been Pwned check) and
-  the show and list views, ready for the database commands
-- `docs/`: exit codes, scripting, TOTP formats, clipboard, configuration, security notes
-- CI: minimum supported Rust (1.88) job and a weekly RustSec advisory check
-- `prive completions <shell>` (bash, zsh, fish, elvish, PowerShell) and man pages
-  (`cargo run --example man`)
-- Fuzzy picker module (drawn on stderr) for the upcoming `pick` command
-- `--no-password` for databases unlocked by a key file alone; `uuid:` accepts KeePassXC's
-  `{...}` form and dashless hex
-- Test databases written by KeePassXC (KDBX 3.1, 4.0, 4.1 and key file) and interop tests
-  that compare one-time codes with `keepassxc-cli`; CI installs KeePassXC to run them
-- `CONTRIBUTING.md`, `SECURITY.md`, issue and pull request templates, `deny.toml` licence and
-  source policy checked in CI
 
-### Fixed
-- `import --check --map title=Site` also guessed the `Site` column as the URL; a column
-  given to one field is no longer guessed into another
-- `unlock` with an agent directory too deep for a Unix socket said "path must be shorter
-  than SUN_LEN"; it now says how to fix it, and `doctor` checks for it
-- A missing database file is reported as such, with where prive looked; a quoted `~/` in
-  `--db`, `PRIVE_DB` or `--keyfile` means the home directory
-- `ls GROUP -t TAG` said the group was missing when no entry in it had the tag
-- Text from a database (titles, usernames, URLs, notes) and names quoted in messages are
-  shown with control characters spelled out, so escape sequences in them never reach the
-  terminal; values from `get`, `otp` and `--json` are unchanged
-- A missing field, attachment, one-time code or group was reported as "no entry matches";
-  the message now says what is missing (still exit code 3)
-- Notices printed their `{...}` placeholders instead of the values ("clears in {seconds} s")
-- Windows: `--clip` no longer keeps a caller waiting (a script's `$(...)`) until the
-  clipboard is cleared; the helper used to inherit the caller's output pipes
-- CI: the Windows test job no longer hangs until the 6-hour limit (two tests reached a console password prompt); every job has a timeout
-- Release builds use rustls instead of the system OpenSSL, so the musl target links and Linux binaries no longer need `libssl`
-- `pw` and `note` commands report a missing vault before asking for the master password
+### Scripts and other programs
+- stdout carries only results; `--json` on every command that reports something, with keys
+  kept stable (`docs/json.md`); exit codes 0 ok, 1 error, 2 usage, 3 not there, 4 ambiguous,
+  5 credentials or no terminal, 130 cancelled
+- `--password-stdin` and `PRIVE_PASSWORD_FILE`; never a prompt without a terminal
+- `prive run`: secrets in a command's environment, never on its command line or on disk
+- `prive git-credential`: git's credential helper for HTTPS remotes
+- Colour in `doctor`, `audit` and `diff` on a terminal only (`NO_COLOR`, `CLICOLOR_FORCE`)
+- Shell completions and man pages for every command; entry-name completion recipes
 
-### Changed
-- `prive --help` lists commands in the order people reach for them; every command's help
-  puts the global options under their own heading, and every argument and `--json` says
-  what it is
-- `history` calls its first line the current version
-- Added the MIT `LICENSE` file
-- README: install from source only, and a notice listing the known problems in 0.5
-- Removed the Homebrew, AUR and WinGet manifests; they pointed at releases that were never published
+### Health and sync
+- `audit`: weak, reused, old, expired, expiring and (with `--hibp`) breached passwords, and
+  the database's own key settings (AES-KDF, Argon2 below OWASP's minimum); `--only` to pick
+  kinds; entries excluded from reports in KeePassXC are skipped
+- `info`: format, encryption, key derivation, counts; `--time` for what an open costs here
+- `diff`: what a sync conflict copy or backup holds that the database doesn't, paired by
+  UUID, field names only; it agrees with what `keepassxc-cli merge` would do
+- `doctor`: config, database, key file, password source, conflict copies, agent and
+  clipboard, without a password; `--all` for every named database
+
+### Generating passwords
+- `gen`: random passwords (every class guaranteed, `--symbols`, `--exclude`,
+  `--avoid-ambiguous`), passphrases from the EFF large list or `--word-list FILE`, PINs;
+  `--count`, `--clip`, `--json` with honest entropy
+
+### Bringing passwords in
+- `import FILE --check`: reads exports from Proton Pass, Apple Passwords, Google Password
+  Manager, LastPass and any other CSV (Bitwarden, 1Password, Dashlane by column names,
+  `--map` for the rest) and says what would come across; writing the database comes in 0.7
+
+### Safety
+- Secrets are held in memory that is wiped when freed and never appear in debug output
+- Control characters from a database are spelled out wherever text is shown, so escape
+  sequences in a title or note can't reach the terminal
+- Copied secrets are cleared from the clipboard after a timeout, only if still there, and
+  kept out of clipboard history where the system allows
+
+### Changed since 0.5
+- Added the MIT `LICENSE` file; removed the Homebrew, AUR and WinGet manifests, which pointed
+  at releases that were never published
+- Release builds use rustls, so Linux binaries need no system OpenSSL
+- CI on Linux, macOS and Windows, with an MSRV (1.88) job, KeePassXC interop tests, fuzzing,
+  cargo-deny and a weekly RustSec check; releases are made by hand, as drafts, with checksums
 
 ## [0.5.0] - 2026-05-09
 
