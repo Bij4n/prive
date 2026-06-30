@@ -132,6 +132,36 @@ pub fn bitwarden_csv(entries: &[&Entry], all: &[Entry]) -> anyhow::Result<Zeroiz
     Ok(Zeroizing::new(bytes))
 }
 
+/// One path component made safe to create under the export directory: no separators, no
+/// `.` or `..`, no control characters, never empty. A title like `../../.ssh` can't climb out.
+pub fn safe_component(s: &str) -> String {
+    let cleaned: String = s
+        .chars()
+        .map(|c| match c {
+            '/' | '\\' | ':' | '*' | '?' | '"' | '<' | '>' | '|' => '_',
+            c if c.is_control() => '_',
+            c => c,
+        })
+        .collect();
+    let trimmed = cleaned.trim().trim_end_matches('.');
+    match trimmed {
+        "" | "." | ".." => "_".to_string(),
+        t => t.to_string(),
+    }
+}
+
+/// Where an attachment of `e` goes under `dir`: `dir/Group/Sub/Title/name`, every part made
+/// safe with [`safe_component`].
+pub fn attachment_path(dir: &std::path::Path, e: &Entry, name: &str) -> std::path::PathBuf {
+    let mut p = dir.to_path_buf();
+    for part in e.group.split('/').filter(|g| !g.is_empty()) {
+        p.push(safe_component(part));
+    }
+    p.push(safe_component(&e.title));
+    p.push(safe_component(name));
+    p
+}
+
 #[derive(Serialize)]
 struct JsonField<'a> {
     name: &'a str,
@@ -291,6 +321,26 @@ mod tests {
             .collect();
         assert_eq!(names, ["API key"]);
         assert_eq!(*records[1].password, "pa\"ss,word");
+    }
+
+    #[test]
+    fn attachment_paths_never_leave_the_directory() {
+        let dir = std::path::Path::new("/tmp/export");
+        let e = Entry {
+            group: "Work/Keys".into(),
+            title: "../../.ssh".into(),
+            ..Entry::default()
+        };
+        let p = attachment_path(dir, &e, "../authorized_keys");
+        // Separators become `_`, so each part is one plain name inside the directory.
+        assert_eq!(p, dir.join("Work/Keys/.._.._.ssh/.._authorized_keys"));
+        assert_eq!(p.components().count(), dir.components().count() + 4);
+        assert!(p.starts_with(dir));
+        for name in ["/etc/passwd", "..", ".", "", "a\u{1b}b", "C:\\x", "trail.."] {
+            let c = safe_component(name);
+            assert!(!c.is_empty() && c != "." && c != "..", "{name:?} -> {c:?}");
+            assert!(!c.contains(['/', '\\']) && !c.chars().any(char::is_control));
+        }
     }
 
     #[test]
