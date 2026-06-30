@@ -197,19 +197,30 @@ pub fn audit(entries: &[Entry], opts: &Options) -> anyhow::Result<Report> {
         *by_password.entry(fingerprint(&e.password)).or_default() += 1;
     }
 
-    let mut breach_cache = HashMap::new();
+    // Looked up before the rest, several at a time; a big database takes a while against the
+    // network, so say how far along it is.
+    let breaches = if opts.breach_check {
+        let tty = std::io::IsTerminal::is_terminal(&std::io::stderr());
+        let passwords: Vec<&str> = checked.iter().map(|e| e.password.as_str()).collect();
+        let counts = crate::hibp::breach_counts(&passwords, |done, total| {
+            if tty {
+                eprint!("\rChecking Have I Been Pwned: {done}/{total} ranges");
+            }
+        })?;
+        if tty {
+            eprintln!();
+        }
+        counts
+    } else {
+        Vec::new()
+    };
     let mut findings = Vec::new();
     for (n, e) in checked.iter().enumerate() {
         let mut issues = Vec::new();
-        if opts.breach_check {
-            // A big database takes a while against the network; say how far along it is.
-            if std::io::IsTerminal::is_terminal(&std::io::stderr()) {
-                eprint!("\rChecking Have I Been Pwned: {}/{}", n + 1, checked.len());
-            }
-            let count = crate::hibp::breach_count(&e.password, &mut breach_cache)?;
-            if count > 0 {
-                issues.push(Issue::Breached { count });
-            }
+        if let Some(&count) = breaches.get(n)
+            && count > 0
+        {
+            issues.push(Issue::Breached { count });
         }
         // A password built from the site name or username is weaker than it looks.
         let hints = [e.title.as_str(), e.username.as_str(), e.url.as_str()];
@@ -242,9 +253,6 @@ pub fn audit(entries: &[Entry], opts: &Options) -> anyhow::Result<Report> {
                 issues,
             });
         }
-    }
-    if opts.breach_check && std::io::IsTerminal::is_terminal(&std::io::stderr()) {
-        eprintln!();
     }
     // Worst first: breached, then weak, reused, expired, old; ties by path.
     findings.sort_by(|a, b| {

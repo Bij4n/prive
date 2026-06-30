@@ -6,23 +6,70 @@
 //! See <https://haveibeenpwned.com/API/v3#PwnedPasswords>.
 
 use std::collections::HashMap;
+use std::sync::Mutex;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use anyhow::{Context, Result};
 use sha1::{Digest, Sha1};
 
 const API: &str = "https://api.pwnedpasswords.com/range/";
 
-/// How many times the password appears in known breaches (0 if none). Lookups are cached per
-/// hash for the life of `cache`, so reused passwords cost one request.
-pub fn breach_count(password: &str, cache: &mut HashMap<String, u64>) -> Result<u64> {
-    let hash = hex::encode_upper(Sha1::digest(password.as_bytes()));
-    if let Some(n) = cache.get(&hash) {
-        return Ok(*n);
+/// Requests in flight at once. The range API has no rate limit; eight keeps a 5,000-entry
+/// audit to well under a minute without hammering it.
+const WORKERS: usize = 8;
+
+/// How many times each password appears in known breaches (0 if none), in the same order.
+/// Passwords whose hashes share a five-character prefix cost one request between them.
+/// `progress(done, total)` is called as requests finish.
+pub fn breach_counts(
+    passwords: &[&str],
+    progress: impl Fn(usize, usize) + Sync,
+) -> Result<Vec<u64>> {
+    breach_counts_with(passwords, fetch_range, progress)
+}
+
+/// [`breach_counts`] with the fetching passed in, so it can be tested without the network.
+fn breach_counts_with(
+    passwords: &[&str],
+    fetch: impl Fn(&str) -> Result<String> + Sync,
+    progress: impl Fn(usize, usize) + Sync,
+) -> Result<Vec<u64>> {
+    let hashes: Vec<String> = passwords
+        .iter()
+        .map(|p| hex::encode_upper(Sha1::digest(p.as_bytes())))
+        .collect();
+    let mut prefixes: Vec<&str> = hashes.iter().map(|h| &h[..5]).collect();
+    prefixes.sort_unstable();
+    prefixes.dedup();
+    let next = AtomicUsize::new(0);
+    let done = AtomicUsize::new(0);
+    let ranges: Mutex<HashMap<&str, Result<String>>> = Mutex::new(HashMap::new());
+    std::thread::scope(|s| {
+        for _ in 0..WORKERS.min(prefixes.len()) {
+            s.spawn(|| {
+                loop {
+                    let i = next.fetch_add(1, Ordering::Relaxed);
+                    let Some(prefix) = prefixes.get(i) else { break };
+                    let body = fetch(prefix);
+                    ranges
+                        .lock()
+                        .expect("no thread panics holding it")
+                        .insert(prefix, body);
+                    progress(done.fetch_add(1, Ordering::Relaxed) + 1, prefixes.len());
+                }
+            });
+        }
+    });
+    let mut ranges = ranges.into_inner().expect("the threads have finished");
+    let mut bodies: HashMap<&str, String> = HashMap::new();
+    for prefix in &prefixes {
+        let body = ranges.remove(prefix).expect("every prefix was fetched")?;
+        bodies.insert(prefix, body);
     }
-    let (prefix, suffix) = hash.split_at(5);
-    let count = count_in_range(&fetch_range(prefix)?, suffix);
-    cache.insert(hash, count);
-    Ok(count)
+    Ok(hashes
+        .iter()
+        .map(|h| count_in_range(&bodies[&h[..5]], &h[5..]))
+        .collect())
 }
 
 fn fetch_range(prefix: &str) -> Result<String> {
@@ -47,6 +94,40 @@ fn count_in_range(body: &str, suffix: &str) -> u64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn many_passwords_one_request_per_prefix() {
+        // SHA-1("password") starts 5BAA6; "hunter2" starts F3BBB.
+        let asked = Mutex::new(Vec::new());
+        let fetch = |prefix: &str| -> Result<String> {
+            asked.lock().unwrap().push(prefix.to_string());
+            Ok(match prefix {
+                "5BAA6" => "1E4C9B93F3F0682250B6CF8331B7EE68FD8:9545824\r\n".into(),
+                _ => "0000000000000000000000000000000000A:1\r\n".into(),
+            })
+        };
+        let counts =
+            breach_counts_with(&["password", "hunter2", "password"], fetch, |_, _| {}).unwrap();
+        assert_eq!(counts, [9545824, 0, 9545824]);
+        let mut asked = asked.into_inner().unwrap();
+        asked.sort();
+        assert_eq!(
+            asked,
+            ["5BAA6", "F3BBB"],
+            "one request each, the repeat costs none"
+        );
+    }
+
+    #[test]
+    fn a_failed_request_fails_the_check() {
+        let fetch = |_: &str| -> Result<String> { anyhow::bail!("offline") };
+        assert!(breach_counts_with(&["x"], fetch, |_, _| {}).is_err());
+        assert!(
+            breach_counts_with(&[], fetch, |_, _| {})
+                .unwrap()
+                .is_empty()
+        );
+    }
 
     #[test]
     fn finds_the_suffix_in_a_range() {
@@ -74,8 +155,7 @@ mod tests {
     #[test]
     #[ignore = "needs the network"]
     fn the_real_service_knows_a_famous_password() {
-        let mut cache = HashMap::new();
-        assert!(breach_count("password", &mut cache).unwrap() > 1_000_000);
-        assert_eq!(cache.len(), 1);
+        let counts = breach_counts(&["password"], |_, _| {}).unwrap();
+        assert!(counts[0] > 1_000_000);
     }
 }
