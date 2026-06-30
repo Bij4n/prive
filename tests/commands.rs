@@ -675,6 +675,17 @@ fn import_check_recognises_each_export() {
             "LastPass",
             "3 entries, 1 with a one-time code, in 2 groups",
         ),
+        // These two go to the generic reader, by their column names.
+        (
+            "1password.csv",
+            "CSV",
+            "2 entries, 1 with a one-time code, no groups",
+        ),
+        (
+            "dashlane.csv",
+            "CSV",
+            "2 entries, 1 with a one-time code, in 1 group",
+        ),
     ] {
         Command::cargo_bin("prive")
             .unwrap()
