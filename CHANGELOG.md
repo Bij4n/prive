@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- `import --check` reads Bitwarden's CSV on its own: recognised from its header, secure notes
+  tagged `note`, the custom fields packed into its `fields` column split out (kept protected)
 - `prive import --check --list`: each entry as it would come across, never a password
 - `prive export --plaintext [--format csv|json] [-o FILE]`: everything, references resolved,
   to a new owner-only file or a pipe (never a terminal), to move to another app

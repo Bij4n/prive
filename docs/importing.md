@@ -9,7 +9,8 @@
 | Apple Passwords / Safari | File, Export, All Passwords | yes | yes (`OTPAuth` column) |
 | Proton Pass | Settings, Export, CSV | yes | yes |
 | LastPass | Advanced, Export | yes (folders, favourites, secure notes) | yes |
-| Bitwarden, 1Password, Dashlane, others | their CSV export | yes, as `--from csv` | when the export has a code column |
+| Bitwarden | its CSV export (Tools > Export vault > .csv) | yes | yes; secure notes tagged `note`, custom fields split out and kept protected |
+| 1Password, Dashlane, KeePassXC, others | their CSV export | yes, as `--from csv` | when the export has a code column |
 
 Check what an export would give before anything is written:
 
