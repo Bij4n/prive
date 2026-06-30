@@ -44,5 +44,10 @@ removes whole classes of memory bugs there, and gives one self-contained binary 
 in milliseconds: a 5,000-entry database lists in a tenth of a second, plus whatever its key
 derivation setting costs ([performance.md](performance.md)).
 
+**How do I leave?**
+Your passwords are in a KeePass file any KeePass app opens. For another kind of app,
+`prive export --plaintext` writes them out as KeePassXC's CSV, Bitwarden's, or JSON; see
+[importing.md](importing.md#leaving).
+
 **Something doesn't work.**
 Run `prive doctor`, then see [troubleshooting.md](troubleshooting.md).

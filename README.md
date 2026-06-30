@@ -74,6 +74,7 @@ prive audit --hibp               # also check Have I Been Pwned (k-anonymity)
 prive info                       # format, encryption and key settings of the file
 prive diff Passwords.sync-conflict-20260612-101500-ABCDEFG.kdbx   # what a conflict copy holds
 prive doctor                     # what would get in the way, without a password
+prive export --plaintext -o all.csv   # everything, to move to another app (owner-only file)
 prive --db work ls               # another database, by its name in the config file
 prive gen --words 6              # a passphrase, no database needed
 prive lock                       # forget the unlocked databases now
