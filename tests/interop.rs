@@ -297,6 +297,49 @@ fn diff_agrees_with_a_keepassxc_merge_dry_run() {
     );
 }
 
+/// `prive export` and `keepassxc-cli export -f csv` hold the same titles, usernames,
+/// passwords, URLs and notes. (KeePassXC also writes the root group's name and the recycle
+/// bin; prive leaves both out, so the group column and the deleted entry are set aside.)
+#[test]
+fn export_matches_keepassxc_csv() {
+    if !available() {
+        return;
+    }
+    let theirs = keepassxc(&["export", "-q", "-f", "csv", &fixture("kdbx41.kdbx")]).unwrap();
+    let ours = assert_cmd::Command::cargo_bin("prive")
+        .unwrap()
+        .env("PRIVE_CONFIG", fixture("no-such-config.toml"))
+        .env("PRIVE_NO_AGENT", "1")
+        .args([
+            "--db",
+            &fixture("kdbx41.kdbx"),
+            "--password-stdin",
+            "export",
+            "--plaintext",
+        ])
+        .write_stdin(format!("{PASSWORD}\n"))
+        .output()
+        .unwrap();
+    let rows = |text: &[u8]| -> Vec<Vec<String>> {
+        let mut r = csv::Reader::from_reader(text);
+        let mut out: Vec<Vec<String>> = r
+            .records()
+            .map(|rec| {
+                rec.unwrap()
+                    .iter()
+                    .skip(1)
+                    .take(5)
+                    .map(str::to_string)
+                    .collect()
+            })
+            .filter(|cols: &Vec<String>| cols[0] != "Deleted thing")
+            .collect();
+        out.sort();
+        out
+    };
+    assert_eq!(rows(&ours.stdout), rows(theirs.as_bytes()));
+}
+
 /// `prive otp` and `keepassxc-cli show -t` agree on every entry with a code, read from the
 /// same file.
 #[test]
