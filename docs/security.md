@@ -31,7 +31,9 @@ What prive protects against, and what it doesn't. This will grow as the rewrite 
   the clipboard (OSC 52) through escape sequences. Values a script reads (`get`, `otp`,
   `--json`, `run`) come out exactly as stored; JSON escapes them itself.
 - Writes secrets out in bulk only with `prive export --plaintext`: to a new file readable only
-  by you, or to a pipe, never to a terminal.
+  by you, or to a pipe, never to a terminal. With `--files DIR`, attached files go into
+  folders only you can open, under names made from the entries' with separators, `..` and
+  control characters replaced, so no title can put a file outside DIR.
 - `open` only ever opens http and https addresses, through the system's opener with no
   shell. KeePass's `cmd://` URLs, which run programs, are refused.
 - The only network access is the optional Have I Been Pwned check (`audit --hibp`), which
