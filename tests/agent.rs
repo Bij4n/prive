@@ -422,3 +422,15 @@ fn unlock_all_carries_on_past_one_that_fails() {
         ));
     s.prive(&["get", "Bank"]).assert().success();
 }
+
+#[test]
+fn export_from_the_agent_without_a_password() {
+    let s = Sandbox::new();
+    s.unlock();
+    let out = s.dir.path().join("all.csv");
+    s.prive(&["export", "--plaintext", "-o", out.to_str().unwrap()])
+        .assert()
+        .success();
+    let text = std::fs::read_to_string(&out).unwrap();
+    assert!(text.contains("\"b4nk-P@ss-2026!\""));
+}

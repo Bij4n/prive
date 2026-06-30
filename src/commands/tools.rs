@@ -284,7 +284,6 @@ pub fn export(
     }
     // References are resolved against the whole database, so an exported entry that points at
     // one left out still gets its value.
-    let chosen: Vec<&crate::entry::Entry> = chosen;
     let bytes = match format {
         crate::export::Format::Csv => crate::export::csv(&chosen, &db.entries)?,
         crate::export::Format::Json => crate::export::json(&chosen, &db.entries)?,
