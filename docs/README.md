@@ -1,5 +1,7 @@
 # prive documentation
 
+Start with [questions people ask](faq.md).
+
 **Using it**
 - [Installing](install.md): from source, shell completions, man pages
 - [Commands](commands.md): every command and what it prints
