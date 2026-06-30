@@ -52,7 +52,9 @@ something else, `prive export` writes everything out in plain text:
 
 ```bash
 prive export --plaintext -o passwords.csv              # KeePassXC's CSV columns
+prive export --plaintext --format bitwarden -o bw.csv  # Bitwarden's: import it as "Bitwarden (csv)"
 prive export --plaintext --format json -o passwords.json
+prive export --plaintext Family -o family.csv          # one group only (or -t TAG)
 ```
 
 The CSV has KeePassXC's columns (Group, Title, Username, Password, URL, Notes, TOTP, ...),

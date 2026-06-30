@@ -9,8 +9,9 @@ All notable changes to this project will be documented in this file.
   tagged `note`, the custom fields packed into its `fields` column split out (kept protected)
 - `prive import --check --list` (and `--json`): each entry as it would come across, never a
   password
-- `prive export --plaintext [--format csv|json] [-o FILE]`: everything, references resolved,
-  to a new owner-only file or a pipe (never a terminal), to move to another app
+- `prive export --plaintext [GROUP] [-t TAG] [--format csv|json|bitwarden] [-o FILE]`:
+  everything (or one group's, or a tag's), references resolved, to a new owner-only file or a
+  pipe (never a terminal), to move to another app; `bitwarden` is Bitwarden's own CSV
 
 ### Changed
 - `audit --hibp` looks up eight hash prefixes at a time, one request per prefix, and gives
