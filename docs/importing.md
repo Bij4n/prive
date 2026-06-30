@@ -40,3 +40,23 @@ rather than dropped.
 
 Every export is a file with all your passwords in plain text. Export to an encrypted disk,
 import, check the result, and delete the export.
+
+## Leaving
+
+Your passwords are in a KeePass file, so any KeePass app opens them as they are. To move to
+something else, `prive export` writes everything out in plain text:
+
+```bash
+prive export --plaintext -o passwords.csv              # KeePassXC's CSV columns
+prive export --plaintext --format json -o passwords.json
+```
+
+The CSV has KeePassXC's columns (Group, Title, Username, Password, URL, Notes, TOTP, ...),
+which Bitwarden, 1Password and most others can map on import; the JSON has every custom
+field and tag as well. References are resolved, one-time codes come out as otpauth URIs,
+the recycle bin is left out, and attachments and earlier versions are not included.
+
+The file holds every password unencrypted. prive makes it readable only by you, never
+replaces an existing file and refuses to print it on a terminal; import it, then delete it
+(`shred -u passwords.csv` on Linux).
+
