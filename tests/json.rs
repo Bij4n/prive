@@ -142,6 +142,35 @@ fn reports() {
 }
 
 #[test]
+fn export() {
+    let out = Command::cargo_bin("prive")
+        .unwrap()
+        .env("PRIVE_CONFIG", fixture("no-such-config.toml"))
+        .env("PRIVE_NO_AGENT", "1")
+        .arg("--db")
+        .arg(fixture("kdbx41.kdbx"))
+        .args([
+            "--password-stdin",
+            "export",
+            "--plaintext",
+            "--format",
+            "json",
+        ])
+        .write_stdin("fixture-pass\n")
+        .output()
+        .unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    has(
+        &v[0],
+        &[
+            "path", "group", "title", "username", "password", "url", "notes", "otp", "tags",
+            "fields", "uuid", "modified", "expires",
+        ],
+        "export",
+    );
+}
+
+#[test]
 fn status_config_and_gen() {
     has(
         &json(&["status"]),

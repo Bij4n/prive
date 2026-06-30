@@ -82,6 +82,13 @@ A list of checks: `{ "name", "status", "detail" }`, `status` being `ok`, `warn`,
 `skip`. With `--all`, a list of `{ "database", "checks" }`, `database` being `null` for the
 checks that aren't about one database.
 
+## `export --format json`
+
+The one place secrets are written in bulk (see `prive export`): a list of entries, each with
+`path`, `group`, `title`, `username`, `password`, `url`, `notes`, `otp` (an otpauth URI, or
+`""`), `tags`, `fields` (list of `{ "name", "value", "protected" }`, values in clear),
+`uuid`, `modified` and `expires`. References are resolved.
+
 ## `status`, `config`, `gen`
 
 - `status`: `unlocked`, `databases` (list of `{ "path", "name" }`), `db` and `name` (the one
