@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+- `audit --hibp` looks up eight hash prefixes at a time, one request per prefix, and gives
+  up on a request after 30 seconds instead of waiting for ever
+
 ### Added
 - `prive export --plaintext [--format csv|json] [-o FILE]`: everything, references resolved,
   to a new owner-only file or a pipe (never a terminal), to move to another app

@@ -35,7 +35,8 @@ What prive protects against, and what it doesn't. This will grow as the rewrite 
 - `open` only ever opens http and https addresses, through the system's opener with no
   shell. KeePass's `cmd://` URLs, which run programs, are refused.
 - The only network access is the optional Have I Been Pwned check (`audit --hibp`), which
-  sends 5 hex characters of each password's SHA-1 hash and nothing else.
+  sends 5 hex characters of each password's SHA-1 hash and nothing else: one request per
+  distinct prefix, eight at a time, each given up after 30 seconds.
 
 ## Key derivation
 
