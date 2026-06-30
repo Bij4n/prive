@@ -288,6 +288,7 @@ pub fn export(
     let bytes = match format {
         crate::export::Format::Csv => crate::export::csv(&chosen, &db.entries)?,
         crate::export::Format::Json => crate::export::json(&chosen, &db.entries)?,
+        crate::export::Format::Bitwarden => crate::export::bitwarden_csv(&chosen, &db.entries)?,
     };
     match out {
         Some(path) => {

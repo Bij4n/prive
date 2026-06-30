@@ -20,6 +20,9 @@ pub enum Format {
     Csv,
     /// One object per entry, with every custom field and its tags
     Json,
+    /// Bitwarden's own CSV columns, to import there in one step (custom fields go in its
+    /// `fields` column)
+    Bitwarden,
 }
 
 /// The entry's one-time code setup as an otpauth URI (it holds the secret), or nothing.
@@ -73,6 +76,56 @@ pub fn csv(entries: &[&Entry], all: &[Entry]) -> anyhow::Result<Zeroizing<Vec<u8
             time(e.modified).as_str(),
             // prive doesn't keep the creation time; KeePassXC accepts an empty one.
             "",
+        ])?;
+    }
+    let bytes = w.into_inner().map_err(|e| anyhow::anyhow!("{e}"))?;
+    Ok(Zeroizing::new(bytes))
+}
+
+/// Bitwarden's CSV: the columns its importer expects, custom fields packed one `name: value`
+/// a line into `fields`, the one-time code in `login_totp`.
+pub fn bitwarden_csv(entries: &[&Entry], all: &[Entry]) -> anyhow::Result<Zeroizing<Vec<u8>>> {
+    let mut w = csv::Writer::from_writer(Vec::new());
+    w.write_record([
+        "folder",
+        "favorite",
+        "type",
+        "name",
+        "notes",
+        "fields",
+        "reprompt",
+        "login_uri",
+        "login_username",
+        "login_password",
+        "login_totp",
+    ])?;
+    for e in entries {
+        let r = |v: &str| crate::refs::resolve(all, v);
+        let fields = Zeroizing::new(
+            e.custom
+                .iter()
+                .filter(|c| !crate::otp::is_otp_field(&c.name))
+                .map(|c| format!("{}: {}", c.name, r(&c.value).as_str()))
+                .collect::<Vec<_>>()
+                .join("\n"),
+        );
+        let favorite = if e.tags.iter().any(|t| t.eq_ignore_ascii_case("favorite")) {
+            "1"
+        } else {
+            ""
+        };
+        w.write_record([
+            e.group.as_str(),
+            favorite,
+            "login",
+            r(&e.title).as_str(),
+            r(&e.notes).as_str(),
+            fields.as_str(),
+            "0",
+            r(&e.url).as_str(),
+            r(&e.username).as_str(),
+            r(&e.password).as_str(),
+            otp_uri(e).as_str(),
         ])?;
     }
     let bytes = w.into_inner().map_err(|e| anyhow::anyhow!("{e}"))?;
@@ -215,6 +268,29 @@ mod tests {
         let rows: Vec<csv::StringRecord> = r.records().map(Result::unwrap).collect();
         assert_eq!(rows.len(), 1);
         assert_eq!(&rows[0][3], "pa\"ss,word");
+    }
+
+    #[test]
+    fn bitwarden_csv_reads_back_as_bitwarden() {
+        let all = sample();
+        let refs: Vec<&Entry> = all.iter().collect();
+        let out = bitwarden_csv(&refs, &all).unwrap();
+        let text = String::from_utf8(out.to_vec()).unwrap();
+        assert_eq!(
+            crate::import::Format::detect(&text),
+            Some(crate::import::Format::Bitwarden)
+        );
+        let (records, _) = crate::import::Format::Bitwarden.parse(&text, &[]).unwrap();
+        assert_eq!(records[0].group, "Work");
+        assert_eq!(*records[0].password, "pa\"ss,word");
+        assert!(records[0].otp.is_some());
+        let names: Vec<&str> = records[0]
+            .extra
+            .iter()
+            .map(|(n, _, _)| n.as_str())
+            .collect();
+        assert_eq!(names, ["API key"]);
+        assert_eq!(*records[1].password, "pa\"ss,word");
     }
 
     #[test]
