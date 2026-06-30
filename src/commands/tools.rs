@@ -282,6 +282,19 @@ pub fn export(
     for t in tags {
         chosen = select::with_tag(&chosen, t);
     }
+    // Attachments don't fit a CSV row; say which entries have some rather than drop them
+    // without a word.
+    let with_files: Vec<String> = chosen
+        .iter()
+        .filter(|e| !e.attachments.is_empty())
+        .map(|e| e.path())
+        .collect();
+    if !with_files.is_empty() {
+        output::notice(&format!(
+            "Not exported: the files attached to {} (prive file ENTRY NAME -o PATH writes them)",
+            with_files.join(", ")
+        ));
+    }
     // References are resolved against the whole database, so an exported entry that points at
     // one left out still gets its value.
     let bytes = match format {

@@ -1793,7 +1793,10 @@ fn export_needs_saying_so_and_writes_a_private_new_file() {
         .assert()
         .success()
         .stdout(predicate::str::is_empty())
-        .stderr(predicate::str::contains("Delete it when you are done"));
+        .stderr(predicate::str::contains("Delete it when you are done"))
+        .stderr(predicate::str::contains(
+            "Not exported: the files attached to Work/GitHub",
+        ));
     let text = std::fs::read_to_string(&out).unwrap();
     assert!(text.starts_with("\"Group\",\"Title\",\"Username\",\"Password\""));
     assert!(text.contains("\"Work\",\"GitHub\",\"demo\",\"gh-Secret-1\""));
