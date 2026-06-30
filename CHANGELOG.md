@@ -13,6 +13,11 @@ All notable changes to this project will be documented in this file.
   Apple Passwords export, and left out its groups and one-time codes; 1Password's CSV the
   same, losing its tags. Apple's exports are now known by their exact columns
 
+### Changed
+- `import --check`: apps' own bookkeeping columns (KeePassXC's Icon and dates, Bitwarden's
+  type and reprompt, 1Password's flags) are no longer kept as fields; a set Favorite or
+  Archived flag becomes a tag
+
 ### Added
 - `prive export --plaintext [--format csv|json] [-o FILE]`: everything, references resolved,
   to a new owner-only file or a pipe (never a terminal), to move to another app

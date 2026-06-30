@@ -36,7 +36,9 @@ URI in the `otp` field). A code prive can't read is kept on its entry as a field
 
 Columns are matched by name, ignoring case and order, so small changes in an exporter's
 layout don't break the import. Columns prive has no place for are kept as custom fields
-rather than dropped.
+rather than dropped, except the ones apps keep for themselves (KeePassXC's Icon and dates,
+Bitwarden's type and reprompt): a Favorite or Archived flag that is set becomes a
+`favorite` or `archived` tag.
 
 Every export is a file with all your passwords in plain text. Export to an encrypted disk,
 import, check the result, and delete the export.
