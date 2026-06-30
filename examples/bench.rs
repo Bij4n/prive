@@ -53,12 +53,17 @@ fn main() -> anyhow::Result<()> {
         prive::output::render_list(&all).len()
     });
     let paths: Vec<String> = db.entries.iter().map(|e| e.path()).collect();
-    time("select every entry by path", || {
-        paths
-            .iter()
-            .filter(|p| prive::select::select(&db.entries, p).is_ok())
-            .count()
-    });
+    // One command looks up one entry; this does all of them to get a steady figure.
+    let started = Instant::now();
+    let found = paths
+        .iter()
+        .filter(|p| prive::select::select(&db.entries, p).is_ok())
+        .count();
+    println!(
+        "{:<40} {:>9.3} ms",
+        "select an entry by path (each)",
+        ms(started.elapsed()) / found.max(1) as f64
+    );
     time("search (a word that matches nothing)", || {
         prive::select::search(&db.entries, "nothing-matches-this").len()
     });
