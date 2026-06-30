@@ -55,12 +55,15 @@ prive export --plaintext -o passwords.csv              # KeePassXC's CSV columns
 prive export --plaintext --format bitwarden -o bw.csv  # Bitwarden's: import it as "Bitwarden (csv)"
 prive export --plaintext --format json -o passwords.json
 prive export --plaintext Family -o family.csv          # one group only (or -t TAG)
+prive export --plaintext -o all.csv --files attached/  # and every attached file
 ```
 
 The CSV has KeePassXC's columns (Group, Title, Username, Password, URL, Notes, TOTP, ...),
 which Bitwarden, 1Password and most others can map on import; the JSON has every custom
 field and tag as well. References are resolved, one-time codes come out as otpauth URIs,
-the recycle bin is left out, and attachments and earlier versions are not included.
+the recycle bin is left out, and earlier versions are not included. Attached files go under
+`--files DIR` as `Group/Title/name`, in folders only you can open; without it prive says
+which entries have files it left behind.
 
 The file holds every password unencrypted. prive makes it readable only by you, never
 replaces an existing file and refuses to print it on a terminal; import it, then delete it

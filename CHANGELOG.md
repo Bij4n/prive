@@ -11,7 +11,8 @@ All notable changes to this project will be documented in this file.
   password
 - `prive export --plaintext [GROUP] [-t TAG] [--format csv|json|bitwarden] [-o FILE]`:
   everything (or one group's, or a tag's), references resolved, to a new owner-only file or a
-  pipe (never a terminal), to move to another app; `bitwarden` is Bitwarden's own CSV
+  pipe (never a terminal), to move to another app; `bitwarden` is Bitwarden's own CSV;
+  `--files DIR` writes attached files too, in owner-only folders, names made safe
 
 ### Changed
 - `audit --hibp` looks up eight hash prefixes at a time, one request per prefix, and gives
