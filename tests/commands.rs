@@ -1772,3 +1772,55 @@ fn import_map_uses_each_column_once() {
         "columns used: title <- Site, password <- Secret, notes <- comment",
     ));
 }
+
+#[test]
+fn export_needs_saying_so_and_writes_a_private_new_file() {
+    prive(&["export"]).assert().code(2);
+    let dir = tempfile::tempdir().unwrap();
+    let out = dir.path().join("all.csv");
+    prive(&["export", "--plaintext", "-o", out.to_str().unwrap()])
+        .assert()
+        .success()
+        .stdout(predicate::str::is_empty())
+        .stderr(predicate::str::contains("Delete it when you are done"));
+    let text = std::fs::read_to_string(&out).unwrap();
+    assert!(text.starts_with("\"Group\",\"Title\",\"Username\",\"Password\""));
+    assert!(text.contains("\"Work\",\"GitHub\",\"demo\",\"gh-Secret-1\""));
+    // Old VPN's BANK_PASSWORD reference doesn't matter to the CSV; the deleted entry is out.
+    assert!(!text.contains("Deleted thing"));
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mode = std::fs::metadata(&out).unwrap().permissions().mode() & 0o777;
+        assert_eq!(mode, 0o600);
+    }
+    // Never over an existing file.
+    prive(&["export", "--plaintext", "-o", out.to_str().unwrap()])
+        .assert()
+        .code(1)
+        .stderr(predicate::str::contains("already exists"));
+}
+
+#[test]
+fn export_json_to_a_pipe() {
+    let out = prive(&["export", "--plaintext", "--format", "json"])
+        .output()
+        .unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    let vpn = v
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|e| e["title"] == "Old VPN")
+        .unwrap();
+    let token = vpn["fields"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|f| f["name"] == "BANK_PASSWORD")
+        .unwrap();
+    assert_eq!(
+        token["value"], "b4nk-P@ss-2026!",
+        "references come out resolved"
+    );
+}
