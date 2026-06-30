@@ -13,10 +13,11 @@ AES-KDF with KeePassXC's default 1,000,000 rounds):
 `diff` opens both files, so it pays the key derivation twice; pairing the 5,000 entries
 takes about 3 ms.
 
-Most of `ls`'s time is the key derivation, which is the database's own setting: Argon2 with
-a large memory cost (KeePassXC's default for KDBX 4) takes about a second by design, on
-every open. That is what `prive unlock` is for: after it, commands skip key derivation and
-answer from memory.
+With these settings most of the time is decrypting and reading the 5,000 entries; the
+1,000,000 AES-KDF rounds take about 13 ms. Key derivation is the database's own setting,
+though: with KeePassXC's default for new databases (Argon2id, 64 MiB, tuned to about a
+second) it takes that second on every open, by design. That is what `prive unlock` is for:
+after it, commands skip both and answer from memory.
 
 Inside one process, stage by stage (`cargo run --release --example bench -- DB < password`):
 

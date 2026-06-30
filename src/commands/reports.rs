@@ -130,7 +130,7 @@ pub fn info(global: &Global, time: bool, json: bool) -> Result<()> {
     let mut text = output::render_info(&db, size);
     if let Some(t) = took {
         text.push_str(&format!(
-            "{:<13} {:.2} s on this machine, nearly all of it the key derivation\n",
+            "{:<13} {:.2} s on this machine (the key derivation, then reading the entries)\n",
             "Opening:",
             t.as_secs_f64()
         ));
