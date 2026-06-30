@@ -252,3 +252,41 @@ pub fn completions(shell: clap_complete::Shell) -> Result<()> {
     clap_complete::generate(shell, &mut cmd, "prive", &mut out);
     output::print(&String::from_utf8_lossy(&out))
 }
+
+/// Every entry with its secrets, to a new owner-only file or to a pipe. Refused on a terminal,
+/// where it would put every password on screen and into the scrollback.
+pub fn export(
+    global: &Global,
+    format: crate::export::Format,
+    out: Option<&std::path::Path>,
+) -> Result<()> {
+    if out.is_none() && std::io::stdout().is_terminal() {
+        anyhow::bail!(
+            "export writes every password in plain text; give --out FILE, or pipe it somewhere"
+        );
+    }
+    let db = open(global)?;
+    let bytes = match format {
+        crate::export::Format::Csv => crate::export::csv(&db.entries)?,
+        crate::export::Format::Json => crate::export::json(&db.entries)?,
+    };
+    match out {
+        Some(path) => {
+            crate::fsutil::write_new_file(path, &bytes)?;
+            output::notice(&format!(
+                "Wrote {} entries, passwords in plain text, to {}. Delete it when you are done.",
+                db.entries.len(),
+                path.display()
+            ));
+            Ok(())
+        }
+        None => {
+            use std::io::Write;
+            let mut stdout = std::io::stdout().lock();
+            match stdout.write_all(&bytes).and_then(|()| stdout.flush()) {
+                Err(e) if e.kind() == std::io::ErrorKind::BrokenPipe => Ok(()),
+                other => Ok(other?),
+            }
+        }
+    }
+}

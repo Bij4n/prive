@@ -338,6 +338,20 @@ pub enum Command {
     /// Generate a password, passphrase or PIN (no database needed)
     Gen(GenArgs),
 
+    /// Write every entry with its passwords in plain text (CSV or JSON), to move elsewhere
+    Export {
+        /// csv (KeePassXC's columns) or json
+        #[arg(long, value_enum, default_value_t = crate::export::Format::Csv)]
+        format: crate::export::Format,
+        /// Write to this new file (readable only by you; never replaced). Without it, stdout,
+        /// but never a terminal
+        #[arg(short, long, value_name = "FILE")]
+        out: Option<PathBuf>,
+        /// Say you know the result holds every password unencrypted (required)
+        #[arg(long, required = true)]
+        plaintext: bool,
+    },
+
     /// Read another password manager's export and say what would come across
     Import {
         /// The export file (CSV)
