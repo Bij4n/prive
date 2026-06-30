@@ -142,6 +142,34 @@ fn reports() {
 }
 
 #[test]
+fn import_check() {
+    let out = Command::cargo_bin("prive")
+        .unwrap()
+        .args(["import", "--check", "--json"])
+        .arg(fixture("exports/lastpass.csv"))
+        .output()
+        .unwrap();
+    let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    has(&v, &["format", "entries", "notes", "records"], "import");
+    has(
+        &v["records"][0],
+        &[
+            "title",
+            "group",
+            "username",
+            "url",
+            "tags",
+            "has_password",
+            "has_otp",
+            "fields",
+        ],
+        "import records",
+    );
+    let text = String::from_utf8(out.stdout).unwrap();
+    assert!(!text.contains("gh-Secret-1"), "no password in the report");
+}
+
+#[test]
 fn export() {
     let out = Command::cargo_bin("prive")
         .unwrap()

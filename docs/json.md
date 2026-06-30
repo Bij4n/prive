@@ -82,6 +82,12 @@ A list of checks: `{ "name", "status", "detail" }`, `status` being `ok`, `warn`,
 `skip`. With `--all`, a list of `{ "database", "checks" }`, `database` being `null` for the
 checks that aren't about one database.
 
+## `import --check`
+
+`format` (the app it came from), `entries`, `notes` (what the text report says under its
+first line) and `records`: one per entry with `title`, `group`, `username`, `url`, `tags`,
+`has_password`, `has_otp` and `fields` (names only). No password or code secret appears.
+
 ## `export --format json`
 
 The one place secrets are written in bulk (see `prive export`): a list of entries, each with

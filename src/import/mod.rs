@@ -130,6 +130,32 @@ pub fn render_list(records: &[Record]) -> String {
     out
 }
 
+/// `import --check --json`: the report and every record, by name only. Never a password, a
+/// code's secret or a field's value.
+pub fn json_report(format: Format, records: &[Record], report: &Report) -> serde_json::Value {
+    let list: Vec<serde_json::Value> = records
+        .iter()
+        .map(|r| {
+            serde_json::json!({
+                "title": r.title,
+                "group": r.group,
+                "username": r.username,
+                "url": r.url,
+                "tags": r.tags,
+                "has_password": !r.password.is_empty(),
+                "has_otp": r.otp.is_some(),
+                "fields": r.extra.iter().map(|(n, _, _)| n.as_str()).collect::<Vec<_>>(),
+            })
+        })
+        .collect();
+    serde_json::json!({
+        "format": format.label(),
+        "entries": report.records,
+        "notes": report.notes,
+        "records": list,
+    })
+}
+
 /// The export formats prive reads.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
 pub enum Format {

@@ -369,6 +369,9 @@ pub enum Command {
         /// a code, its other fields by name. Never a password
         #[arg(long)]
         list: bool,
+        /// Print JSON instead of text, for scripts (the list included, never a password)
+        #[arg(long)]
+        json: bool,
     },
 
     /// Check the config, database, key file, agent and clipboard, without a password
