@@ -4,23 +4,21 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- `prive export --plaintext [--format csv|json] [-o FILE]`: everything, references resolved,
+  to a new owner-only file or a pipe (never a terminal), to move to another app
+
 ### Changed
 - `audit --hibp` looks up eight hash prefixes at a time, one request per prefix, and gives
   up on a request after 30 seconds instead of waiting for ever
+- `import --check`: apps' own bookkeeping columns (KeePassXC's Icon and dates, Bitwarden's
+  type and reprompt, 1Password's flags) are no longer kept as fields; a set Favorite or
+  Archived flag becomes a tag
 
 ### Fixed
 - `import --check` took a CSV in KeePassXC's columns (prive's own export among them) for an
   Apple Passwords export, and left out its groups and one-time codes; 1Password's CSV the
   same, losing its tags. Apple's exports are now known by their exact columns
-
-### Changed
-- `import --check`: apps' own bookkeeping columns (KeePassXC's Icon and dates, Bitwarden's
-  type and reprompt, 1Password's flags) are no longer kept as fields; a set Favorite or
-  Archived flag becomes a tag
-
-### Added
-- `prive export --plaintext [--format csv|json] [-o FILE]`: everything, references resolved,
-  to a new owner-only file or a pipe (never a terminal), to move to another app
 
 ## [0.6.0] - 2026-06-30
 
