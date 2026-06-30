@@ -728,7 +728,7 @@ fn import_check_generic_csv() {
         .assert()
         .success()
         .stdout(predicate::str::starts_with(
-            "CSV export: 2 entries, 1 with a one-time code, in 1 group",
+            "Bitwarden export: 2 entries, 1 with a one-time code, in 1 group",
         ))
         .stdout(predicate::str::contains("username <- login_username"));
     Command::cargo_bin("prive")

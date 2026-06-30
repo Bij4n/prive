@@ -48,7 +48,7 @@ pub fn import_check(
         (None, false) => crate::import::Format::Csv,
         (None, true) => crate::import::Format::detect(&text).with_context(|| {
             format!(
-                "can't tell which app made {}; name it with --from (proton, apple, google, lastpass, csv)",
+                "can't tell which app made {}; name it with --from (proton, apple, google, lastpass, bitwarden, csv)",
                 file.display()
             )
         })?,

@@ -6,6 +6,7 @@
 //! [`Report`].
 
 pub mod apple;
+pub mod bitwarden;
 pub mod csvtable;
 pub mod generic;
 pub mod google;
@@ -136,7 +137,8 @@ pub enum Format {
     Apple,
     Google,
     Lastpass,
-    /// Any other CSV (Bitwarden, 1Password, Dashlane, ...), by column names.
+    Bitwarden,
+    /// Any other CSV (1Password, Dashlane, KeePassXC, ...), by column names.
     Csv,
 }
 
@@ -147,6 +149,7 @@ impl Format {
             Format::Apple => "Apple Passwords",
             Format::Google => "Google Password Manager",
             Format::Lastpass => "LastPass",
+            Format::Bitwarden => "Bitwarden",
             Format::Csv => "CSV",
         }
     }
@@ -165,6 +168,7 @@ impl Format {
             Format::Apple => apple::parse(text),
             Format::Google => google::parse(text),
             Format::Lastpass => lastpass::parse(text),
+            Format::Bitwarden => bitwarden::parse(text),
             Format::Csv => generic::parse(text, map),
         }?;
         tidy_otp(&mut records, &mut report);
@@ -178,6 +182,8 @@ impl Format {
             Some(Format::Proton)
         } else if table.has("grouping") && table.has("extra") {
             Some(Format::Lastpass)
+        } else if table.has("login_uri") && table.has("login_password") {
+            Some(Format::Bitwarden)
         } else if is_apple(&table) {
             Some(Format::Apple)
         } else if table.has("name")
@@ -303,12 +309,11 @@ mod tests {
             assert_eq!(Format::detect(header), Some(want), "{header}");
         }
         assert_eq!(Format::detect("a,b,c\n"), None);
-        // Bitwarden's CSV has name/url-like columns too, but more of them: generic CSV.
         assert_eq!(
             Format::detect(
                 "folder,favorite,type,name,notes,fields,reprompt,login_uri,login_username,login_password,login_totp\n"
             ),
-            Some(Format::Csv)
+            Some(Format::Bitwarden)
         );
     }
 
