@@ -345,7 +345,7 @@ pub enum Command {
         /// Only entries with this tag (repeat for several: all must match)
         #[arg(short, long = "tag", value_name = "TAG")]
         tags: Vec<String>,
-        /// csv (KeePassXC's columns) or json
+        /// The layout to write
         #[arg(long, value_enum, default_value_t = crate::export::Format::Csv)]
         format: crate::export::Format,
         /// Write to this new file (readable only by you; never replaced). Without it, stdout,

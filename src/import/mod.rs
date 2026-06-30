@@ -159,10 +159,15 @@ pub fn json_report(format: Format, records: &[Record], report: &Report) -> serde
 /// The export formats prive reads.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
 pub enum Format {
+    /// Proton Pass's CSV export
     Proton,
+    /// Apple Passwords / Safari's CSV export
     Apple,
+    /// Google Password Manager / Chrome's CSV export
     Google,
+    /// LastPass's CSV export
     Lastpass,
+    /// Bitwarden's CSV export
     Bitwarden,
     /// Any other CSV (1Password, Dashlane, KeePassXC, ...), by column names.
     Csv,
