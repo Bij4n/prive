@@ -11,6 +11,29 @@ use zeroize::Zeroizing;
 use super::csvtable::Table;
 use super::{Record, Report, title_from_url};
 
+/// Columns apps use for their own bookkeeping (KeePassXC's Icon and dates, 1Password's and
+/// Bitwarden's flags). They aren't kept as fields on every entry; a favourite or archived
+/// flag that is set becomes a tag instead.
+const BOOKKEEPING: [&str; 10] = [
+    "icon",
+    "last modified",
+    "created",
+    "modified",
+    "reprompt",
+    "type",
+    "favorite",
+    "favourite",
+    "fav",
+    "archived",
+];
+
+fn set(flag: &str) -> bool {
+    matches!(
+        flag.trim().to_ascii_lowercase().as_str(),
+        "1" | "true" | "yes" | "y"
+    )
+}
+
 const FIELDS: [(&str, &[&str]); 8] = [
     ("title", &["title", "name", "entry", "account", "item"]),
     (
@@ -76,7 +99,8 @@ pub fn parse(text: &str, map: &[(String, String)]) -> Result<(Vec<Record>, Repor
     };
     let cols: Vec<(&str, Option<String>)> = FIELDS.iter().map(|(f, _)| (*f, column(f))).collect();
     let used: Vec<String> = cols.iter().filter_map(|(_, c)| c.clone()).collect();
-    let used_refs: Vec<&str> = used.iter().map(String::as_str).collect();
+    let mut used_refs: Vec<&str> = used.iter().map(String::as_str).collect();
+    used_refs.extend(BOOKKEEPING);
     let get = |row: &super::csvtable::Row<'_>, field: &str| -> String {
         cols.iter()
             .find(|(f, _)| *f == field)
@@ -95,12 +119,22 @@ pub fn parse(text: &str, map: &[(String, String)]) -> Result<(Vec<Record>, Repor
         let otp = Some(get(&row, "otp"))
             .filter(|o| !o.is_empty())
             .map(Zeroizing::new);
-        let tags = get(&row, "tags")
+        let mut tags: Vec<String> = get(&row, "tags")
             .split([',', ';'])
             .map(str::trim)
             .filter(|t| !t.is_empty())
             .map(str::to_string)
             .collect();
+        for (columns, tag) in [
+            (&["favorite", "favourite", "fav"][..], "favorite"),
+            (&["archived"][..], "archived"),
+        ] {
+            if columns.iter().any(|c| table.has(c) && set(row.get(&[c])))
+                && !tags.iter().any(|t| t == tag)
+            {
+                tags.push(tag.to_string());
+            }
+        }
         records.push(Record {
             title,
             group: get(&row, "group").replace('\\', "/"),
@@ -142,8 +176,9 @@ mod tests {
         assert_eq!(r[0].username, "demo");
         assert_eq!(*r[0].password, "gh-pw");
         assert!(r[0].otp.is_some());
-        let kept: Vec<&str> = r[0].extra.iter().map(|(k, _, _)| k.as_str()).collect();
-        assert_eq!(kept, ["favorite", "type", "reprompt"]);
+        // Bitwarden's type and reprompt are its own bookkeeping; favorite=1 is a tag.
+        assert!(r[0].extra.is_empty());
+        assert_eq!(r[0].tags, ["favorite"]);
         assert!(report.notes[0].contains("username <- login_username"));
     }
 
@@ -154,6 +189,25 @@ mod tests {
         let (r, _) = parse(text, &[]).unwrap();
         assert_eq!(r[0].url, "https://bank.invalid");
         assert_eq!(r[0].tags, ["money", "important"]);
+    }
+
+    #[test]
+    fn bookkeeping_columns_are_not_fields_and_flags_are_tags() {
+        let keepassxc = "Group,Title,Username,Password,URL,Notes,TOTP,Icon,Last Modified,Created\n\
+                         Work,GitHub,demo,pw,https://github.com,,,0,2026-05-26T17:00:00Z,2026-05-26T17:00:00Z\n";
+        let (r, _) = parse(keepassxc, &[]).unwrap();
+        assert!(
+            r[0].extra.is_empty(),
+            "{:?}",
+            r[0].extra.iter().map(|e| &e.0).collect::<Vec<_>>()
+        );
+        let onepassword = "Title,Url,Username,Password,OTPAuth,Favorite,Archived,Tags,Notes\n\
+                           A,https://a.invalid,me,pw,,true,false,work,\n\
+                           B,https://b.invalid,me,pw,,false,TRUE,,\n";
+        let (r, _) = parse(onepassword, &[]).unwrap();
+        assert_eq!(r[0].tags, ["work", "favorite"]);
+        assert_eq!(r[1].tags, ["archived"]);
+        assert!(r.iter().all(|x| x.extra.is_empty()));
     }
 
     #[test]
