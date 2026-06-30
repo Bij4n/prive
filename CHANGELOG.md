@@ -8,6 +8,10 @@ All notable changes to this project will be documented in this file.
 - `audit --hibp` looks up eight hash prefixes at a time, one request per prefix, and gives
   up on a request after 30 seconds instead of waiting for ever
 
+### Fixed
+- `import --check` took a CSV in KeePassXC's columns (prive's own export among them) for an
+  Apple Passwords export, and left out its groups and one-time codes
+
 ### Added
 - `prive export --plaintext [--format csv|json] [-o FILE]`: everything, references resolved,
   to a new owner-only file or a pipe (never a terminal), to move to another app
