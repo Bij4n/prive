@@ -35,6 +35,7 @@ pub fn import_check(
     file: &std::path::Path,
     from: Option<crate::import::Format>,
     map: &[String],
+    list: bool,
 ) -> Result<()> {
     use anyhow::Context;
     let text = Zeroizing::new(
@@ -53,11 +54,11 @@ pub fn import_check(
         })?,
     };
     let (records, report) = format.parse(&text, &map)?;
-    output::print_human(&format!(
-        "{} export: {}",
-        format.label(),
-        report.render(&records)
-    ))
+    let mut out = format!("{} export: {}", format.label(), report.render(&records));
+    if list {
+        out.push_str(&crate::import::render_list(&records));
+    }
+    output::print_human(&out)
 }
 
 pub fn generate(args: &GenArgs) -> Result<()> {

@@ -96,6 +96,39 @@ pub(crate) fn plural(n: usize, one: &str, many: &str) -> String {
     format!("{n} {}", if n == 1 { one } else { many })
 }
 
+/// `import --check --list`: one line per record, as it would come across. Never a secret:
+/// fields are named, not shown.
+pub fn render_list(records: &[Record]) -> String {
+    let mut out = String::new();
+    for r in records {
+        let path = if r.group.is_empty() {
+            r.title.clone()
+        } else {
+            format!("{}/{}", r.group, r.title)
+        };
+        let mut line = format!("  {path}");
+        if !r.username.is_empty() {
+            line.push_str(&format!("  ({})", r.username));
+        }
+        if let Some((_, host, _)) = crate::gitcred::split_url(&r.url) {
+            line.push_str(&format!("  {host}"));
+        }
+        if r.otp.is_some() {
+            line.push_str("  2fa");
+        }
+        if r.password.is_empty() {
+            line.push_str("  no password");
+        }
+        if !r.extra.is_empty() {
+            let names: Vec<&str> = r.extra.iter().map(|(n, _, _)| n.as_str()).collect();
+            line.push_str(&format!("  + {}", names.join(", ")));
+        }
+        out.push_str(&line);
+        out.push('\n');
+    }
+    out
+}
+
 /// The export formats prive reads.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
 pub enum Format {

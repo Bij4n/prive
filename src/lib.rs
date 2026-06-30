@@ -148,7 +148,8 @@ fn dispatch(cli: Cli) -> Result<()> {
             from,
             map,
             check: _,
-        } => commands::import_check(file, *from, map),
+            list,
+        } => commands::import_check(file, *from, map, *list),
         Command::Run { env, from, command } => commands::run(g, env, from, command),
         Command::Open {
             entry,

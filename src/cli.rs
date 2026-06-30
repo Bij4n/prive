@@ -365,6 +365,10 @@ pub enum Command {
         /// Only read and report. (Writing a KeePass database from it comes next.)
         #[arg(long, required = true)]
         check: bool,
+        /// Also list each entry that would come across: path, username, site, whether it has
+        /// a code, its other fields by name. Never a password
+        #[arg(long)]
+        list: bool,
     },
 
     /// Check the config, database, key file, agent and clipboard, without a password

@@ -1851,3 +1851,26 @@ fn an_export_reads_back_with_import_check() {
             "CSV export: 7 entries, 4 with one-time codes, in 3 groups\n",
         ));
 }
+
+#[test]
+fn import_check_list_names_what_would_come_but_shows_no_password() {
+    let out = Command::cargo_bin("prive")
+        .unwrap()
+        .args(["import", "--check", "--list"])
+        .arg(fixture("exports/lastpass.csv"))
+        .output()
+        .unwrap();
+    assert!(out.status.success());
+    let text = String::from_utf8(out.stdout).unwrap();
+    assert!(
+        text.contains("  Work/Dev/GitHub  (demo)  github.com  2fa\n"),
+        "{text}"
+    );
+    assert!(text.contains("  Personal/Visa  no password\n"), "{text}");
+    let csv = std::fs::read_to_string(fixture("exports/lastpass.csv")).unwrap();
+    let password = csv.lines().nth(1).unwrap().split(',').nth(2).unwrap();
+    assert!(
+        !password.is_empty() && !text.contains(password),
+        "a password leaked: {text}"
+    );
+}
