@@ -1824,3 +1824,19 @@ fn export_json_to_a_pipe() {
         "references come out resolved"
     );
 }
+
+#[test]
+fn an_export_reads_back_with_import_check() {
+    let dir = tempfile::tempdir().unwrap();
+    let out = dir.path().join("all.csv");
+    prive(&["export", "--plaintext", "-o", out.to_str().unwrap()])
+        .assert()
+        .success();
+    // Recognised without --from, groups and one-time codes kept.
+    prive(&["import", out.to_str().unwrap(), "--check"])
+        .assert()
+        .success()
+        .stdout(predicate::str::starts_with(
+            "CSV export: 7 entries, 4 with one-time codes, in 3 groups\n",
+        ));
+}

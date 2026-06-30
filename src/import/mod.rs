@@ -145,7 +145,15 @@ impl Format {
             Some(Format::Proton)
         } else if table.has("grouping") && table.has("extra") {
             Some(Format::Lastpass)
-        } else if table.has("otpauth") || (table.has("title") && table.has("notes")) {
+        } else if table.has("otpauth")
+            // Safari's older exports, before codes were added: exactly these five columns.
+            || (table.headers().len() == 5
+                && ["title", "url", "username", "password", "notes"]
+                    .iter()
+                    .all(|c| table.has(c)))
+        {
+            // KeePassXC's own CSV has a title and notes too, but more columns (Group, TOTP,
+            // ...): it goes to the generic reader, which knows them all.
             Some(Format::Apple)
         } else if table.has("name")
             && table.has("url")
@@ -243,6 +251,11 @@ mod tests {
                 Format::Lastpass,
             ),
             ("Title,URL,Username,Password,Notes,OTPAuth\n", Format::Apple),
+            ("Title,URL,Username,Password,Notes\n", Format::Apple),
+            (
+                "Group,Title,Username,Password,URL,Notes,TOTP,Icon,Last Modified,Created\n",
+                Format::Csv,
+            ),
             ("name,url,username,password,note\n", Format::Google),
             ("name,url,username,password\n", Format::Google),
         ];
