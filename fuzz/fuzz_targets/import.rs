@@ -6,7 +6,8 @@ use libfuzzer_sys::fuzz_target;
 use prive::import::Format;
 
 fuzz_target!(|text: &str| {
-    for format in [Format::Proton, Format::Apple, Format::Google, Format::Lastpass, Format::Csv] {
+    // Every format there is, so a new one is fuzzed from the start.
+    for format in Format::ALL {
         if let Ok((records, _)) = format.parse(text, &[]) {
             for r in &records {
                 if let Some(uri) = &r.otp {

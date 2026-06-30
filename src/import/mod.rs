@@ -143,6 +143,16 @@ pub enum Format {
 }
 
 impl Format {
+    /// Every format, for whatever needs to try them all (the fuzz target does).
+    pub const ALL: [Format; 6] = [
+        Format::Proton,
+        Format::Apple,
+        Format::Google,
+        Format::Lastpass,
+        Format::Bitwarden,
+        Format::Csv,
+    ];
+
     pub fn label(self) -> &'static str {
         match self {
             Format::Proton => "Proton Pass",
@@ -278,6 +288,14 @@ mod tests {
         );
         assert_eq!(title_from_url("example.org"), "example.org");
         assert_eq!(title_from_url(""), "untitled");
+    }
+
+    #[test]
+    fn all_lists_every_format() {
+        assert_eq!(
+            Format::ALL.as_slice(),
+            <Format as clap::ValueEnum>::value_variants()
+        );
     }
 
     #[test]
