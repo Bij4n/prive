@@ -36,11 +36,13 @@ They work on the same file (prive only reads it, for now), so use both.
 
 ## Install
 
-There are no packaged releases yet. With a recent stable Rust (1.88 or later):
+With a recent stable Rust (1.88 or later), the latest release:
 
 ```bash
-cargo install --git https://github.com/Bij4n/prive --locked
+cargo install --git https://github.com/Bij4n/prive --tag v0.6.0 --locked
 ```
+
+Leave out `--tag` for the newest commit. There are no prebuilt binaries or packages yet.
 
 Shell completions, man pages and other ways in: [docs/install.md](docs/install.md). Coming from
 prive 0.5? See [docs/migrating-from-0.5.md](docs/migrating-from-0.5.md).
