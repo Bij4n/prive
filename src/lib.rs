@@ -17,6 +17,7 @@ pub mod diff;
 pub mod doctor;
 pub mod entry;
 pub mod error;
+pub mod export;
 pub mod fsutil;
 pub mod generate;
 pub mod gitcred;
