@@ -145,15 +145,7 @@ impl Format {
             Some(Format::Proton)
         } else if table.has("grouping") && table.has("extra") {
             Some(Format::Lastpass)
-        } else if table.has("otpauth")
-            // Safari's older exports, before codes were added: exactly these five columns.
-            || (table.headers().len() == 5
-                && ["title", "url", "username", "password", "notes"]
-                    .iter()
-                    .all(|c| table.has(c)))
-        {
-            // KeePassXC's own CSV has a title and notes too, but more columns (Group, TOTP,
-            // ...): it goes to the generic reader, which knows them all.
+        } else if is_apple(&table) {
             Some(Format::Apple)
         } else if table.has("name")
             && table.has("url")
@@ -167,6 +159,16 @@ impl Format {
             None
         }
     }
+}
+
+/// Apple's exports have exactly these columns (the older ones without OTPAuth). Others share
+/// some of them, 1Password's OTPAuth and KeePassXC's Title and Notes among them, but have
+/// more (tags, groups): those go to the generic reader, which keeps them.
+fn is_apple(table: &csvtable::Table) -> bool {
+    const APPLE: [&str; 6] = ["title", "url", "username", "password", "notes", "otpauth"];
+    let n = table.headers().len();
+    (n == 6 && APPLE.iter().all(|c| table.has(c)))
+        || (n == 5 && APPLE[..5].iter().all(|c| table.has(c)))
 }
 
 /// Put every one-time code into the otpauth form KeePass apps read. One that can't be read is
@@ -254,6 +256,11 @@ mod tests {
             ("Title,URL,Username,Password,Notes\n", Format::Apple),
             (
                 "Group,Title,Username,Password,URL,Notes,TOTP,Icon,Last Modified,Created\n",
+                Format::Csv,
+            ),
+            // 1Password's CSV has Apple's OTPAuth column, and its own tags.
+            (
+                "Title,Url,Username,Password,OTPAuth,Favorite,Archived,Tags,Notes\n",
                 Format::Csv,
             ),
             ("name,url,username,password,note\n", Format::Google),

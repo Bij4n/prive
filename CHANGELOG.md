@@ -10,7 +10,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - `import --check` took a CSV in KeePassXC's columns (prive's own export among them) for an
-  Apple Passwords export, and left out its groups and one-time codes
+  Apple Passwords export, and left out its groups and one-time codes; 1Password's CSV the
+  same, losing its tags. Apple's exports are now known by their exact columns
 
 ### Added
 - `prive export --plaintext [--format csv|json] [-o FILE]`: everything, references resolved,
