@@ -276,3 +276,21 @@ proptest! {
         }
     }
 }
+
+proptest! {
+    #[test]
+    fn exported_files_stay_inside_their_directory(
+        group in ".{0,30}",
+        title in ".{0,30}",
+        name in ".{0,30}",
+    ) {
+        let dir = std::path::Path::new("/export/here");
+        let e = prive::entry::Entry { group, title, ..Default::default() };
+        let p = prive::export::attachment_path(dir, &e, &name);
+        prop_assert!(p.starts_with(dir));
+        // Every part below the directory is a plain name.
+        for c in p.strip_prefix(dir).unwrap().components() {
+            prop_assert!(matches!(c, std::path::Component::Normal(_)), "{:?} in {:?}", c, p);
+        }
+    }
+}
