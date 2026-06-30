@@ -15,6 +15,7 @@ Check what an export would give before anything is written:
 
 ```bash
 prive import --check ~/Downloads/Proton\ Pass_export.csv
+prive import --check --list ~/Downloads/Proton\ Pass_export.csv   # and every entry, no passwords
 # Proton Pass export: 412 entries, 37 with one-time codes, in 3 group(s)
 #   2 note item(s): Proton's CSV only has their name and note; its JSON export has the rest
 ```

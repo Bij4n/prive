@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- `prive import --check --list`: each entry as it would come across, never a password
 - `prive export --plaintext [--format csv|json] [-o FILE]`: everything, references resolved,
   to a new owner-only file or a pipe (never a terminal), to move to another app
 
