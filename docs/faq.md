@@ -41,8 +41,8 @@ file work.
 **Why Rust?**
 A password tool handles secrets in memory and parses files other programs wrote. Rust
 removes whole classes of memory bugs there, and gives one self-contained binary that starts
-in milliseconds (a 5,000-entry database lists in a tenth of a second, most of it the key
-derivation).
+in milliseconds: a 5,000-entry database lists in a tenth of a second, plus whatever its key
+derivation setting costs ([performance.md](performance.md)).
 
 **Something doesn't work.**
 Run `prive doctor`, then see [troubleshooting.md](troubleshooting.md).
