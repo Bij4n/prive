@@ -32,7 +32,9 @@ run.rs        `prive run`: secrets into a child's environment, exit code passed 
 gitcred.rs    git credential helper: a remote's host and user -> an entry
 agent/        the unlock-once agent: private socket dir, protocol, framing, peer check,
               state (unlocked databases by path, each forgotten when its file changes), server, client
-import/       reading other apps' exports into common records (CSV by column name)
+import/       reading other apps' exports into common records (CSV by column name; Proton,
+              Apple, Google, LastPass and Bitwarden have readers of their own)
+export.rs     `export --plaintext`: KeePassXC's CSV, Bitwarden's, JSON; safe paths for files
 clip.rs       clipboard copy with a detached clearing helper
 output.rs     everything printed: list, show, audit, JSON, pipe-safe stdout
 pick.rs       fuzzy picker on stderr
