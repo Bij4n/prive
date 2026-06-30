@@ -72,8 +72,21 @@ fn breach_counts_with(
         .collect())
 }
 
+/// One HTTP client for every lookup, with a time limit: a network that hangs fails the
+/// check after 30 seconds instead of keeping `audit` waiting for ever.
+fn agent() -> &'static ureq::Agent {
+    static AGENT: std::sync::OnceLock<ureq::Agent> = std::sync::OnceLock::new();
+    AGENT.get_or_init(|| {
+        ureq::Agent::config_builder()
+            .timeout_global(Some(std::time::Duration::from_secs(30)))
+            .build()
+            .into()
+    })
+}
+
 fn fetch_range(prefix: &str) -> Result<String> {
-    ureq::get(format!("{API}{prefix}"))
+    agent()
+        .get(format!("{API}{prefix}"))
         .header("Add-Padding", "true")
         .header("User-Agent", concat!("prive/", env!("CARGO_PKG_VERSION")))
         .call()
