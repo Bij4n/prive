@@ -10,7 +10,8 @@ Start with [questions people ask](faq.md).
 - [Generating passwords](generate.md)
 - [Running commands with secrets](run.md): `prive run`
 - [git credential helper](git.md)
-- [Bringing passwords in](importing.md) from Proton Pass, Apple, Google, LastPass, any CSV
+- [Bringing passwords in](importing.md) from Proton Pass, Apple, Google, LastPass, Bitwarden,
+  any CSV, and [taking them out](importing.md#leaving) with `prive export`
 - [Syncing and conflict copies](sync.md): `prive diff`
 - [Moving from prive 0.5](migrating-from-0.5.md)
 - [Scripting](scripting.md), [JSON output](json.md), [exit codes](exit-codes.md),
