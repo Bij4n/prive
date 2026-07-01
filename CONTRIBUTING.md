@@ -34,6 +34,13 @@ index; `tests/docs.rs` fails when a link between pages points at a file that doe
   completions and man page tests (`tests/cli.rs`, `tests/man.rs`).
 - If it reads entries, a test against the KeePassXC-made fixtures in `tests/commands.rs`.
 
+## Speed
+
+A change meant to make something faster, or that might make it slower, gets measured before
+and after with `cargo run --release --example bench -- DB < password` on a large database
+(the 5,000-entry one in `tests/interop.rs` is a good start); put the numbers in the pull
+request, and in `docs/performance.md` if they move.
+
 ## Ground rules
 
 - stdout is for results only; prompts, notices and errors go to stderr.
