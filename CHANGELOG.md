@@ -25,6 +25,8 @@ All notable changes to this project will be documented in this file.
 - `import --check` took a CSV in KeePassXC's columns (prive's own export among them) for an
   Apple Passwords export, and left out its groups and one-time codes; 1Password's CSV the
   same, losing its tags. Apple's exports are now known by their exact columns
+- `info --time` said nearly all of an open was the key derivation; on a big database with
+  fast settings most of it is reading the entries, and it now says both
 
 ## [0.6.0] - 2026-06-30
 
