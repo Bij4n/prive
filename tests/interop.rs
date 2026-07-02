@@ -201,11 +201,13 @@ fn info_matches_keepassxc() {
             ours["entries"].to_string(),
             "{f}"
         );
-        // KeePassXC counts the root group and the recycle bin; prive counts neither.
-        assert_eq!(
-            value("Number of groups:"),
-            (ours["groups"].as_u64().unwrap() + 2).to_string(),
-            "{f}"
+        // prive counts neither the root group nor the recycle bin. KeePassXC 2.7.6 counts both;
+        // 2.7.10 (Ubuntu 26.04) one of them less.
+        let theirs: u64 = value("Number of groups:").parse().unwrap();
+        let groups = ours["groups"].as_u64().unwrap();
+        assert!(
+            theirs == groups + 1 || theirs == groups + 2,
+            "{f}: keepassxc {theirs} groups, prive {groups}"
         );
         assert_eq!(
             value("KDF:"),
