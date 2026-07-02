@@ -13,6 +13,13 @@ use crate::entry::Entry;
 /// How deep references to references may go before prive stops, as KeePass does.
 const MAX_DEPTH: usize = 10;
 
+/// The most references one value may expand, all depths together, and the longest it may
+/// grow. Depth alone doesn't bound the work: a value that refers to itself twice doubles at
+/// every level, and a few such references in a crafted database or import would otherwise
+/// run out of memory. Past either limit the rest are left as written, like a broken one.
+const MAX_REFS: usize = 1000;
+const MAX_LEN: usize = 1 << 20;
+
 fn uuid_hex(uuid: &str) -> String {
     uuid.chars()
         .filter(char::is_ascii_hexdigit)
@@ -46,11 +53,17 @@ fn find<'a>(entries: &'a [Entry], search: char, text: &str) -> Option<&'a Entry>
 /// `value` with every reference replaced by what it points at. A reference that points at
 /// nothing is left as written, as KeePass does, so the user sees what to fix.
 pub fn resolve(entries: &[Entry], value: &str) -> Zeroizing<String> {
-    resolve_depth(entries, value, 0)
+    let mut budget = MAX_REFS;
+    resolve_depth(entries, value, 0, &mut budget)
 }
 
-fn resolve_depth(entries: &[Entry], value: &str, depth: usize) -> Zeroizing<String> {
-    if depth >= MAX_DEPTH || !value.contains("{REF:") {
+fn resolve_depth(
+    entries: &[Entry],
+    value: &str,
+    depth: usize,
+    budget: &mut usize,
+) -> Zeroizing<String> {
+    if depth >= MAX_DEPTH || *budget == 0 || !value.contains("{REF:") {
         return Zeroizing::new(value.to_string());
     }
     let mut out = Zeroizing::new(String::with_capacity(value.len()));
@@ -64,17 +77,21 @@ fn resolve_depth(entries: &[Entry], value: &str, depth: usize) -> Zeroizing<Stri
         };
         let inner = &after[5..end]; // after "{REF:"
         let replaced = parse(inner).and_then(|(field, search, text)| {
+            if *budget == 0 {
+                return None;
+            }
+            *budget -= 1;
             let target = find(entries, search, text)?;
             let raw = if field.eq_ignore_ascii_case(&'I') {
                 uuid_hex(&target.uuid)
             } else {
                 standard(target, field)?.to_string()
             };
-            Some(resolve_depth(entries, &raw, depth + 1))
+            Some(resolve_depth(entries, &raw, depth + 1, budget))
         });
         match replaced {
-            Some(v) => out.push_str(&v),
-            None => out.push_str(&after[..=end]),
+            Some(v) if out.len() + v.len() <= MAX_LEN => out.push_str(&v),
+            _ => out.push_str(&after[..=end]),
         }
         rest = &after[end + 1..];
     }
@@ -123,6 +140,26 @@ mod tests {
                 ..Entry::default()
             },
         ]
+    }
+
+    #[test]
+    fn a_reference_that_multiplies_itself_stays_small() {
+        // Each level would double: 2^10 copies, and more with more references per value.
+        let uuid = "00000000000000000000000000000077";
+        let e = vec![Entry {
+            uuid: uuid.into(),
+            title: "Loop".into(),
+            password: Zeroizing::new(format!("{{REF:P@I:{uuid}}}").repeat(8)),
+            ..Entry::default()
+        }];
+        let started = std::time::Instant::now();
+        let out = resolve(&e, &e[0].password);
+        assert!(out.len() <= MAX_LEN, "{} bytes", out.len());
+        assert!(started.elapsed() < std::time::Duration::from_secs(2));
+        assert!(
+            out.contains("{REF:"),
+            "what isn't expanded stays as written"
+        );
     }
 
     #[test]
