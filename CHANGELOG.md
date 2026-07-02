@@ -22,6 +22,8 @@ All notable changes to this project will be documented in this file.
   Archived flag becomes a tag
 
 ### Fixed
+- A field reference that refers to itself more than once could make prive run out of memory
+  (found by fuzzing); one value now expands at most 1,000 references and 1 MiB
 - `import --check` took a CSV in KeePassXC's columns (prive's own export among them) for an
   Apple Passwords export, and left out its groups and one-time codes; 1Password's CSV the
   same, losing its tags. Apple's exports are now known by their exact columns

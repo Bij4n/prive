@@ -22,3 +22,11 @@ does. One that points at nothing is left as written, so you can see what to fix.
 
 `audit` checks a referenced password at its source entry only, so a shared password isn't
 reported as "reused" by every entry that refers to it.
+
+## Limits
+
+A reference to a reference is followed up to ten levels deep, as KeePass does. One value
+expands at most 1,000 references in all and grows to at most 1 MiB; anything past that is
+left as written. No real database comes near either, but without them a value that refers to
+itself several times would double at every level and could run prive out of memory.
+\n
