@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Fixed
+- CI: the Windows test job no longer hangs until the 6-hour limit (tests reached a console password prompt); every job now has a timeout
+- Release builds: HTTPS uses rustls instead of the system OpenSSL, so the musl build links and Linux binaries no longer need `libssl`
+- `pw` and `note` commands report a missing vault before asking for the master password
+
+### Changed
+- Added the MIT `LICENSE` file
+- README: install from source only; added a status notice listing known problems in 0.5
+- Removed the Homebrew, AUR and WinGet manifests (they referenced releases that were never published)
+
 ## [0.5.0] - 2026-05-09
 
 ### Added

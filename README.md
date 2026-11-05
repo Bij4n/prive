@@ -1,5 +1,17 @@
 # Prive
 
+> **Status: 0.5 is legacy. A rewrite is in progress.**
+> Version 1.0 will be a terminal client for KeePass (`.kdbx`) databases, the same files
+> KeePassXC, KeePassDX and Strongbox open.
+>
+> **Do not use 0.5 for real secrets.** Known problems in 0.5:
+> - `prive pgp generate` stores the secret key unencrypted, even though it asks for a
+>   passphrase.
+> - Vault and key files are created with default permissions (often readable by other users).
+> - The session agent, auto-backup and clipboard auto-clear don't work.
+> - `pgp gen-revoke` does not produce a real revocation certificate.
+> - The KeePass XML import misses entries from real exports.
+
 Prive is a cross-platform password manager and PGP encryption toolkit that lives entirely in your terminal. Your vault stays on your machine — encrypted with AES-256-GCM and locked behind Argon2id key derivation — with no cloud sync, no accounts, and no external dependencies. Just a single binary that does everything: generate strong passwords, manage TOTP codes, encrypt files with PGP, audit your security posture, and share secrets safely. Because your passwords shouldn't need the internet's permission to exist.
 
 ## Features
@@ -26,32 +38,10 @@ Prive is a cross-platform password manager and PGP encryption toolkit that lives
 
 ## Installation
 
-### Homebrew (macOS / Linux)
+There are no packaged releases yet. Build from source with a recent stable Rust:
 
 ```bash
-brew install Bij4n/prive/prive
-```
-
-### AUR (Arch Linux)
-
-```bash
-yay -S prive
-```
-
-### WinGet (Windows)
-
-```bash
-winget install Bij4n.Prive
-```
-
-### Pre-built binaries
-
-Download from the [Releases](https://github.com/Bij4n/prive-app/releases) page.
-
-### From source
-
-```bash
-cargo install --path .
+cargo install --git https://github.com/Bij4n/prive --locked
 ```
 
 ## Quick Start
