@@ -87,7 +87,7 @@ pub fn handle_decrypt(args: &DecryptArgs) -> Result<()> {
         if let Ok(secret_key) = keyring.load_secret_key(&key_info.key_id) {
             let passphrase = rpassword::prompt_password(format!(
                 "Passphrase for key {} (empty if none): ",
-                &key_info.key_id
+                key_info.key_id
             ))?;
 
             match operations::decrypt_with_key(&encrypted_data, &secret_key, &passphrase) {

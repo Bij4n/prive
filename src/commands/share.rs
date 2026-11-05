@@ -89,7 +89,7 @@ fn cmd_import(vault_path: Option<&Path>, file: &Path) -> Result<()> {
         if let Ok(secret_key) = keyring.load_secret_key(&key_info.key_id) {
             let passphrase = rpassword::prompt_password(format!(
                 "Passphrase for key {} (empty if none): ",
-                &key_info.key_id
+                key_info.key_id
             ))?;
 
             match share::receive_shared(&encrypted_data, &secret_key, &passphrase) {
