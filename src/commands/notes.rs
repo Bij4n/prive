@@ -20,6 +20,9 @@ fn unlock_vault(
     vault_path: Option<&Path>,
 ) -> Result<(std::path::PathBuf, crate::vault::model::Vault, String)> {
     let path = resolve_vault_path(vault_path);
+    if !path.exists() {
+        anyhow::bail!("Vault not found. Run `prive vault init` first.");
+    }
     let password = rpassword::prompt_password("Master password: ")?;
     let vault = VaultStorage::load(&path, password.as_bytes()).map_err(|e| anyhow::anyhow!(e))?;
     Ok((path, vault, password))
